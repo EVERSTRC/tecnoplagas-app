@@ -47,6 +47,9 @@ const URL_WEB_APP_GOOGLE = "https://script.google.com/macros/s/AKfycbzV-y6bvTwK8
 
 let clientesArray = []; // Guarda la copia de la base de datos para el buscador rápido
 
+// Variables temporales para guardar los datos extras del cliente al agendar
+let datosClienteAgendado = { telefono: '', gps: '', direccion: '' };
+
 // 5. Captura de Ubicación GPS por la Tablet
 btnGps.addEventListener('click', () => {
   if (navigator.geolocation) {
@@ -92,40 +95,36 @@ form.addEventListener('submit', async (e) => {
     };
 
     if (!esEdicion) {
-      // Si es un cliente nuevo, grabamos la fecha de hoy
       datosCliente.fechaRegistro = new Date().toISOString();
     } else {
-      // Si es edición, buscamos y mantenemos la fecha exacta que ya tenía antes
       const clienteOriginal = clientesArray.find(c => c.cedula === cedula);
       datosCliente.fechaRegistro = clienteOriginal ? clienteOriginal.fechaRegistro : new Date().toISOString();
     }
 
-    // Guarda en Firestore usando la Cédula como ID único del documento
     await setDoc(doc(db, "clientes", cedula), datosCliente);
     
     alert(esEdicion ? "¡Cliente modificado con éxito!" : "¡Cliente guardado correctamente!");
     resetearFormulario();
-    window.cambiarPestaña('consulta'); // Te devuelve automáticamente a la pestaña de búsqueda
+    window.cambiarPestaña('consulta');
   } catch (error) {
     console.error(error);
     alert("Error al conectar con Firestore.");
   }
 });
 
-// 7. Botón para cancelar la edición y limpiar todo
 btnCancelar.addEventListener('click', resetearFormulario);
 
 function resetearFormulario() {
   form.reset();
   modoEdicionHidden.value = "";
-  inputCedula.disabled = false; // Desbloquea el campo Cédula para nuevos registros
+  inputCedula.disabled = false;
   tituloFormulario.innerText = "Fumigadora Tecnoplagas - Nuevo Registro";
   btnGuardar.innerText = "Guardar Cliente en Sistema";
-  btnGuardar.style.background = "#10b981"; // Vuelve a verde normal
+  btnGuardar.style.background = "#10b981";
   btnCancelar.style.display = "none";
 }
 
-// 8. Mostrar Clientes en Pantalla (Dibuja las tarjetas con botones Agendar, Editar y Eliminar)
+// 7. Mostrar Clientes en Pantalla
 function renderizarClientes(arregloClientes) {
   listaClientes.innerHTML = '';
   
@@ -149,7 +148,7 @@ function renderizarClientes(arregloClientes) {
         <p style="font-size:12px; color:#94a3b8;">Registrado el: ${fecha}</p>
       </div>
       <div class="acciones-card">
-        <button class="btn-calendar" data-nombre="${c.nombre}">📅 Agendar</button>
+        <button class="btn-calendar" data-cedula="${c.cedula}" data-nombre="${c.nombre}">📅 Agendar</button>
         <button class="btn-edit" data-id="${c.cedula}">✏️ Editar</button>
         <button class="btn-delete" data-id="${c.cedula}">❌ Eliminar</button>
       </div>
@@ -157,12 +156,24 @@ function renderizarClientes(arregloClientes) {
     listaClientes.appendChild(div);
   });
 
-  // --- ESCUCHAR CLIC EN EL BOTÓN AGENDAR EN GOOGLE CALENDAR ---
+  // --- ESCUCHAR CLIC EN EL BOTÓN AGENDAR ---
   document.querySelectorAll('.btn-calendar').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const cedulaCliente = e.target.getAttribute('data-cedula');
       const nombreCliente = e.target.getAttribute('data-nombre');
-      calNombreCliente.value = nombreCliente;
-      calendarModal.style.display = 'flex'; // Abre la ventana flotante
+      
+      // Buscamos el objeto completo del cliente en nuestro arreglo local
+      const cliente = clientesArray.find(c => c.cedula === cedulaCliente);
+      
+      if(cliente) {
+        // Guardamos temporalmente sus datos extras
+        datosClienteAgendado.telefono = cliente.telefono || 'No especificado';
+        datosClienteAgendado.direccion = cliente.direccion || 'No especificada';
+        datosClienteAgendado.gps = cliente.gps || 'No capturado';
+        
+        calNombreCliente.value = nombreCliente;
+        calendarModal.style.display = 'flex'; // Abre la ventana flotante
+      }
     });
   });
 
@@ -173,9 +184,8 @@ function renderizarClientes(arregloClientes) {
       const cliente = clientesArray.find(c => c.cedula === idCliente);
       
       if(cliente) {
-        // Pasa los datos del cliente seleccionado a las casillas del formulario
         inputCedula.value = cliente.cedula;
-        inputCedula.disabled = true; // Bloquea la cédula para que no cambie la llave primaria
+        inputCedula.disabled = true;
         document.getElementById('nombre').value = cliente.nombre;
         document.getElementById('telefono').value = cliente.telefono || '';
         document.getElementById('email').value = cliente.email || '';
@@ -184,14 +194,12 @@ function renderizarClientes(arregloClientes) {
         document.getElementById('gps').value = cliente.gps || '';
         document.getElementById('direccion').value = cliente.direccion || '';
 
-        // Transforma visualmente el formulario al "Modo Edición"
         modoEdicionHidden.value = cliente.cedula;
         tituloFormulario.innerText = `✏️ Modificando Cliente: ${cliente.nombre}`;
         btnGuardar.innerText = "Actualizar Datos del Cliente";
-        btnGuardar.style.background = "#f59e0b"; // Color naranja de alerta/edición
+        btnGuardar.style.background = "#f59e0b";
         btnCancelar.style.display = "block";
 
-        // Mueve al usuario automáticamente a la pestaña del Formulario
         window.cambiarPestaña('registro');
       }
     });
@@ -208,14 +216,29 @@ function renderizarClientes(arregloClientes) {
   });
 }
 
-// 9. Envío de evento a Google Calendar mediante el Puente Web
+// 8. Envío de evento a Google Calendar (Combina los detalles con teléfono, GPS y dirección)
 calendarForm.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  // Generamos un enlace directo a Google Maps si hay coordenadas
+  const enlaceMaps = datosClienteAgendado.gps !== 'No capturado' 
+    ? `https://www.google.com/maps/search/?api=1&query=${datosClienteAgendado.gps}` 
+    : 'No disponible';
+
+  // Construimos una descripción organizada y limpia para el evento de Google Calendar
+  const descripcionCompleta = `Trabajo: ${calDetalles.value}
+
+---------------------------------------
+📞 Teléfono: ${datosClienteAgendado.telefono}
+📍 Dirección: ${datosClienteAgendado.direccion}
+🗺️ Coordenadas GPS: ${datosClienteAgendado.gps}
+🚗 Ruta Maps: ${enlaceMaps}
+---------------------------------------`;
 
   const payload = {
     title: `Fumigación - ${calNombreCliente.value}`,
     startTime: calFecha.value,
-    description: calDetalles.value
+    description: descripcionCompleta
   };
 
   alert("Enviando cita a Google Calendar...");
@@ -230,15 +253,13 @@ calendarForm.addEventListener('submit', async (e) => {
     calendarForm.reset();
     calendarModal.style.display = 'none';
   } catch (error) {
-    // Nota técnica: Google Apps Script a veces genera un bloqueo CORS ficticio en respuestas POST, 
-    // pero ejecuta la acción perfectamente en segundo plano de igual modo.
     alert("¡Acción enviada! Revisa tu calendario de Google en unos segundos.");
     calendarForm.reset();
     calendarModal.style.display = 'none';
   }
 });
 
-// 10. Oír la Base de Datos de Firestore en Tiempo Real
+// 9. Oír la Base de Datos de Firestore en Tiempo Real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   clientesArray = [];
   snapshot.forEach((docSnap) => {
@@ -247,7 +268,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   renderizarClientes(clientesArray);
 });
 
-// 11. Lógica de Filtrado del Buscador en tiempo real
+// 10. Lógica de Filtrado del Buscador en tiempo real
 buscador.addEventListener('input', (e) => {
   const texto = e.target.value.toLowerCase().trim();
   const clientesFiltrados = clientesArray.filter(c => {
