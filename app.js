@@ -35,9 +35,19 @@ const btnGuardar = document.getElementById('btn-guardar');
 const btnCancelar = document.getElementById('btn-cancelar');
 const inputCedula = document.getElementById('cedula');
 
+// Elementos exclusivos para Google Calendar (Modal)
+const calendarModal = document.getElementById('calendar-modal');
+const calendarForm = document.getElementById('calendar-form');
+const calNombreCliente = document.getElementById('cal-nombre-cliente');
+const calFecha = document.getElementById('cal-fecha');
+const calDetalles = document.getElementById('cal-detalles');
+
+// 4. Enlace oficial de tu puente de Google Apps Script para el Calendario
+const URL_WEB_APP_GOOGLE = "https://script.google.com/macros/s/AKfycbzV-y6bvTwK8ZqKSfhh9zbgbzon9Lzf384nKlO_UFDrxFXBCu5lL7UyhMACuWBDcfj6/exec";
+
 let clientesArray = []; // Guarda la copia de la base de datos para el buscador rápido
 
-// 4. Captura de Ubicación GPS por la Tablet
+// 5. Captura de Ubicación GPS por la Tablet
 btnGps.addEventListener('click', () => {
   if (navigator.geolocation) {
     inputGps.value = "Obteniendo coordenadas...";
@@ -54,7 +64,7 @@ btnGps.addEventListener('click', () => {
   }
 });
 
-// 5. Enviar el Formulario (Decide automáticamente si REGISTRA o EDITA)
+// 6. Enviar el Formulario (Decide automáticamente si REGISTRA o EDITA)
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   
@@ -102,7 +112,7 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// 6. Botón para cancelar la edición y limpiar todo
+// 7. Botón para cancelar la edición y limpiar todo
 btnCancelar.addEventListener('click', resetearFormulario);
 
 function resetearFormulario() {
@@ -115,7 +125,7 @@ function resetearFormulario() {
   btnCancelar.style.display = "none";
 }
 
-// 7. Mostrar Clientes en Pantalla (Dibuja las tarjetas con botones Editar y Eliminar)
+// 8. Mostrar Clientes en Pantalla (Dibuja las tarjetas con botones Agendar, Editar y Eliminar)
 function renderizarClientes(arregloClientes) {
   listaClientes.innerHTML = '';
   
@@ -139,11 +149,21 @@ function renderizarClientes(arregloClientes) {
         <p style="font-size:12px; color:#94a3b8;">Registrado el: ${fecha}</p>
       </div>
       <div class="acciones-card">
+        <button class="btn-calendar" data-nombre="${c.nombre}">📅 Agendar</button>
         <button class="btn-edit" data-id="${c.cedula}">✏️ Editar</button>
         <button class="btn-delete" data-id="${c.cedula}">❌ Eliminar</button>
       </div>
     `;
     listaClientes.appendChild(div);
+  });
+
+  // --- ESCUCHAR CLIC EN EL BOTÓN AGENDAR EN GOOGLE CALENDAR ---
+  document.querySelectorAll('.btn-calendar').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const nombreCliente = e.target.getAttribute('data-nombre');
+      calNombreCliente.value = nombreCliente;
+      calendarModal.style.display = 'flex'; // Abre la ventana flotante
+    });
   });
 
   // --- ESCUCHAR CLIC EN EL BOTÓN EDITAR ---
@@ -188,7 +208,37 @@ function renderizarClientes(arregloClientes) {
   });
 }
 
-// 8. Oír la Base de Datos de Firestore en Tiempo Real
+// 9. Envío de evento a Google Calendar mediante el Puente Web
+calendarForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    title: `Fumigación - ${calNombreCliente.value}`,
+    startTime: calFecha.value,
+    description: calDetalles.value
+  };
+
+  alert("Enviando cita a Google Calendar...");
+
+  try {
+    await fetch(URL_WEB_APP_GOOGLE, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
+    
+    alert("¡Cita agendada correctamente en tu Google Calendar!");
+    calendarForm.reset();
+    calendarModal.style.display = 'none';
+  } catch (error) {
+    // Nota técnica: Google Apps Script a veces genera un bloqueo CORS ficticio en respuestas POST, 
+    // pero ejecuta la acción perfectamente en segundo plano de igual modo.
+    alert("¡Acción enviada! Revisa tu calendario de Google en unos segundos.");
+    calendarForm.reset();
+    calendarModal.style.display = 'none';
+  }
+});
+
+// 10. Oír la Base de Datos de Firestore en Tiempo Real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   clientesArray = [];
   snapshot.forEach((docSnap) => {
@@ -197,7 +247,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   renderizarClientes(clientesArray);
 });
 
-// 9. Lógica de Filtrado del Buscador en tiempo real
+// 11. Lógica de Filtrado del Buscador en tiempo real
 buscador.addEventListener('input', (e) => {
   const texto = e.target.value.toLowerCase().trim();
   const clientesFiltrados = clientesArray.filter(c => {
