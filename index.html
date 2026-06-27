@@ -40,9 +40,10 @@
 
     /* Tarjetas de clientes */
     .cliente-card { background: #fff; border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-    .cliente-info h3 { margin: 0 0 8px 0; color: #1e293b; }
+    .cliente-info h3 { margin: 0 0 8px 0; color: #1e293b; display: flex; align-items: center; gap: 8px; }
     .cliente-info p { margin: 4px 0; font-size: 14px; color: #64748b; }
     .badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-consecutivo { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-family: monospace; font-size: 14px; }
     
     .acciones-card { display: flex; flex-direction: column; gap: 8px; }
     .btn-calendar { background: #2563eb; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
@@ -70,12 +71,16 @@
         <input type="hidden" id="modo-edicion" value="">
         <div class="grid-form">
           <div>
+            <label for="consecutivo">Consecutivo / Código de Cliente</label>
+            <input type="text" id="consecutivo" readonly style="background:#e2e8f0; font-weight:bold; color:#1e293b; font-family:monospace; text-align:center;">
+          </div>
+          <div>
             <label for="cedula">Cédula / Identificación</label>
             <input type="text" id="cedula" required placeholder="Ej: 1-1234-5678">
           </div>
-          <div>
-            <label for="nombre">Nombre Completo</label>
-            <input type="text" id="nombre" required placeholder="Nombre o Razón Social">
+          <div class="full-width">
+            <label for="nombre">Nombre Completo / Razón Social</label>
+            <input type="text" id="nombre" required placeholder="Nombre del cliente o negocio">
           </div>
           <div>
             <label for="telefono">Teléfono</label>
@@ -108,7 +113,7 @@
           </div>
           <div class="full-width">
             <label for="direccion">Dirección Exacta</label>
-            <textarea id="direccion" rows="2" placeholder="Detalles específicos del domicilio..."></textarea>
+            <textarea id="direccion" rows="2" placeholder="Detalles específicos para llegar al domicilio..."></textarea>
           </div>
         </div>
         <button type="submit" id="btn-guardar" class="btn-submit">Guardar Cliente en Sistema</button>
@@ -119,7 +124,7 @@
     <div id="pestaña-consulta" class="tab-content">
       <h2>Buscador de Clientes</h2>
       <div class="search-container">
-        <input type="text" id="buscador" class="search-input" placeholder="🔍 Escribe un nombre o cédula para buscar...">
+        <input type="text" id="buscador" class="search-input" placeholder="🔍 Escribe un nombre, cédula o consecutivo (CLI-...)">
       </div>
       <div id="lista-clientes"></div>
     </div>
@@ -129,15 +134,20 @@
     <div class="modal-content">
       <h3 style="margin-top:0; color:#1e293b;">📅 Agendar Cita en Google Calendar</h3>
       <form id="calendar-form">
-        <div style="margin-bottom: 12px;">
-          <label>Cliente Seleccionado</label>
-          <input type="text" id="cal-nombre-cliente" readonly style="background:#e2e8f0; font-weight:bold;">
+        <div style="margin-bottom: 12px; display: grid; grid-template-columns: 1fr 2fr; gap: 10px;">
+          <div>
+            <label>Código</label>
+            <input type="text" id="cal-consecutivo-cliente" readonly style="background:#e2e8f0; font-weight:bold; text-align:center; font-family:monospace;">
+          </div>
+          <div>
+            <label>Cliente Seleccionado</label>
+            <input type="text" id="cal-nombre-cliente" readonly style="background:#e2e8f0; font-weight:bold;">
+          </div>
         </div>
         <div style="margin-bottom: 12px;">
           <label for="cal-fecha">Fecha y Hora de la Cita</label>
           <input type="datetime-local" id="cal-fecha" required>
         </div>
-        
         <div style="margin-bottom: 12px;">
           <label for="cal-tipo-visita">Tipo de Visita</label>
           <select id="cal-tipo-visita" required>
@@ -146,12 +156,10 @@
             <option value="Refuerzo">Refuerzo</option>
           </select>
         </div>
-
         <div style="margin-bottom: 12px;">
           <label for="cal-monto">Monto a Facturar</label>
           <input type="number" id="cal-monto" placeholder="Ej: 25000" min="0">
         </div>
-
         <div style="margin-bottom: 12px;">
           <label for="cal-detalles">Notas adicionales / Síntomas</label>
           <input type="text" id="cal-detalles" placeholder="Ej: Reporta fuerte problema en cocina">
