@@ -16,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Persistencia Offline para la Tablet
 enableIndexedDbPersistence(db).catch((err) => {
     console.log("Persistencia offline activa con límites: ", err.code);
 });
@@ -27,17 +28,19 @@ const btnGps = document.getElementById('btn-capturar-gps');
 const inputGps = document.getElementById('gps');
 const buscador = document.getElementById('buscador');
 
-// Edición
+// Edición y Consecutivo
 const modoEdicionHidden = document.getElementById('modo-edicion');
 const tituloFormulario = document.getElementById('titulo-formulario');
 const btnGuardar = document.getElementById('btn-guardar');
 const btnCancelar = document.getElementById('btn-cancelar');
 const inputCedula = document.getElementById('cedula');
+const inputConsecutivo = document.getElementById('consecutivo');
 
 // Google Calendar DOM
 const calendarModal = document.getElementById('calendar-modal');
 const calendarForm = document.getElementById('calendar-form');
 const calNombreCliente = document.getElementById('cal-nombre-cliente');
+const calConsecutivoCliente = document.getElementById('cal-consecutivo-cliente');
 const calFecha = document.getElementById('cal-fecha');
 const calTipoVisita = document.getElementById('cal-tipo-visita');
 const calMonto = document.getElementById('cal-monto');
@@ -47,7 +50,16 @@ const calDetalles = document.getElementById('cal-detalles');
 const URL_WEB_APP_GOOGLE = "https://script.google.com/macros/s/AKfycbzV-y6bvTwK8ZqKSfhh9zbgbzon9Lzf384nKlO_UFDrxFXBCu5lL7UyhMACuWBDcfj6/exec";
 
 let clientesArray = []; 
-let datosClienteAgendado = { telefono: '', gps: '', direccion: '' };
+let datosClienteAgendado = { consecutivo: '', telefono: '', gps: '', direccion: '' };
+
+// Generador automático del Consecutivo "CLI-000001"
+function calcularSiguienteConsecutivo() {
+  if (modoEdicionHidden.value === "") {
+    const numeroSiguiente = clientesArray.length + 1;
+    const formatoNumero = String(numeroSiguiente).padStart(6, '0');
+    inputConsecutivo.value = `CLI-${formatoNumero}`;
+  }
+}
 
 // Captura GPS
 btnGps.addEventListener('click', () => {
@@ -64,6 +76,7 @@ btnGps.addEventListener('click', () => {
 // Guardar / Editar Cliente
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+  const consecutivo = inputConsecutivo.value; 
   const cedula = inputCedula.value.trim();
   const nombre = document.getElementById('nombre').value;
   const telefono = document.getElementById('telefono').value;
@@ -75,7 +88,7 @@ form.addEventListener('submit', async (e) => {
   const esEdicion = modoEdicionHidden.value !== "";
 
   try {
-    const datosCliente = { cedula, nombre, telefono, email, sucursal, frecuenciaFumigacion: frecuencia, gps, direccion };
+    const datosCliente = { consecutivo, cedula, nombre, telefono, email, sucursal, frecuenciaFumigacion: frecuencia, gps, direccion };
     if (!esEdicion) {
       datosCliente.fechaRegistro = new Date().toISOString();
     } else {
@@ -101,9 +114,10 @@ function resetearFormulario() {
   btnGuardar.innerText = "Guardar Cliente en Sistema";
   btnGuardar.style.background = "#10b981";
   btnCancelar.style.display = "none";
+  calcularSiguienteConsecutivo(); 
 }
 
-// Pintar Clientes
+// Pintar Clientes en Pantalla
 function renderizarClientes(arregloClientes) {
   listaClientes.innerHTML = '';
   if (arregloClientes.length === 0) {
@@ -117,7 +131,7 @@ function renderizarClientes(arregloClientes) {
     div.className = 'cliente-card';
     div.innerHTML = `
       <div class="cliente-info">
-        <h3>${c.nombre} <span class="badge">${c.frecuenciaFumigacion}</span></h3>
+        <h3><span class="badge badge-consecutivo">${c.consecutivo || 'S/C'}</span> ${c.nombre} <span class="badge">${c.frecuenciaFumigacion}</span></h3>
         <p><strong>Cédula:</strong> ${c.cedula}</p>
         <p><strong>Sucursal:</strong> ${c.sucursal || 'N/A'} | <strong>Tel:</strong> ${c.telefono || 'N/A'}</p>
         <p><strong>Email:</strong> ${c.email || 'N/A'}</p>
@@ -134,7 +148,7 @@ function renderizarClientes(arregloClientes) {
     listaClientes.appendChild(div);
   });
 
-  // Evento Agendar
+  // Evento Modal Agendar Cita
   document.querySelectorAll('.btn-calendar').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const cedulaCliente = e.target.getAttribute('data-cedula');
@@ -142,23 +156,26 @@ function renderizarClientes(arregloClientes) {
       const cliente = clientesArray.find(c => c.cedula === cedulaCliente);
       
       if(cliente) {
+        datosClienteAgendado.consecutivo = cliente.consecutivo || 'Sin Código';
         datosClienteAgendado.telefono = cliente.telefono || 'No especificado';
         datosClienteAgendado.direccion = cliente.direccion || 'No especificada';
         datosClienteAgendado.gps = cliente.gps || 'No capturado';
         
         calNombreCliente.value = nombreCliente;
+        calConsecutivoCliente.value = datosClienteAgendado.consecutivo; 
         calendarModal.style.display = 'flex';
       }
     });
   });
 
-  // Evento Editar
+  // Evento Editar Cliente
   document.querySelectorAll('.btn-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const idCliente = e.target.getAttribute('data-id');
       const cliente = clientesArray.find(c => c.cedula === idCliente);
       if(cliente) {
         inputCedula.value = cliente.cedula; inputCedula.disabled = true;
+        inputConsecutivo.value = cliente.consecutivo || 'S/C'; 
         document.getElementById('nombre').value = cliente.nombre;
         document.getElementById('telefono').value = cliente.telefono || '';
         document.getElementById('email').value = cliente.email || '';
@@ -175,7 +192,7 @@ function renderizarClientes(arregloClientes) {
     });
   });
 
-  // Evento Eliminar
+  // Evento Eliminar Cliente
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const idCliente = e.target.getAttribute('data-id');
@@ -184,7 +201,7 @@ function renderizarClientes(arregloClientes) {
   });
 }
 
-// Envío de evento a Google Calendar (Combina los nuevos campos con los de contacto)
+// Envío unificado de evento a Google Calendar
 calendarForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -195,8 +212,8 @@ calendarForm.addEventListener('submit', async (e) => {
   const montoFactura = calMonto.value ? `₡${calMonto.value}` : 'Por definir';
   const notasAdicionales = calDetalles.value || 'Ninguna';
 
-  // Construcción de la descripción final exacta que verás en tu Google Calendar
-  const descripcionCompleta = `📋 Tipo de Visita: ${calTipoVisita.value}
+  const descripcionCompleta = `📋 Código Cliente: ${datosClienteAgendado.consecutivo}
+🛠️ Tipo de Visita: ${calTipoVisita.value}
 💰 Monto a Facturar: ${montoFactura}
 📝 Notas: ${notasAdicionales}
 
@@ -208,7 +225,7 @@ calendarForm.addEventListener('submit', async (e) => {
 ---------------------------------------`;
 
   const payload = {
-    title: `${calTipoVisita.value} - ${calNombreCliente.value}`,
+    title: `[${datosClienteAgendado.consecutivo}] ${calTipoVisita.value} - ${calNombreCliente.value}`,
     startTime: calFecha.value,
     description: descripcionCompleta
   };
@@ -231,16 +248,20 @@ calendarForm.addEventListener('submit', async (e) => {
   }
 });
 
-// Escuchar Firestore
+// Listener de Firestore en tiempo real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   clientesArray = [];
   snapshot.forEach((docSnap) => { clientesArray.push(docSnap.data()); });
   renderizarClientes(clientesArray);
+  calcularSiguienteConsecutivo(); 
 });
 
-// Buscador rápido
+// Filtrado inteligente del Buscador (Nombre, Cédula o Consecutivo)
 buscador.addEventListener('input', (e) => {
   const texto = e.target.value.toLowerCase().trim();
-  const clientesFiltrados = clientesArray.filter(c => c.nombre.toLowerCase().includes(texto) || c.cedula.toLowerCase().includes(texto));
+  const clientesFiltrados = clientesArray.filter(c => {
+    const cons = c.consecutivo ? c.consecutivo.toLowerCase() : '';
+    return c.nombre.toLowerCase().includes(texto) || c.cedula.toLowerCase().includes(texto) || cons.includes(texto);
+  });
   renderizarClientes(clientesFiltrados);
 });
