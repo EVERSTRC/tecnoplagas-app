@@ -76,7 +76,7 @@ btnGps.addEventListener('click', () => {
 // Guardar / Editar Cliente
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const consecutivo = inputConsecutivo.value; 
+  const consecutivo = inputConsecutivo.value; // Será la llave/ID del documento
   const cedula = inputCedula.value.trim();
   const nombre = document.getElementById('nombre').value;
   const telefono = document.getElementById('telefono').value;
@@ -89,13 +89,18 @@ form.addEventListener('submit', async (e) => {
 
   try {
     const datosCliente = { consecutivo, cedula, nombre, telefono, email, sucursal, frecuenciaFumigacion: frecuencia, gps, direccion };
+    
     if (!esEdicion) {
       datosCliente.fechaRegistro = new Date().toISOString();
     } else {
-      const original = clientesArray.find(c => c.cedula === cedula);
+      // Si es edición, buscamos por consecutivo (modoEdicionHidden ahora guarda el consecutivo)
+      const original = clientesArray.find(c => c.consecutivo === consecutivo);
       datosCliente.fechaRegistro = original ? original.fechaRegistro : new Date().toISOString();
     }
-    await setDoc(doc(db, "clientes", cedula), datosCliente);
+    
+    // --- CAMBIO CLAVE AQUÍ: Ahora se usa 'consecutivo' en lugar de 'cedula' para identificar el documento ---
+    await setDoc(doc(db, "clientes", consecutivo), datosCliente);
+    
     alert(esEdicion ? "¡Cliente modificado con éxito!" : "¡Cliente guardado correctamente!");
     resetearFormulario();
     window.cambiarPestaña('consulta');
@@ -125,7 +130,12 @@ function renderizarClientes(arregloClientes) {
     return;
   }
 
-  arregloClientes.forEach((c) => {
+  // Ordenamos el arreglo por consecutivo de forma ascendente para evitar desorden visual
+  const arregloOrdenado = [...arregloClientes].sort((a, b) => {
+    return (a.consecutivo || '').localeCompare(b.consecutivo || '');
+  });
+
+  arregloOrdenado.forEach((c) => {
     const fecha = new Date(c.fechaRegistro).toLocaleDateString();
     const div = document.createElement('div');
     div.className = 'cliente-card';
@@ -140,9 +150,9 @@ function renderizarClientes(arregloClientes) {
         <p style="font-size:12px; color:#94a3b8;">Registrado el: ${fecha}</p>
       </div>
       <div class="acciones-card">
-        <button class="btn-calendar" data-cedula="${c.cedula}" data-nombre="${c.nombre}">📅 Agendar</button>
-        <button class="btn-edit" data-id="${c.cedula}">✏️ Editar</button>
-        <button class="btn-delete" data-id="${c.cedula}">❌ Eliminar</button>
+        <button class="btn-calendar" data-consecutivo="${c.consecutivo}" data-nombre="${c.nombre}">📅 Agendar</button>
+        <button class="btn-edit" data-id="${c.consecutivo}">✏️ Editar</button>
+        <button class="btn-delete" data-id="${c.consecutivo}">❌ Eliminar</button>
       </div>
     `;
     listaClientes.appendChild(div);
@@ -151,9 +161,9 @@ function renderizarClientes(arregloClientes) {
   // Evento Modal Agendar Cita
   document.querySelectorAll('.btn-calendar').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const cedulaCliente = e.target.getAttribute('data-cedula');
+      const consecutivoCliente = e.target.getAttribute('data-consecutivo');
       const nombreCliente = e.target.getAttribute('data-nombre');
-      const cliente = clientesArray.find(c => c.cedula === cedulaCliente);
+      const cliente = clientesArray.find(c => c.consecutivo === consecutivoCliente);
       
       if(cliente) {
         datosClienteAgendado.consecutivo = cliente.consecutivo || 'Sin Código';
@@ -168,14 +178,14 @@ function renderizarClientes(arregloClientes) {
     });
   });
 
-  // Evento Editar Cliente
+  // Evento Editar Cliente (Usa Consecutivo)
   document.querySelectorAll('.btn-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const idCliente = e.target.getAttribute('data-id');
-      const cliente = clientesArray.find(c => c.cedula === idCliente);
+      const idCliente = e.target.getAttribute('data-id'); // Ahora es el consecutivo
+      const cliente = clientesArray.find(c => c.consecutivo === idCliente);
       if(cliente) {
-        inputCedula.value = cliente.cedula; inputCedula.disabled = true;
-        inputConsecutivo.value = cliente.consecutivo || 'S/C'; 
+        inputCedula.value = cliente.cedula; 
+        inputConsecutivo.value = cliente.consecutivo; 
         document.getElementById('nombre').value = cliente.nombre;
         document.getElementById('telefono').value = cliente.telefono || '';
         document.getElementById('email').value = cliente.email || '';
@@ -183,20 +193,24 @@ function renderizarClientes(arregloClientes) {
         document.getElementById('frecuencia').value = cliente.frecuenciaFumigacion;
         document.getElementById('gps').value = cliente.gps || '';
         document.getElementById('direccion').value = cliente.direccion || '';
-        modoEdicionHidden.value = cliente.cedula;
+        
+        modoEdicionHidden.value = cliente.consecutivo; // Se bloquea bajo el consecutivo
         tituloFormulario.innerText = `✏️ Modificando Cliente: ${cliente.nombre}`;
         btnGuardar.innerText = "Actualizar Datos del Cliente";
-        btnGuardar.style.background = "#f59e0b"; btnCancelar.style.display = "block";
+        btnGuardar.style.background = "#f59e0b"; 
+        btnCancelar.style.display = "block";
         window.cambiarPestaña('registro');
       }
     });
   });
 
-  // Evento Eliminar Cliente
+  // Evento Eliminar Cliente (Usa Consecutivo)
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const idCliente = e.target.getAttribute('data-id');
-      if(confirm(`¿Deseas eliminar al cliente ID: ${idCliente}?`)) { await deleteDoc(doc(db, "clientes", idCliente)); }
+      const idCliente = e.target.getAttribute('data-id'); // Consecutivo
+      if(confirm(`¿Deseas eliminar al cliente con Código: ${idCliente}?`)) { 
+        await deleteDoc(doc(db, "clientes", idCliente)); 
+      }
     });
   });
 }
