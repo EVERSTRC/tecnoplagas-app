@@ -3,7 +3,6 @@ import {
   getFirestore, collection, setDoc, onSnapshot, deleteDoc, doc, enableIndexedDbPersistence 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 1. Credenciales de tu proyecto "Fumigadora Tecnoplagas"
 const firebaseConfig = {
   apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -16,19 +15,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Persistencia Offline para la Tablet
 enableIndexedDbPersistence(db).catch((err) => {
-    console.log("Persistencia offline activa con límites: ", err.code);
+    console.log("Persistencia offline activa: ", err.code);
 });
 
-// Referencias del DOM básico
 const form = document.getElementById('cliente-form');
 const listaClientes = document.getElementById('lista-clientes');
 const btnGps = document.getElementById('btn-capturar-gps');
 const inputGps = document.getElementById('gps');
 const buscador = document.getElementById('buscador');
 
-// Edición y Consecutivo
 const modoEdicionHidden = document.getElementById('modo-edicion');
 const tituloFormulario = document.getElementById('titulo-formulario');
 const btnGuardar = document.getElementById('btn-guardar');
@@ -36,7 +32,6 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const inputCedula = document.getElementById('cedula');
 const inputConsecutivo = document.getElementById('consecutivo');
 
-// Google Calendar DOM
 const calendarModal = document.getElementById('calendar-modal');
 const calendarForm = document.getElementById('calendar-form');
 const calNombreCliente = document.getElementById('cal-nombre-cliente');
@@ -46,13 +41,11 @@ const calTipoVisita = document.getElementById('cal-tipo-visita');
 const calMonto = document.getElementById('cal-monto');
 const calDetalles = document.getElementById('cal-detalles');
 
-// Enlace de tu puente de Google Apps Script
 const URL_WEB_APP_GOOGLE = "https://script.google.com/macros/s/AKfycbzV-y6bvTwK8ZqKSfhh9zbgbzon9Lzf384nKlO_UFDrxFXBCu5lL7UyhMACuWBDcfj6/exec";
 
 let clientesArray = []; 
 let datosClienteAgendado = { consecutivo: '', telefono: '', gps: '', direccion: '' };
 
-// Generador automático del Consecutivo "CLI-000001"
 function calcularSiguienteConsecutivo() {
   if (modoEdicionHidden.value === "") {
     const numeroSiguiente = clientesArray.length + 1;
@@ -61,7 +54,6 @@ function calcularSiguienteConsecutivo() {
   }
 }
 
-// Captura GPS
 btnGps.addEventListener('click', () => {
   if (navigator.geolocation) {
     inputGps.value = "Obteniendo coordenadas...";
@@ -73,10 +65,9 @@ btnGps.addEventListener('click', () => {
   }
 });
 
-// Guardar / Editar Cliente
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const consecutivo = inputConsecutivo.value; // Será la llave/ID del documento
+  const consecutivo = inputConsecutivo.value; 
   const cedula = inputCedula.value.trim();
   const nombre = document.getElementById('nombre').value;
   const telefono = document.getElementById('telefono').value;
@@ -93,17 +84,14 @@ form.addEventListener('submit', async (e) => {
     if (!esEdicion) {
       datosCliente.fechaRegistro = new Date().toISOString();
     } else {
-      // Si es edición, buscamos por consecutivo (modoEdicionHidden ahora guarda el consecutivo)
       const original = clientesArray.find(c => c.consecutivo === consecutivo);
       datosCliente.fechaRegistro = original ? original.fechaRegistro : new Date().toISOString();
     }
     
-    // --- CAMBIO CLAVE AQUÍ: Ahora se usa 'consecutivo' en lugar de 'cedula' para identificar el documento ---
     await setDoc(doc(db, "clientes", consecutivo), datosCliente);
-    
     alert(esEdicion ? "¡Cliente modificado con éxito!" : "¡Cliente guardado correctamente!");
     resetearFormulario();
-    window.cambiarPestaña('consulta');
+    window.location.href = "index.html";
   } catch (error) {
     alert("Error al conectar con la base de datos.");
   }
@@ -122,7 +110,6 @@ function resetearFormulario() {
   calcularSiguienteConsecutivo(); 
 }
 
-// Pintar Clientes en Pantalla
 function renderizarClientes(arregloClientes) {
   listaClientes.innerHTML = '';
   if (arregloClientes.length === 0) {
@@ -130,7 +117,6 @@ function renderizarClientes(arregloClientes) {
     return;
   }
 
-  // Ordenamos el arreglo por consecutivo de forma ascendente para evitar desorden visual
   const arregloOrdenado = [...arregloClientes].sort((a, b) => {
     return (a.consecutivo || '').localeCompare(b.consecutivo || '');
   });
@@ -158,7 +144,6 @@ function renderizarClientes(arregloClientes) {
     listaClientes.appendChild(div);
   });
 
-  // Evento Modal Agendar Cita
   document.querySelectorAll('.btn-calendar').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const consecutivoCliente = e.target.getAttribute('data-consecutivo');
@@ -178,10 +163,9 @@ function renderizarClientes(arregloClientes) {
     });
   });
 
-  // Evento Editar Cliente (Usa Consecutivo)
   document.querySelectorAll('.btn-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const idCliente = e.target.getAttribute('data-id'); // Ahora es el consecutivo
+      const idCliente = e.target.getAttribute('data-id'); 
       const cliente = clientesArray.find(c => c.consecutivo === idCliente);
       if(cliente) {
         inputCedula.value = cliente.cedula; 
@@ -194,7 +178,7 @@ function renderizarClientes(arregloClientes) {
         document.getElementById('gps').value = cliente.gps || '';
         document.getElementById('direccion').value = cliente.direccion || '';
         
-        modoEdicionHidden.value = cliente.consecutivo; // Se bloquea bajo el consecutivo
+        modoEdicionHidden.value = cliente.consecutivo; 
         tituloFormulario.innerText = `✏️ Modificando Cliente: ${cliente.nombre}`;
         btnGuardar.innerText = "Actualizar Datos del Cliente";
         btnGuardar.style.background = "#f59e0b"; 
@@ -204,10 +188,9 @@ function renderizarClientes(arregloClientes) {
     });
   });
 
-  // Evento Eliminar Cliente (Usa Consecutivo)
   document.querySelectorAll('.btn-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
-      const idCliente = e.target.getAttribute('data-id'); // Consecutivo
+      const idCliente = e.target.getAttribute('data-id'); 
       if(confirm(`¿Deseas eliminar al cliente con Código: ${idCliente}?`)) { 
         await deleteDoc(doc(db, "clientes", idCliente)); 
       }
@@ -215,14 +198,9 @@ function renderizarClientes(arregloClientes) {
   });
 }
 
-// Envío unificado de evento a Google Calendar
 calendarForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  const enlaceMaps = datosClienteAgendado.gps !== 'No capturado' 
-    ? `https://www.google.com/maps/search/?api=1&query=${datosClienteAgendado.gps}` 
-    : 'No disponible';
-
+  const enlaceMaps = datosClienteAgendado.gps !== 'No capturado' ? `https://www.google.com/maps/search/?api=1&query=${datosClienteAgendado.gps}` : 'No disponible';
   const montoFactura = calMonto.value ? `₡${calMonto.value}` : 'Por definir';
   const notasAdicionales = calDetalles.value || 'Ninguna';
 
@@ -245,24 +223,18 @@ calendarForm.addEventListener('submit', async (e) => {
   };
 
   alert("Enviando cita a Google Calendar...");
-
   try {
-    await fetch(URL_WEB_APP_GOOGLE, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
-    
-    alert("¡Cita agendada correctamente en tu Google Calendar!");
+    await fetch(URL_WEB_APP_GOOGLE, { method: "POST", body: JSON.stringify(payload) });
+    alert("¡Cita agendada correctamente!");
     calendarForm.reset();
     calendarModal.style.display = 'none';
   } catch (error) {
-    alert("¡Acción enviada! Revisa tu calendario de Google en unos segundos.");
+    alert("¡Acción enviada! Revisa tu calendario.");
     calendarForm.reset();
     calendarModal.style.display = 'none';
   }
 });
 
-// Listener de Firestore en tiempo real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   clientesArray = [];
   snapshot.forEach((docSnap) => { clientesArray.push(docSnap.data()); });
@@ -270,7 +242,6 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   calcularSiguienteConsecutivo(); 
 });
 
-// Filtrado inteligente del Buscador (Nombre, Cédula o Consecutivo)
 buscador.addEventListener('input', (e) => {
   const texto = e.target.value.toLowerCase().trim();
   const clientesFiltrados = clientesArray.filter(c => {
