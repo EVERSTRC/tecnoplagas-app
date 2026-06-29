@@ -9,36 +9,32 @@
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f7fb; color: #333; }
     .container { max-width: 1000px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     
-    /* Diseño de Pestañas (Tabs) */
-    .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-    .tab-btn { padding: 12px 24px; font-size: 16px; font-weight: bold; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+    .btn-back { background: #64748b; color: white; padding: 10px 16px; border-radius: 6px; font-weight: bold; text-decoration: none; font-size: 14px; }
+    
+    .tabs-container { display: flex; gap: 10px; }
+    .tab-btn { padding: 10px 20px; font-size: 15px; font-weight: bold; background: #e2e8f0; color: #475569; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
     .tab-btn.active { background: #10b981; color: white; }
     
-    /* Contenedores de contenido */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     
-    /* Formulario */
     .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
     .full-width { grid-column: span 2; }
     label { font-size: 14px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
     input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; background: #fff; }
-    input:disabled { background: #e2e8f0; color: #64748b; cursor: not-allowed; }
+    input:readonly { background: #e2e8f0; color: #334155; cursor: not-allowed; }
     
     .gps-container { display: flex; gap: 10px; }
     .btn-gps { width: auto; background: #0ea5e9; color: white; border: none; padding: 0 15px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap; }
     
-    /* Botones de acción */
     .btn-submit { width: 100%; padding: 14px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
     .btn-cancelar { width: 100%; padding: 10px; background: #94a3b8; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; display: none; }
     
-    /* Buscador en la pestaña de consultas */
     .search-container { margin-bottom: 20px; }
-    .search-input { padding: 14px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 8px; background: #fff; }
-    .search-input:focus { border-color: #10b981; }
+    .search-input { padding: 14px; font-size: 16px; border: 2px solid #cbd5e1; border-radius: 8px; background: #fff; width: 100%; box-sizing: border-box; }
 
-    /* Tarjetas de clientes */
     .cliente-card { background: #fff; border: 1px solid #e2e8f0; padding: 20px; margin-bottom: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     .cliente-info h3 { margin: 0 0 8px 0; color: #1e293b; display: flex; align-items: center; gap: 8px; }
     .cliente-info p { margin: 4px 0; font-size: 14px; color: #64748b; }
@@ -50,7 +46,6 @@
     .btn-edit { background: #f59e0b; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
     .btn-delete { background: #ef4444; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 14px; }
 
-    /* Ventana Flotante / Modal para Google Calendar */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: white; padding: 25px; border-radius: 12px; max-width: 450px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
     .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
@@ -60,9 +55,12 @@
 <body>
 
   <div class="container">
-    <div class="tabs-container">
-      <button id="btn-tab-registro" class="tab-btn active" onclick="cambiarPestaña('registro')">📝 Registrar Cliente</button>
-      <button id="btn-tab-consulta" class="tab-btn" onclick="cambiarPestaña('consulta')">🔍 Consultar Clientes</button>
+    <div class="top-bar">
+      <div class="tabs-container">
+        <button id="btn-tab-registro" class="tab-btn active" onclick="cambiarPestaña('registro')">📝 Registrar Cliente</button>
+        <button id="btn-tab-consulta" class="tab-btn" onclick="cambiarPestaña('consulta')">🔍 Consultar Clientes</button>
+      </div>
+      <a href="index.html" class="btn-back">🏠 Menú Inicio</a>
     </div>
     
     <div id="pestaña-registro" class="tab-content active">
@@ -72,7 +70,7 @@
         <div class="grid-form">
           <div>
             <label for="consecutivo">Consecutivo / Código de Cliente</label>
-            <input type="text" id="consecutivo" readonly style="background:#e2e8f0; font-weight:bold; color:#1e293b; font-family:monospace; text-align:center;">
+            <input type="text" id="consecutivo" readonly style="font-weight:bold; color:#1e293b; font-family:monospace; text-align:center;">
           </div>
           <div>
             <label for="cedula">Cédula / Identificación</label>
