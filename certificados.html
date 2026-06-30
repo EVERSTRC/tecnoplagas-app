@@ -13,14 +13,12 @@
     .btn-back { background: #64748b; color: white; padding: 10px 16px; border-radius: 6px; font-weight: bold; text-decoration: none; font-size: 14px; }
     h2 { color: #1e293b; margin: 0; }
     
-    /* Sistema de Pestañas (Tabs) */
     .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; }
     .tab-btn { padding: 12px 20px; font-size: 16px; font-weight: bold; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
     .tab-btn.active { color: white; background: #2563eb; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* Formulario */
     .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px; margin-bottom: 25px; }
     .full-width { grid-column: span 2; }
     label { font-size: 14px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
@@ -29,14 +27,12 @@
     input:readonly { background: #e2e8f0; color: #334155; cursor: not-allowed; font-family: monospace; font-weight: bold; }
     .btn-submit { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
-    /* Buscador e Historial */
     .search-container { margin-bottom: 15px; }
     .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
     .history-table th, .history-table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
     .history-table th { background: #f1f5f9; font-weight: bold; color: #334155; }
     .history-table tr:hover { background: #f8fafc; }
     .btn-print-old { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
-    .btn-print-old:hover { background: #059669; }
 
     /* --- ESTILOS DE IMPRESIÓN / PLANTILLA TIPO PDF --- */
     #area-impresion { display: none; background: white; color: #000; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.4; }
@@ -148,15 +144,21 @@
             <label for="plagas-controla">Plagas que Controla</label>
             <input type="text" id="plagas-controla" value="control de insectos rastreros, arácnidos, insectos voladores y termitas">
           </div>
+          
           <div class="full-width">
-            <label for="producto-utilizado">Producto Utilizado</label>
+            <label for="producto-utilizado">Producto Utilizado (Ficha Comercial)</label>
             <select id="producto-utilizado" required>
               <option value="">Seleccione el producto químico...</option>
-              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid) | MS: 4113-P-902</option>
+              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid) | Dosis: 5-10 ml/L</option>
               <option value="Cypermethrin">Cypermethrin 25% EC | Dosis: 10ml/L</option>
               <option value="Deltamethrin">Deltamethrin 2.5% WP | Dosis: 15g/L</option>
               <option value="Fipronil">Fipronil 5% SC | Dosis: 5ml/L</option>
-              <option value="Brodifacoum">Brodifacoum 0.005% Baits (Cebo)</option>
+              <option value="Brodifacoum">Brodifacoum 0.005% Baits (Cebo Rodenticida)</option>
+              <option value="Chlorpyrifos20E">Chlorpyrifos 20% E</option>
+              <option value="Chlorpyrifos20EC">Chlorpyrifos 20% EC</option>
+              <option value="Permethrin">Permethrin 10% WP</option>
+              <option value="ZincPhosphide">Zinc Phosphide 80%</option>
+              <option value="Hydramethylnon">Hydramethylnon 2%</option>
             </select>
           </div>
         </div>
@@ -251,6 +253,7 @@
               <th>Nombre del Producto</th>
               <th>Ingrediente Activo</th>
               <th>Registro M.S.</th>
+              <th>Lote</th>
               <th>Dosis Recom.</th>
               <th>Vencimiento</th>
             </tr>
@@ -260,8 +263,9 @@
               <td id="td-prod-nombre">---</td>
               <td id="td-prod-activo">---</td>
               <td id="td-prod-ms">---</td>
+              <td id="td-prod-lote">---</td>
               <td id="td-prod-dosis">---</td>
-              <td>25/02/2028</td>
+              <td id="td-prod-vence">---</td>
             </tr>
           </tbody>
         </table>
@@ -279,11 +283,9 @@
   </div>
 
   <script>
-    // Función nativa para alternar las pestañas en la tablet
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      
       event.target.classList.add('active');
       document.getElementById(tabId).classList.add('active');
     }
