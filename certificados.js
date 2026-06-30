@@ -23,17 +23,15 @@ const inputBuscar = document.getElementById('input-buscar');
 
 let totalCertificados = 0;
 let listaClientesGlobal = [];
-let listaCertificadosGlobal = []; // Para el buscador local en tiempo real
+let listaCertificadosGlobal = [];
 
 // 1. CARGAR CLIENTES EN TIEMPO REAL
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
-  
   snapshot.forEach((docSnap) => {
     const cliente = docSnap.data();
     listaClientesGlobal.push(cliente);
-    
     const option = document.createElement('option');
     option.value = cliente.consecutivo; 
     option.textContent = `[${cliente.consecutivo}] ${cliente.nombre}`;
@@ -51,7 +49,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// 3. SISTEMA DE CONSULTA E HISTORIAL (CON SENSADO EN TIEMPO REAL)
+// 3. CONSULTA HISTÓRICA EN TIEMPO REAL
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
   listaCertificadosGlobal = [];
   tablaHistorialBody.innerHTML = "";
@@ -61,7 +59,6 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
     return;
   }
 
-  // Mapeamos los certificados y resolvemos la referencia del cliente de forma asíncrona
   for (const docSnap of snapshot.docs) {
     const cert = docSnap.data();
     let nombreClienteStr = "Cargando...";
@@ -77,7 +74,7 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
       }
     }
 
-    const itemCertificado = {
+    listaCertificadosGlobal.push({
       id: docSnap.id,
       cliente: nombreClienteStr,
       direccion: direccionClienteStr,
@@ -93,12 +90,9 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
       plagas: cert["Plagas que controla"] || '---',
       horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
       horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00'
-    };
-
-    listaCertificadosGlobal.push(itemCertificado);
+    });
   }
 
-  // Ordenar del más reciente al más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
@@ -108,7 +102,7 @@ function renderTablaHistorial(lista) {
   lista.forEach(cert => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <strong><td>${cert.id}</td></strong>
+      <td><strong>${cert.id}</strong></td>
       <td>${cert.cliente}</td>
       <td>${cert.fecha}</td>
       <td><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${cert.producto}</span></td>
@@ -118,7 +112,7 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// 4. FILTRO / BUSCADOR EN TIEMPO REAL
+// 4. BUSCADOR
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -127,18 +121,16 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// 5. ACCIÓN: RE-IMPRIMIR DESDE EL HISTORIAL
+// 5. EVENTO RE-IMPRIMIR
 tablaHistorialBody.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-print-old')) {
     const idCert = e.target.getAttribute('data-id');
     const cert = listaCertificadosGlobal.find(c => c.id === idCert);
-    
-    if (cert) {
-      prepararYDispararImpresion(cert);
-    }
+    if (cert) prepararYDispararImpresion(cert);
   }
 });
 
+// DESGLOSE TÉCNICO DE LA TABLA DE FICHA QUÍMICA
 function prepararYDispararImpresion(cert) {
   document.getElementById('print-num-cert').innerText = cert.id;
   document.getElementById('print-cliente').innerText = cert.cliente;
@@ -153,7 +145,7 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('print-remolque').innerText = cert.remolque;
   document.getElementById('print-plagas').innerText = cert.plagas;
 
-  // Casillas
+  // Casillas [X]
   document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
   document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
   document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
@@ -162,29 +154,43 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
   document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
 
-  // Tabla Ficha Química
-  let pNombre = "---", pActivo = "---", pReg = "---", pDosis = "---";
-  if (cert.producto === "Finigen") {
-    pNombre = "Finigen"; pActivo = "Cipermetrina + Acetamiprid"; pReg = "4113-P-902"; pDosis = "5-10 ml/L";
-  } else if (cert.producto === "Cypermethrin") {
-    pNombre = "Cypermethrin 25% EC"; pActivo = "Cipermetrina"; pReg = "N/A"; pDosis = "10 ml/L";
-  } else if (cert.producto === "Deltamethrin") {
-    pNombre = "Deltamethrin 2.5% WP"; pActivo = "Deltametrina"; pReg = "N/A"; pDosis = "15 g/L";
-  } else if (cert.producto === "Fipronil") {
-    pNombre = "Fipronil 5% SC"; pActivo = "Fipronil"; pReg = "N/A"; pDosis = "5 ml/L";
-  } else if (cert.producto === "Brodifacoum") {
-    pNombre = "Brodifacoum 0.005%"; pActivo = "Brodifacoum"; pReg = "N/A"; pDosis = "Bloques / Cebo";
+  // MAPEO DINÁMICO DE LOS PRODUCTOS SOLICITADOS
+  let pNombre = "---", pActivo = "---", pReg = "---", pLote = "2301234", pDosis = "---", pVence = "25/02/2028";
+
+  switch (cert.producto) {
+    case "Finigen":
+      pNombre = "Finigen"; pActivo = "Cipermetrina + Acetamiprid"; pReg = "4113-P-902"; pDosis = "5-10 ml/L"; break;
+    case "Cypermethrin":
+      pNombre = "Cypermethrin 25% EC"; pActivo = "Cypermethrin"; pReg = "4113-P-902"; pDosis = "10 ml/L"; break;
+    case "Deltamethrin":
+      pNombre = "Deltamethrin 2.5% WP"; pActivo = "Deltamethrin"; pReg = "5012-P-901"; pDosis = "15 g/L"; break;
+    case "Fipronil":
+      pNombre = "Fipronil 5% SC"; pActivo = "Fipronil"; pReg = "3991-P-880"; pDosis = "5 ml/L"; break;
+    case "Brodifacoum":
+      pNombre = "Brodifacoum 0.005%"; pActivo = "Brodifacoum"; pReg = "3211-P-720"; pDosis = "Baits (Cebo)"; break;
+    case "Chlorpyrifos20E":
+      pNombre = "Chlorpyrifos 20% E"; pActivo = "Chlorpyrifos"; pReg = "2899-P-610"; pDosis = "Segun Ficha"; break;
+    case "Chlorpyrifos20EC":
+      pNombre = "Chlorpyrifos 20% EC"; pActivo = "Chlorpyrifos"; pReg = "2899-P-611"; pDosis = "Segun Ficha"; break;
+    case "Permethrin":
+      pNombre = "Permethrin 10% WP"; pActivo = "Permethrin"; pReg = "4512-P-890"; pDosis = "Segun Ficha"; break;
+    case "ZincPhosphide":
+      pNombre = "Zinc Phosphide 80%"; pActivo = "Zinc Phosphide"; pReg = "1204-P-310"; pDosis = "Polvo / Cebo"; break;
+    case "Hydramethylnon":
+      pNombre = "Hydramethylnon 2%"; pActivo = "Hydramethylnon"; pReg = "5112-P-915"; pDosis = "Gel / Atractivo"; break;
   }
 
   document.getElementById('td-prod-nombre').innerText = pNombre;
   document.getElementById('td-prod-activo').innerText = pActivo;
   document.getElementById('td-prod-ms').innerText = pReg;
+  document.getElementById('td-prod-lote').innerText = pLote;
   document.getElementById('td-prod-dosis').innerText = pDosis;
+  document.getElementById('td-prod-vence').innerText = pVence;
 
   window.print();
 }
 
-// 6. ENVIAR Y CREAR NUEVO CERTIFICADO (EVENTO SUBMIT)
+// 6. EVENTO SUBMIT NUEVO
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -217,7 +223,6 @@ formCert.addEventListener('submit', async (e) => {
   try {
     await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
     
-    // Objeto temporal simulado para lanzar la impresión inmediata
     const certMock = {
       id: idCertificadoValue,
       cliente: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
