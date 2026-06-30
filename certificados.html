@@ -3,35 +3,64 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tecnoplagas - Certificados</title>
+  <title>Tecnoplagas - Emisión y Consulta de Certificados</title>
   <style>
+    /* --- ESTILOS DE LA PANTALLA DE TRABAJO (TABLET) --- */
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f7fb; color: #333; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .container { max-width: 950px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     
     .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
     .btn-back { background: #64748b; color: white; padding: 10px 16px; border-radius: 6px; font-weight: bold; text-decoration: none; font-size: 14px; }
     h2 { color: #1e293b; margin: 0; }
     
-    .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; margin-bottom: 25px; }
+    /* Sistema de Pestañas (Tabs) */
+    .tabs-container { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #cbd5e1; padding-bottom: 10px; }
+    .tab-btn { padding: 12px 20px; font-size: 16px; font-weight: bold; color: #64748b; background: #f1f5f9; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { color: white; background: #2563eb; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Formulario */
+    .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px; margin-bottom: 25px; }
     .full-width { grid-column: span 2; }
     label { font-size: 14px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
     input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: #f8fafc; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; background: #fff; }
     input:readonly { background: #e2e8f0; color: #334155; cursor: not-allowed; font-family: monospace; font-weight: bold; }
-    
     .btn-submit { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
 
-    #area-impresion { display: none; background: white; padding: 40px; border: 2px solid #333; color: #000; margin-top: 30px; }
-    .header-cert { text-align: center; border-bottom: 3px double #000; padding-bottom: 15px; margin-bottom: 20px; }
-    .seccion-cert { margin-bottom: 15px; font-size: 15px; line-height: 1.6; }
-    .footer-cert { margin-top: 50px; display: flex; justify-content: space-between; }
-    .firma { border-top: 1px solid #000; width: 200px; text-align: center; padding-top: 5px; margin-top: 40px; }
+    /* Buscador e Historial */
+    .search-container { margin-bottom: 15px; }
+    .history-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 15px; }
+    .history-table th, .history-table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+    .history-table th { background: #f1f5f9; font-weight: bold; color: #334155; }
+    .history-table tr:hover { background: #f8fafc; }
+    .btn-print-old { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
+    .btn-print-old:hover { background: #059669; }
+
+    /* --- ESTILOS DE IMPRESIÓN / PLANTILLA TIPO PDF --- */
+    #area-impresion { display: none; background: white; color: #000; font-family: 'Courier New', Courier, monospace; font-size: 13px; line-height: 1.4; }
+    .header-pdf { text-align: center; margin-bottom: 15px; }
+    .header-pdf h1 { margin: 0; font-size: 20px; font-weight: bold; }
+    .header-pdf p { margin: 2px 0; font-size: 11px; }
+    .title-pdf { text-align: center; font-weight: bold; font-size: 14px; margin: 10px 0; text-decoration: underline; }
+    .box-pdf { border: 1px solid #000; padding: 10px; margin-bottom: 10px; }
+    .box-title { font-weight: bold; font-size: 12px; border-bottom: 1px solid #000; margin: -10px -10px 8px -10px; padding: 4px 10px; background: #f2f2f2; }
+    .grid-pdf-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .grid-pdf-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
+    .table-pdf { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 12px; }
+    .table-pdf th, .table-pdf td { border: 1px solid #000; padding: 6px; text-align: left; }
+    .table-pdf th { background: #f2f2f2; font-weight: bold; }
+    .casillas-container { display: flex; gap: 20px; margin: 8px 0; }
+    .casilla { font-weight: bold; }
+    .footer-pdf { margin-top: 40px; display: flex; justify-content: space-between; font-size: 12px; }
+    .firma-box { border-top: 1px solid #000; width: 220px; text-align: center; padding-top: 5px; margin-top: 35px; }
 
     @media print {
       body { background: white; padding: 0; }
       .container { max-width: 100%; border: none; box-shadow: none; padding: 0; }
-      #certificado-form, .top-bar, h2 { display: none !important; }
-      #area-impresion { display: block !important; border: none; padding: 0; }
+      #certificado-form, .top-bar, h2, .tabs-container, #tab-consulta { display: none !important; }
+      #area-impresion { display: block !important; }
     }
   </style>
 </head>
@@ -39,114 +68,226 @@
 
   <div class="container">
     <div class="top-bar">
-      <h2>📄 Emisión de Certificados</h2>
+      <h2>📄 Módulo de Certificados</h2>
       <a href="index.html" class="btn-back">🏠 Menú Inicio</a>
     </div>
+
+    <div class="tabs-container">
+      <button class="tab-btn active" onclick="switchTab('tab-nuevo')">✍️ Emitir Nuevo</button>
+      <button class="tab-btn" onclick="switchTab('tab-consulta')">🔍 Historial y Consulta</button>
+    </div>
     
-    <form id="certificado-form">
-      <div class="grid-form">
-        <div>
-          <label for="id-certificado">ID Certificado (Consecutivo)</label>
-          <input type="text" id="id-certificado" readonly>
+    <div id="tab-nuevo" class="tab-content active">
+      <form id="certificado-form">
+        <div class="grid-form">
+          <div>
+            <label for="id-certificado">ID Certificado (Consecutivo)</label>
+            <input type="text" id="id-certificado" readonly>
+          </div>
+          <div>
+            <label for="select-cliente">Cliente (Vincular)</label>
+            <select id="select-cliente" required>
+              <option value="">Seleccione un cliente...</option>
+            </select>
+          </div>
+          <div>
+            <label for="cabezal">Cabezal (Placa)</label>
+            <input type="text" id="cabezal" placeholder="Ej: C0039BMQ">
+          </div>
+          <div>
+            <label for="remolque">Remolque (Placa)</label>
+            <input type="text" id="remolque" placeholder="Ej: TC-10CJM">
+          </div>
+          <div class="full-width">
+            <label for="nombre-fantasia">Nombre de Fantasía del Local</label>
+            <input type="text" id="nombre-fantasia" placeholder="Nombre comercial / Sucursal">
+          </div>
+          <div>
+            <label for="fecha-servicio">Fecha del Servicio</label>
+            <input type="date" id="fecha-servicio" required>
+          </div>
+          <div>
+            <label for="servicio-valido">Servicio Válido Hasta</label>
+            <input type="date" id="servicio-valido" required>
+          </div>
+          <div>
+            <label for="hora-inicio">Hora de Inicio</label>
+            <input type="time" id="hora-inicio" required>
+          </div>
+          <div>
+            <label for="hora-finalizacion">Hora de Finalización</label>
+            <input type="time" id="hora-finalizacion" required>
+          </div>
+          <div>
+            <label for="tipo-servicio">Tipo de Servicio</label>
+            <select id="tipo-servicio" required>
+              <option value="">Seleccione tipo...</option>
+              <option value="Control de Plagas">Control de Plagas</option>
+              <option value="Fumigación">Fumigación</option>
+            </select>
+          </div>
+          <div>
+            <label for="objetivo-control">Objetivo de Control principal</label>
+            <select id="objetivo-control" required>
+              <option value="">Seleccione un objetivo...</option>
+              <option value="Desinsectación">Desinsectación</option>
+              <option value="Desratización">Desratización</option>
+              <option value="Sanitización">Sanitización</option>
+            </select>
+          </div>
+          <div>
+            <label for="metodo-aplicacion">Método de Aplicación principal</label>
+            <select id="metodo-aplicacion" required>
+              <option value="">Seleccione un método...</option>
+              <option value="Aspersión">Aspersión</option>
+              <option value="Cebo Rodenticida">Cebo Rodenticida</option>
+              <option value="Termonebulización">Termonebulización</option>
+            </select>
+          </div>
+          <div>
+            <label for="plagas-controla">Plagas que Controla</label>
+            <input type="text" id="plagas-controla" value="control de insectos rastreros, arácnidos, insectos voladores y termitas">
+          </div>
+          <div class="full-width">
+            <label for="producto-utilizado">Producto Utilizado</label>
+            <select id="producto-utilizado" required>
+              <option value="">Seleccione el producto químico...</option>
+              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid) | MS: 4113-P-902</option>
+              <option value="Cypermethrin">Cypermethrin 25% EC | Dosis: 10ml/L</option>
+              <option value="Deltamethrin">Deltamethrin 2.5% WP | Dosis: 15g/L</option>
+              <option value="Fipronil">Fipronil 5% SC | Dosis: 5ml/L</option>
+              <option value="Brodifacoum">Brodifacoum 0.005% Baits (Cebo)</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="select-cliente">Cliente (Vincular)</label>
-          <select id="select-cliente" required>
-            <option value="">Seleccione un cliente...</option>
-          </select>
-        </div>
-        <div>
-          <label for="cabezal">Cabezal (Placa / Identificador)</label>
-          <input type="text" id="cabezal" placeholder="Ej: C-123456">
-        </div>
-        <div>
-          <label for="remolque">Remolque (Placa)</label>
-          <input type="text" id="remolque" placeholder="Ej: R-789012">
-        </div>
-        <div class="full-width">
-          <label for="nombre-fantasia">Nombre de Fantasía del Local</label>
-          <input type="text" id="nombre-fantasia" placeholder="Ej: Sucursal Paseo de las Flores">
-        </div>
-        <div>
-          <label for="fecha-servicio">Fecha del Servicio</label>
-          <input type="date" id="fecha-servicio" required>
-        </div>
-        <div>
-          <label for="servicio-valido">Servicio Válido Hasta</label>
-          <input type="date" id="servicio-valido" required>
-        </div>
-        <div>
-          <label for="hora-inicio">Hora de Inicio</label>
-          <input type="time" id="hora-inicio" required>
-        </div>
-        <div>
-          <label for="hora-finalizacion">Hora de Finalización</label>
-          <input type="time" id="hora-finalizacion" required>
-        </div>
-        <div>
-          <label for="tipo-servicio">Tipo de Servicio</label>
-          <input type="text" id="tipo-servicio" placeholder="Ej: Desinsectación, Desratización">
-        </div>
-        <div>
-          <label for="metodo-aplicacion">Método de Aplicación</label>
-          <input type="text" id="metodo-aplicacion" placeholder="Ej: Aspersión, Termonebulización">
-        </div>
-        <div>
-          <label for="objetivo-control">Objetivo de Control</label>
-          <input type="text" id="objetivo-control" placeholder="Ej: Áreas de cocina y perímetros">
-        </div>
-        <div>
-          <label for="plagas-controla">Plagas que Controla</label>
-          <input type="text" id="plagas-controla" placeholder="Ej: Cucarachas, Roedores">
-        </div>
-        <div class="full-width">
-          <label for="producto-utilizado">Producto Utilizado</label>
-          <input type="text" id="producto-utilizado" placeholder="Ej: Deltetrina 2.5% CE">
-        </div>
+        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
+      </form>
+    </div>
+
+    <div id="tab-consulta" class="tab-content">
+      <div class="search-container">
+        <label for="input-buscar">Buscar por ID de Certificado o Nombre de Cliente:</label>
+        <input type="text" id="input-buscar" placeholder="🔍 Escribe para filtrar en tiempo real...">
       </div>
-      <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
-    </form>
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>ID Certificado</th>
+            <th>Cliente</th>
+            <th>Fecha Servicio</th>
+            <th>Producto</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial-body">
+          <tr>
+            <td colspan="5" style="text-align:center; color:#94a3b8;">Cargando historial de certificados...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
     <div id="area-impresion">
-      <div class="header-cert">
-        <h1 style="margin:0; font-size: 26px;">FUMIGADORA TECNOPLAGAS</h1>
-        <p style="margin:5px 0 0 0; font-size:14px; letter-spacing: 1px;">CERTIFICADO DE SANIDAD Y FUMIGACIÓN PROFESIONAL</p>
-        <h3 style="margin:10px 0 0 0; font-family: monospace;" id="print-num-cert">CERT-000000</h3>
+      <div class="header-pdf">
+        <h1>FUMIGADORA TECNOPLAGAS C.R.C</h1>
+        <p>Tres Ríos, La Unión, Cartago | Teléfonos: 7232-5001 / 8987-7776</p>
+        <p>Permiso Sanitario: ARSLU-3160-02-2025 | Código SIIU: 8129.0 Grupo de Riesgo: B</p>
       </div>
-      <div class="seccion-cert">
-        <p>Por medio del presente documento, se certifica el servicio integral de plagas ejecutado en:</p>
-        <p><strong>Razón Social / Cliente:</strong> <span id="print-cliente">---</span></p>
-        <p><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">---</span></p>
+      <div class="title-pdf">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</div>
+      <h2 style="text-align: center; font-family: monospace; margin: 0 0 10px 0;" id="print-num-cert">CERT-000000</h2>
+
+      <div class="box-pdf">
+        <div class="box-title">Datos del Cliente:</div>
+        <div><strong>Nombre Comercial / Razón Social:</strong> <span id="print-cliente">---</span></div>
+        <div><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">---</span></div>
+        <div><strong>Dirección de Aplicación:</strong> <span id="print-direccion">---</span></div>
       </div>
-      <div class="seccion-cert" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 0;">
-        <div><strong>Fecha del Servicio:</strong> <span id="print-fecha">---</span></div>
-        <div><strong>Vence el:</strong> <span id="print-vence">---</span></div>
-        <div><strong>Hora de Inicio:</strong> <span id="print-inicio">---</span></div>
-        <div><strong>Hora de Finalización:</strong> <span id="print-fin">---</span></div>
-      </div>
-      <div class="seccion-cert">
-        <div style="display:flex; gap:30px;">
+
+      <div class="box-pdf">
+        <div class="box-title">Detalles de la Prestación del Servicio:</div>
+        <div class="grid-pdf-2">
+          <div><strong>Prestación del Servicio (Fecha):</strong> <span id="print-fecha">---</span></div>
+          <div><strong>Válido Hasta:</strong> <span id="print-vence">---</span></div>
+        </div>
+        <div class="grid-pdf-3" style="margin-top: 5px;">
+          <div><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></div>
           <div><strong>Cabezal:</strong> <span id="print-cabezal">---</span></div>
           <div><strong>Remolque:</strong> <span id="print-remolque">---</span></div>
         </div>
+        <div class="grid-pdf-2" style="margin-top: 5px;">
+          <div><strong>Hora de Inicio:</strong> <span id="print-inicio">---</span></div>
+          <div><strong>Hora de Finalización:</strong> <span id="print-fin">---</span></div>
+        </div>
       </div>
-      <div class="seccion-cert">
-        <p><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></p>
-        <p><strong>Método de Aplicación:</strong> <span id="print-metodo">---</span></p>
-        <p><strong>Objetivo del Control:</strong> <span id="print-objetivo">---</span></p>
-        <p><strong>Plagas Controladas:</strong> <span id="print-plagas">---</span></p>
-        <p><strong>Producto Químico:</strong> <span id="print-producto">---</span></p>
+
+      <div class="box-pdf">
+        <div class="box-title">Objetivos de Control Ejecutados:</div>
+        <div class="casillas-container">
+          <span class="casilla" id="chk-desinsectacion">[ ] Desinsectación</span>
+          <span class="casilla" id="chk-desratizacion">[ ] Desratización</span>
+          <span class="casilla" id="chk-sanitizacion">[ ] Sanitización</span>
+        </div>
       </div>
-      <div style="margin-top: 25px; font-size: 12px; text-align: justify; font-style: italic;">
-        Los productos se encuentran registrados ante el Ministerio de Salud. Este certificado garantiza el cumplimiento de las normas vigentes.
+
+      <div class="box-pdf">
+        <div class="box-title">Métodos de Aplicación Utilizados:</div>
+        <div class="casillas-container">
+          <span class="casilla" id="chk-aspersion">[ ] Aspersión</span>
+          <span class="casilla" id="chk-cebo">[ ] Cebo Rodenticida</span>
+          <span class="casilla" id="chk-termonebulizacion">[ ] Termonebulización</span>
+        </div>
       </div>
-      <div class="footer-cert">
-        <div class="firma">Firma Técnico Autorizado</div>
-        <div class="firma">Sello de la Empresa</div>
+
+      <div class="box-pdf">
+        <div class="box-title">Esquema de Plagas Tratadas:</div>
+        <div><strong>Plagas que Controla:</strong> <span id="print-plagas">---</span></div>
+      </div>
+
+      <div class="box-pdf">
+        <div class="box-title">Especificación de Productos Utilizados:</div>
+        <table class="table-pdf">
+          <thead>
+            <tr>
+              <th>Nombre del Producto</th>
+              <th>Ingrediente Activo</th>
+              <th>Registro M.S.</th>
+              <th>Dosis Recom.</th>
+              <th>Vencimiento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td id="td-prod-nombre">---</td>
+              <td id="td-prod-activo">---</td>
+              <td id="td-prod-ms">---</td>
+              <td id="td-prod-dosis">---</td>
+              <td>25/02/2028</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 15px; font-size: 11px; text-align: justify; font-style: italic;">
+        De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N 37308 del 30 de agosto de 2012 (Según la Ley General de Salud).
+      </div>
+
+      <div class="footer-pdf">
+        <div class="firma-box"><strong>Everst Rojas Camacho</strong><br>Técnico Responsable</div>
+        <div class="firma-box"><strong>Firma / Sello Recibido</strong><br>Cliente Satisfecho</div>
       </div>
     </div>
   </div>
 
+  <script>
+    // Función nativa para alternar las pestañas en la tablet
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
   <script type="module" src="certificados.js"></script>
 </body>
 </html>
