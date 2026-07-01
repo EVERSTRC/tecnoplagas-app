@@ -33,6 +33,7 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
+// Autocompletar sugerencias pero permitiendo cambios manuales en tablet
 selectProducto.addEventListener('change', () => {
   const valor = selectProducto.value;
   if (valor === "Finigen") {
@@ -48,6 +49,7 @@ selectProducto.addEventListener('change', () => {
   }
 });
 
+// 1. CARGAR CLIENTES EN TIEMPO REAL
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -61,6 +63,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   });
 });
 
+// 2. CONSECUTIVO AUTOMÁTICO
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -70,6 +73,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
+// 3. CONSULTA HISTÓRICA EN TIEMPO REAL
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
   listaCertificadosGlobal = [];
   tablaHistorialBody.innerHTML = "";
@@ -185,17 +189,17 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // GENERAR EL CÓDIGO DE BARRAS DE SEGURIDAD EN EL SVG
+  // Renderizar el Código de Barras de forma segura
   try {
     JsBarcode("#barcode", cert.id, {
       format: "CODE128",
       lineColor: "#000",
       width: 2,
-      height: 45,
+      height: 40,
       displayValue: true
     });
-  } catch (error) {
-    console.error("Error al renderizar barra: ", error);
+  } catch (err) {
+    console.error("Error barras:", err);
   }
 
   window.print();
@@ -235,8 +239,6 @@ formCert.addEventListener('submit', async (e) => {
     "Lote del producto": inProdLote.value.trim(),
     "Dosis recomendada": inProdDosis.value.trim(),
     "Producto vencimiento": inProdVence.value.trim(),
-    
-    // GUARDAR EL CÓDIGO ÚNICO EN EL CAMPO SOLICITADO
     "Codigo de barras": idCertificadoValue
   };
 
@@ -274,7 +276,7 @@ formCert.addEventListener('submit', async (e) => {
     formCert.reset();
     window.location.href = "index.html";
   } catch (error) {
-    console.error("Error detectado en Firebase: ", error);
+    console.error("Error en Firebase: ", error);
     alert("Error al guardar el certificado.");
   }
 });
