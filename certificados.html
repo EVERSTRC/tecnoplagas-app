@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +7,7 @@
   
   <style>
     :root {
-      --primary-color: #00b074; /* El verde exacto de tu botón Registrar Cliente */
+      --primary-color: #00b074; 
       --primary-hover: #009662;
       --blue-btn: #2563eb;
       --blue-hover: #1d4ed8;
@@ -35,7 +35,6 @@
       padding: 30px;
     }
 
-    /* Barra superior de pestañas y Menú */
     .nav-bar {
       display: flex;
       justify-content: space-between;
@@ -61,7 +60,6 @@
       transition: all 0.2s;
     }
 
-    /* Estados de pestañas idénticos a tu módulo de clientes */
     .tab-btn.active-green {
       background-color: #00b074;
       color: white;
@@ -90,7 +88,6 @@
       margin-bottom: 25px;
     }
 
-    /* Rejilla de formulario profesional */
     .form-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -154,7 +151,7 @@
 
     .btn-submit {
       width: 100%;
-      background-color: var(--blue-btn); /* Color azul solicitado de tu botón original */
+      background-color: var(--blue-btn); 
       color: white;
       border: none;
       padding: 15px;
@@ -173,7 +170,6 @@
       background-color: var(--blue-hover);
     }
 
-    /* Buscador e Historial por aparte */
     .search-wrapper {
       position: relative;
       margin-bottom: 25px;
@@ -203,14 +199,14 @@
       border-radius: 8px;
     }
 
-    table {
+    table.historial-table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
       font-size: 14px;
     }
 
-    th {
+    table.historial-table th {
       background-color: #f1f5f9;
       color: #475569;
       font-weight: bold;
@@ -218,12 +214,11 @@
       border-bottom: 2px solid var(--border-color);
     }
 
-    td {
+    table.historial-table td {
       padding: 14px;
       border-bottom: 1px solid var(--border-color);
     }
 
-    /* Controladores de visibilidad por pestañas */
     .seccion-modulo {
       display: none;
     }
@@ -231,10 +226,65 @@
       display: block;
     }
 
+    /* ESTILOS DE IMPRESIÓN REORGANIZADOS PARA AJUSTAR EN UNA SOLA HOJA */
     @media print {
       .no-print { display: none !important; }
       .only-print { display: block !important; }
+      
+      @page {
+        size: A4 portrait;
+        margin: 8mm 10mm 8mm 10mm; /* Márgenes compactos para prevenir salto de página */
+      }
+      
+      body {
+        background: #fff;
+        color: #000;
+        font-family: Arial, sans-serif;
+        font-size: 11px;
+        line-height: 1.3;
+        padding: 0;
+        margin: 0;
+      }
+
+      table.print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+      }
+
+      table.print-table th, table.print-table td {
+        border: 1px solid #a1a1a1;
+        padding: 5px 8px;
+        vertical-align: top;
+      }
+
+      table.print-table th {
+        background-color: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        font-weight: bold;
+        text-align: left;
+      }
+
+      .print-header-title {
+        text-align: center;
+        font-weight: bold;
+        font-size: 15px;
+        letter-spacing: 1px;
+        margin: 5px 0 10px 0;
+        border-bottom: 2px solid #000;
+        padding-bottom: 5px;
+      }
+      
+      .legal-text {
+        font-size: 8.5px;
+        color: #444;
+        text-align: justify;
+        line-height: 1.2;
+        margin-top: 6px;
+      }
     }
+    
     .only-print { display: none; }
   </style>
 
@@ -243,7 +293,6 @@
 <body>
 
   <div class="no-print container">
-    
     <div class="nav-bar">
       <div class="tabs-left">
         <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Emitir Certificado</button>
@@ -272,15 +321,15 @@
         <div class="form-row">
           <div class="form-group">
             <label for="nombre-fantasia">Nombre de Fantasía</label>
-            <input type="text" id="nombre-fantasia" placeholder="Nombre comercial u opcional">
+            <input type="text" id="nombre-fantasia" placeholder="Opcional">
           </div>
           <div class="form-group">
             <label for="cabezal">Placa Cabezal</label>
-            <input type="text" id="cabezal" placeholder="Ej: C-123456 (N/A si no aplica)">
+            <input type="text" id="cabezal" placeholder="Ej: C160799 (N/A si no aplica)">
           </div>
           <div class="form-group">
-            <label for="remolque">Placa Remolque / Contenedor</label>
-            <input type="text" id="remolque" placeholder="Ej: S-123456 (N/A si no aplica)">
+            <label for="remolque">Placa Remolque</label>
+            <input type="text" id="remolque" placeholder="Ej: S012452 (N/A si no aplica)">
           </div>
         </div>
 
@@ -308,9 +357,9 @@
             <label for="tipo-servicio">Tipo de Servicio</label>
             <select id="tipo-servicio" required>
               <option value="">Seleccione tipo...</option>
+              <option value="Control de Plagas">Control de Plagas</option>
               <option value="Fumigación de Vehículo de Carga">Fumigación de Vehículo de Carga</option>
               <option value="Control de Plagas Comercial">Control de Plagas Comercial</option>
-              <option value="Control de Plagas Residencial">Control de Plagas Residencial</option>
             </select>
           </div>
           <div class="form-group">
@@ -323,7 +372,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="metodo-aplicacion">Método de Aplicación principal</label>
+            <label for="metodo-aplicacion">Método de Aplicación</label>
             <select id="metodo-aplicacion" required>
               <option value="">Seleccione un método...</option>
               <option value="Aspersión">Aspersión</option>
@@ -335,11 +384,11 @@
 
         <div class="form-group full-width" style="margin-bottom: 20px;">
           <label for="plagas-controla">Plagas que Controla</label>
-          <input type="text" id="plagas-controla" required placeholder="Ej: control de insectos rastreros, arácnidos, insectos voladores y termitas">
+          <input type="text" id="plagas-controla" required placeholder="control de insectos rastreros, arácnidos, insectos voladores y termitas">
         </div>
 
         <fieldset>
-          <legend>🧪 Ficha Técnico del Producto Químico</legend>
+          <legend>🧪 Ficha Técnica del Producto Químico</legend>
           
           <div class="form-group" style="margin-bottom: 15px;">
             <label for="producto-utilizado">Producto Utilizado</label>
@@ -375,7 +424,7 @@
             </div>
             <div class="form-group">
               <label>Lote</label>
-              <input type="text" id="form-prod-lote" placeholder="Opcional">
+              <input type="text" id="form-prod-lote" placeholder="Ej: 2301234">
             </div>
             <div class="form-group">
               <label>Vencimiento de Producto</label>
@@ -392,13 +441,11 @@
 
     <div id="vista-consulta" class="seccion-modulo">
       <div class="titulo-modulo">Fumigadora Tecnoplagas - Panel de Historial</div>
-      
       <div class="search-wrapper">
         <input type="text" id="input-buscar" class="search-input" placeholder="Buscar por ID de Certificado o Nombre de Cliente...">
       </div>
-      
       <div class="table-container">
-        <table>
+        <table class="historial-table">
           <thead>
             <tr>
               <th>ID Certificado</th>
@@ -418,66 +465,129 @@
         </table>
       </div>
     </div>
-
   </div>
 
+
   <div id="vista-impresion" class="only-print">
-    <div style="text-align: center; margin-bottom: 20px;">
-      <h2>CERTIFICADO DE FUMIGACIÓN</h2>
-      <p><strong>TECNOPLAGAS S.A.</strong></p>
-      <h3>N° Certificado: <span id="print-num-cert">---</span></h3>
-    </div>
-    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
-      <tr><td colspan="2"><strong>Cliente:</strong> <span id="print-cliente">---</span></td></tr>
-      <tr><td colspan="2"><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">---</span></td></tr>
-      <tr><td colspan="2"><strong>Dirección:</strong> <span id="print-direccion">---</span></td></tr>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 5px;">
       <tr>
-        <td><strong>Fecha:</strong> <span id="print-fecha">---</span></td>
-        <td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
-      </tr>
-      <tr>
-        <td><strong>Inicio:</strong> <span id="print-inicio">---</span></td>
-        <td><strong>Finalización:</strong> <span id="print-fin">---</span></td>
-      </tr>
-      <tr><td colspan="2"><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td></tr>
-      <tr>
-        <td><strong>Placa Cabezal:</strong> <span id="print-cabezal">---</span></td>
-        <td><strong>Placa Remolque:</strong> <span id="print-remolque">---</span></td>
-      </tr>
-      <tr><td colspan="2"><strong>Plagas:</strong> <span id="print-plagas">---</span></td></tr>
-    </table>
-
-    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
-      <tr>
-        <th>Objetivo del Control</th>
-        <th>Método de Aplicación</th>
-      </tr>
-      <tr>
-        <td>
-          <div id="chk-desinsectacion">[ ] Desinsectación</div>
-          <div id="chk-desratizacion">[ ] Desratización</div>
-          <div id="chk-sanitizacion">[ ] Sanitización</div>
+        <td style="width: 50%; vertical-align: top; border: none; padding: 0;">
+          <h3 style="margin: 0 0 4px 0; font-size: 13px; color: #111;">Datos del Cliente:</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <tr><td style="padding: 2px 0; width: 35%;"><strong>Nombre Comercial:</strong></td><td style="padding: 2px 0;" id="print-cliente">---</td></tr>
+            <tr><td style="padding: 2px 0;"><strong>Nombre de Fantasía:</strong></td><td style="padding: 2px 0;" id="print-fantasia">---</td></tr>
+            <tr><td style="padding: 2px 0;"><strong>Dirección:</strong></td><td style="padding: 2px 0;" id="print-direccion">---</td></tr>
+          </table>
         </td>
-        <td>
-          <div id="chk-aspersion">[ ] Aspersión</div>
-          <div id="chk-cebo">[ ] Cebo Rodenticida</div>
-          <div id="chk-termonebulizacion">[ ] Termonebulización</div>
+        <td style="width: 50%; vertical-align: top; border: none; padding: 0 0 0 20px;">
+          <h3 style="margin: 0 0 4px 0; font-size: 13px; color: #111;">Datos de la Empresa de Servicio:</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.2;">
+            <tr><td style="padding: 1px 0; width: 30%;"><strong>Nombre:</strong></td><td style="padding: 1px 0;">Fumigadora TecnoPlagas C.R.C</td></tr>
+            <tr><td style="padding: 1px 0;"><strong>Dirección:</strong></td><td style="padding: 1px 0;">Tres Ríos, La Unión, Cartago</td></tr>
+            <tr><td style="padding: 1px 0;"><strong>Permiso Sanitario:</strong></td><td style="padding: 1px 0;">ARSLU-3160-02-2025</td></tr>
+            <tr><td style="padding: 1px 0;"><strong>Código SIIU:</strong></td><td style="padding: 1px 0;">8129.0 Grupo de Riesgo: B</td></tr>
+          </table>
         </td>
       </tr>
     </table>
 
-    <h4>Detalles del Químico</h4>
-    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+    <div class="print-header-title">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</div>
+
+    <table class="print-table">
       <tr>
-        <th>Producto</th><th>Activo</th><th>Registro M.S.</th><th>Lote</th><th>Dosis</th><th>Vence</th>
+        <td style="width: 50%;"><strong>Prestación del Servicio:</strong> <span id="print-fecha">---</span></td>
+        <td style="width: 50%;"><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
       </tr>
       <tr>
-        <td id="td-prod-nombre">---</td><td id="td-prod-activo">---</td><td id="td-prod-ms">---</td><td id="td-prod-lote">---</td><td id="td-prod-dosis">---</td><td id="td-prod-vence">---</td>
+        <td><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
+        <td><strong>Horario:</strong> <span id="print-inicio">00:00</span> a <span id="print-fin">00:00</span></td>
+      </tr>
+      <tr>
+        <td><strong>Cabezal (Placa):</strong> <span id="print-cabezal">N/A</span></td>
+        <td><strong>Remolque (Placa):</strong> <span id="print-remolque">N/A</span></td>
       </tr>
     </table>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <p>Firma del Técnico Aplicador: ____________________________</p>
-      <div id="qrcode"></div>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th style="width: 50%;">Objetivo de Control</th>
+          <th style="width: 50%;">Método de Aplicación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="line-height: 1.5; padding: 6px;">
+            <div id="chk-desinsectacion">( ) Desinsectación</div>
+            <div id="chk-desratizacion">( ) Desratización</div>
+            <div id="chk-sanitizacion">( ) Sanitización</div>
+          </td>
+          <td style="line-height: 1.5; padding: 6px;">
+            <div id="chk-aspersion">( ) Aspersión</div>
+            <div id="chk-cebo">( ) Cebo Rodenticida</div>
+            <div id="chk-termonebulizacion">( ) Termonebulización</div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="print-table">
+      <thead>
+        <tr><th>Plagas que Controla (Insectos Rastreros / Voladores / Arácnidos)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="print-plagas" style="padding: 6px; font-style: italic;">control de insectos rastreros, arácnidos, insectos voladores y termitas</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th>Producto Utilizado</th>
+          <th>Ingrediente Activo</th>
+          <th>N° Registro M.S.</th>
+          <th>Lote</th>
+          <th>Dosis</th>
+          <th>Vence Químico</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="td-prod-nombre" style="font-weight: bold;">---</td>
+          <td id="td-prod-activo">---</td>
+          <td id="td-prod-ms">---</td>
+          <td id="td-prod-lote">---</td>
+          <td id="td-prod-dosis">---</td>
+          <td id="td-prod-vence">---</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+      <tr>
+        <td style="width: 35%; text-align: center; border: none; padding: 0;">
+          <div style="margin-top: 35px; border-top: 1px solid #000; padding-top: 4px; font-size: 10.5px;">
+            <strong>Everst Rojas Camacho</strong><br>Técnico Responsable
+          </div>
+        </td>
+        <td style="width: 30%; text-align: center; border: none; padding: 0 10px;">
+          <div style="margin-top: 35px; border-top: 1px solid #000; padding-top: 4px; font-size: 10.5px;">
+            <br>Firma de Recibido / Cliente
+          </div>
+        </td>
+        <td style="width: 35%; text-align: right; border: none; padding: 0; vertical-align: middle;">
+          <div style="display: inline-block; padding: 4px; border: 1px solid #ccc; background: #fff;">
+            <div id="qrcode"></div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="legal-text">
+      De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud). Teléfono Oficina: 7232-5001 o 8987-7776 | Email: Info@tecnoplagascrc.com | Web: http://tecnoplagascrc.com
     </div>
   </div>
 
