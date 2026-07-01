@@ -33,7 +33,6 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-// Autocompletado de productos químicos comerciales
 selectProducto.addEventListener('change', () => {
   const valor = selectProducto.value;
   if (valor === "Finigen") {
@@ -49,7 +48,6 @@ selectProducto.addEventListener('change', () => {
   }
 });
 
-// Sincronización de Clientes en Memoria Local de la App
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -67,7 +65,6 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Consecutivo Automático de Certificado Nuevo
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -77,7 +74,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// ESCUCHADOR PROTEGIDO: Consulta y procesa la colección sin riesgo a cuelgues de interfaz
+// LECTOR BLINDADO: Extrae datos fila por fila de forma ultra protegida contra valores nulos
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -91,7 +88,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       const cert = docSnap.data();
       if (!cert) return;
 
-      // Desestructuración defensiva del ID de referencia de cliente
       let idClienteRelacionado = "";
       if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
         idClienteRelacionado = cert.Nombre.id;
@@ -124,7 +120,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.warn("Certificado omitido preventivamente en la lista:", docSnap.id);
+      console.warn("Certificado omitido en la lista para evitar errores:", docSnap.id);
     }
   });
 
@@ -132,7 +128,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Renderizado reactivo de las celdas en el cuerpo del historial
 function renderTablaHistorial(lista) {
   tablaHistorialBody.innerHTML = "";
   
@@ -166,7 +161,6 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// Búsqueda cruzada instantánea sin peticiones extras al servidor
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -176,7 +170,6 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// Callback nativo expuesto a eventos inline de los botones del DOM
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
@@ -198,7 +191,6 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Inyección de textos planos en el formato de impresión y despliegue del driver
 function prepararYDispararImpresion(cert) {
   try {
     document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -229,7 +221,6 @@ function prepararYDispararImpresion(cert) {
     document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Manejo de QR blindado contra desborde por límites de longitud del string
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -260,7 +251,6 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardar y Registrar un nuevo Documento Certificado
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
