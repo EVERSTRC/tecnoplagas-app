@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Emisión y Consulta de Certificados</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <style>
     /* ==========================================================================
        1. ESTILOS DE LA PANTALLA DE TRABAJO (LO QUE VES EN LA TABLET)
@@ -35,7 +36,7 @@
     .btn-back { 
       background: #64748b; 
       color: white; 
-      padding: 10px 16px; 
+      padding: 10px 166px; 
       border-radius: 6px; 
       font-weight: bold; 
       text-decoration: none; 
@@ -149,9 +150,17 @@
       font-size: 13px; 
       line-height: 1.4; 
     }
-    .header-pdf { text-align: center; margin-bottom: 15px; }
+    .header-pdf { text-align: center; margin-bottom: 15px; position: relative; }
     .header-pdf h1 { margin: 0; font-size: 20px; font-weight: bold; }
     .header-pdf p { margin: 2px 0; font-size: 11px; }
+    
+    /* Contenedor del código de barras en la esquina superior del papel */
+    .barcode-container {
+      text-align: center;
+      margin-top: 5px;
+      margin-bottom: 5px;
+    }
+
     .title-pdf { 
       text-align: center; 
       font-weight: bold; 
@@ -204,7 +213,7 @@
 
   <div class="container">
     <div class="top-bar">
-      <h2>📄 Módulo de Certificados</h2>
+      <h2>📄 Módulo de Certificados (Con Código de Seguridad)</h2>
       <a href="index.html" class="btn-back">🏠 Menú Inicio</a>
     </div>
 
@@ -286,7 +295,7 @@
           </div>
           
           <div class="full-width">
-            <label for="producto-utilizado">Línea/Marca Comercial Comercial</label>
+            <label for="producto-utilizado">Línea/Marca Comercial</label>
             <select id="producto-utilizado" required>
               <option value="">Seleccione una opción comercial de referencia...</option>
               <option value="Finigen">Finigen (Cipermetrina + Acetamiprid)</option>
@@ -298,7 +307,7 @@
           </div>
 
           <div>
-            <label for="form-prod-nombre">Nombre de Producto Química</label>
+            <label for="form-prod-nombre">Nombre de Producto Químico</label>
             <input type="text" id="form-prod-nombre" placeholder="Ej: Finigen" required>
           </div>
           <div>
@@ -319,11 +328,10 @@
           </div>
           <div>
             <label for="form-prod-vence">Vencimiento del Producto</label>
-            <input type="text" id="form-prod-vence" placeholder="Ej: 25/02/2028 o mm/aa" required>
+            <input type="text" id="form-prod-vence" placeholder="Ej: 25/02/2028" required>
           </div>
-
         </div>
-        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
+        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado Seguro</button>
       </form>
     </div>
 
@@ -356,6 +364,11 @@
         <p>Tres Ríos, La Unión, Cartago | Teléfonos: 7232-5001 / 8987-7776</p>
         <p>Permiso Sanitario: ARSLU-3160-02-2025 | Código SIIU: 8129.0 Grupo de Riesgo: B</p>
       </div>
+      
+      <div class="barcode-container">
+        <svg id="barcode"></svg>
+      </div>
+
       <div class="title-pdf">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</div>
       <h2 style="text-align: center; font-family: monospace; margin: 0 0 10px 0;" id="print-num-cert">CERT-000000</h2>
 
