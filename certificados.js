@@ -25,21 +25,21 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-// 1. CARGAR CLIENTES EN TIEMPO REAL
+// 1. CARGAR CLIENTES EN TIEMPO REAL AL MENÚ SELECT
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
   snapshot.forEach((docSnap) => {
     const cliente = docSnap.data();
-    listaClientesGlobal.push(cliente);
+    listaClientesGlobal.push({ id: docSnap.id, ...cliente });
     const option = document.createElement('option');
-    option.value = cliente.consecutivo; 
-    option.textContent = `[${cliente.consecutivo}] ${cliente.nombre}`;
+    option.value = docSnap.id; 
+    option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
     selectCliente.appendChild(option);
   });
 });
 
-// 2. CONSECUTIVO AUTOMÁTICO
+// 2. CONSECUTIVO AUTOMÁTICO DE CERTIFICADOS
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -49,7 +49,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// 3. CONSULTA HISTÓRICA EN TIEMPO REAL
+// 3. CONSULTA HISTÓRICA EN TIEMPO REAL (LEYENDO LOS CAMPOS NUEVOS DE FIRESTORE)
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
   listaCertificadosGlobal = [];
   tablaHistorialBody.innerHTML = "";
@@ -64,6 +64,7 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
     let nombreClienteStr = "Cargando...";
     let direccionClienteStr = "---";
 
+    // Validar referencia del campo Nombre
     if (cert.Nombre && cert.Nombre.path) {
       const clienteSnap = await getDoc(cert.Nombre);
       if (clienteSnap.exists()) {
@@ -89,10 +90,19 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
       objetivo: cert["Objetivo de Control"] || '---',
       plagas: cert["Plagas que controla"] || '---',
       horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
-      horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00'
+      horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+      
+      // Mapeo directo de los nuevos campos agregados a Firestore
+      pNombre: cert["Nombre del producto"] || '---',
+      pActivo: cert["Ingrediente Activo"] || '---',
+      pReg: cert["Registro M.S."] || '---',
+      pLote: cert["Lote del producto"] || '---',
+      pDosis: cert["Dosis recomendada"] || '---',
+      pVence: cert["Producto vencimiento"] || '---'
     });
   }
 
+  // Ordenar de más reciente a más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
@@ -105,14 +115,14 @@ function renderTablaHistorial(lista) {
       <td><strong>${cert.id}</strong></td>
       <td>${cert.cliente}</td>
       <td>${cert.fecha}</td>
-      <td><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${cert.producto}</span></td>
+      <td><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${cert.pNombre}</span></td>
       <td><button class="btn-print-old" data-id="${cert.id}">🖨️ Re-Imprimir</button></td>
     `;
     tablaHistorialBody.appendChild(tr);
   });
 }
 
-// 4. BUSCADOR
+// 4. FILTRADO / BUSCADOR EN TIEMPO REAL
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -121,7 +131,7 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// 5. EVENTO RE-IMPRIMIR
+// 5. ACCIÓN BOTÓN RE-IMPRIMIR (CON TU EXCELENTE DISEÑO ORIGINAL)
 tablaHistorialBody.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-print-old')) {
     const idCert = e.target.getAttribute('data-id');
@@ -130,7 +140,6 @@ tablaHistorialBody.addEventListener('click', (e) => {
   }
 });
 
-// DESGLOSE TÉCNICO DE LA TABLA DE FICHA QUÍMICA
 function prepararYDispararImpresion(cert) {
   document.getElementById('print-num-cert').innerText = cert.id;
   document.getElementById('print-cliente').innerText = cert.cliente;
@@ -145,64 +154,61 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('print-remolque').innerText = cert.remolque;
   document.getElementById('print-plagas').innerText = cert.plagas;
 
-  // Casillas [X]
+  // Marcar Casillas Objetivos [X]
   document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
   document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
   document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
+  // Marcar Casillas Métodos [X]
   document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
   document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
   document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
 
-  // MAPEO DINÁMICO DE LOS PRODUCTOS SOLICITADOS
-  let pNombre = "---", pActivo = "---", pReg = "---", pLote = "2301234", pDosis = "---", pVence = "25/02/2028";
-
-  switch (cert.producto) {
-    case "Finigen":
-      pNombre = "Finigen"; pActivo = "Cipermetrina + Acetamiprid"; pReg = "4113-P-902"; pDosis = "5-10 ml/L"; break;
-    case "Cypermethrin":
-      pNombre = "Cypermethrin 25% EC"; pActivo = "Cypermethrin"; pReg = "4113-P-902"; pDosis = "10 ml/L"; break;
-    case "Deltamethrin":
-      pNombre = "Deltamethrin 2.5% WP"; pActivo = "Deltamethrin"; pReg = "5012-P-901"; pDosis = "15 g/L"; break;
-    case "Fipronil":
-      pNombre = "Fipronil 5% SC"; pActivo = "Fipronil"; pReg = "3991-P-880"; pDosis = "5 ml/L"; break;
-    case "Brodifacoum":
-      pNombre = "Brodifacoum 0.005%"; pActivo = "Brodifacoum"; pReg = "3211-P-720"; pDosis = "Baits (Cebo)"; break;
-    case "Chlorpyrifos20E":
-      pNombre = "Chlorpyrifos 20% E"; pActivo = "Chlorpyrifos"; pReg = "2899-P-610"; pDosis = "Segun Ficha"; break;
-    case "Chlorpyrifos20EC":
-      pNombre = "Chlorpyrifos 20% EC"; pActivo = "Chlorpyrifos"; pReg = "2899-P-611"; pDosis = "Segun Ficha"; break;
-    case "Permethrin":
-      pNombre = "Permethrin 10% WP"; pActivo = "Permethrin"; pReg = "4512-P-890"; pDosis = "Segun Ficha"; break;
-    case "ZincPhosphide":
-      pNombre = "Zinc Phosphide 80%"; pActivo = "Zinc Phosphide"; pReg = "1204-P-310"; pDosis = "Polvo / Cebo"; break;
-    case "Hydramethylnon":
-      pNombre = "Hydramethylnon 2%"; pActivo = "Hydramethylnon"; pReg = "5112-P-915"; pDosis = "Gel / Atractivo"; break;
-  }
-
-  document.getElementById('td-prod-nombre').innerText = pNombre;
-  document.getElementById('td-prod-activo').innerText = pActivo;
-  document.getElementById('td-prod-ms').innerText = pReg;
-  document.getElementById('td-prod-lote').innerText = pLote;
-  document.getElementById('td-prod-dosis').innerText = pDosis;
-  document.getElementById('td-prod-vence').innerText = pVence;
+  // Llenar la tabla del PDF con los valores exactos que vienen desde la base de datos
+  document.getElementById('td-prod-nombre').innerText = cert.pNombre;
+  document.getElementById('td-prod-activo').innerText = cert.pActivo;
+  document.getElementById('td-prod-ms').innerText = cert.pReg;
+  document.getElementById('td-prod-lote').innerText = cert.pLote;
+  document.getElementById('td-prod-dosis').innerText = cert.pDosis;
+  document.getElementById('td-prod-vence').innerText = cert.pVence;
 
   window.print();
 }
 
-// 6. EVENTO SUBMIT NUEVO
+// 6. GUARDAR NUEVO CERTIFICADO EN FIRESTORE (REPARTIENDO LOS DATOS INDIVIDUALES)
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const idCertificadoValue = inputIdCertificado.value;
   const clienteSeleccionadoId = selectCliente.value;
-  const clienteEncontrado = listaClientesGlobal.find(c => c.consecutivo === clienteSeleccionadoId);
+  const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
 
   const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
   const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
   const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-inicio').value);
   const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-finalizacion').value);
 
+  const productoSeleccionado = document.getElementById('producto-utilizado').value;
+
+  // Lógica técnica automática para desglosar datos de los productos comerciales
+  let detNombre = "---", detActivo = "---", detReg = "---", detLote = "---", detDosis = "---", detVence = "---";
+
+  switch (productoSeleccionado) {
+    case "Finigen":
+      detNombre = "Finigen"; detActivo = "Cipermetrina + Acetamiprid"; detReg = "4113-P-902"; detLote = "2301234"; detDosis = "5-10 ml/L"; detVence = "25/02/28";
+      break;
+    case "Ekoset":
+      detNombre = "EKOSET EC"; detActivo = "Permetrina + Tetrametrina + Butóxido De Piperonilo"; detReg = "4122-P-698"; detLote = "053044"; detDosis = "10 a 20 ml/L"; detVence = "01/28";
+      break;
+    case "Cybor":
+      detNombre = "Cybor"; detActivo = "Cipermetrina"; detReg = "1007-P-335"; detLote = "7503007072016"; detDosis = "10-20 ml/L"; detVence = "02/28";
+      break;
+    case "Cynoff":
+      detNombre = "Cynoff CE"; detActivo = "Cipermetrina"; detReg = "MV-3382"; detLote = "7443001690314"; detDosis = "5-10 ml/L"; detVence = "02/28";
+      break;
+  }
+
+  // Mapeo de campos estructurado con exactitud para tu base de datos de Firestore
   const payloadCertificado = {
     IdCertificados: idCertificadoValue,
     Cabezal: document.getElementById('cabezal').value.trim(),
@@ -212,24 +218,34 @@ formCert.addEventListener('submit', async (e) => {
     "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
     "Objetivo de Control": document.getElementById('objetivo-control').value,
     "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-    "Producto utilizado": document.getElementById('producto-utilizado').value,
+    "Producto utilizado": productoSeleccionado,
     "Fecha del Servicio": Timestamp.fromDate(fServicio),
     "Servicio valido": Timestamp.fromDate(fValido),
     "Hora de Inicio": Timestamp.fromDate(hInicio),
     "Hora Finalizacion": Timestamp.fromDate(hFin),
-    Nombre: doc(db, "clientes", clienteSeleccionadoId)
+    Nombre: doc(db, "clientes", clienteSeleccionadoId),
+    
+    // Guardado de tus nuevos campos de texto agregados
+    "Nombre del producto": detNombre,
+    "Ingrediente Activo": detActivo,
+    "Registro M.S.": detReg,
+    "Lote del producto": detLote,
+    "Dosis recomendada": detDosis,
+    "Producto vencimiento": detVence,
+    "Codigo de barras": ""
   };
 
   try {
     await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
     
+    // Objeto temporal completo para mandar a la impresión inmediatamente
     const certMock = {
       id: idCertificadoValue,
       cliente: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
       direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
       fecha: fServicio.toLocaleDateString('es-CR'),
       vence: fValido.toLocaleDateString('es-CR'),
-      producto: payloadCertificado["Producto utilizado"],
+      producto: productoSeleccionado,
       cabezal: payloadCertificado.Cabezal,
       remolque: payloadCertificado.Remolque,
       fantasia: payloadCertificado["Nombre de fantasia"],
@@ -238,7 +254,13 @@ formCert.addEventListener('submit', async (e) => {
       objetivo: payloadCertificado["Objetivo de Control"],
       plagas: payloadCertificado["Plagas que controla"],
       horaInicio: document.getElementById('hora-inicio').value,
-      horaFin: document.getElementById('hora-finalizacion').value
+      horaFin: document.getElementById('hora-finalizacion').value,
+      pNombre: detNombre,
+      pActivo: detActivo,
+      pReg: detReg,
+      pLote: detLote,
+      pDosis: detDosis,
+      pVence: detVence
     };
 
     alert("¡Certificado guardado con éxito!");
@@ -247,7 +269,7 @@ formCert.addEventListener('submit', async (e) => {
     formCert.reset();
     window.location.href = "index.html";
   } catch (error) {
-    console.error(error);
+    console.error("Error detectado en Firebase: ", error);
     alert("Error al guardar el certificado.");
   }
 });
