@@ -1,342 +1,261 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnoplagas - Control de Certificados</title>
+  <link rel="stylesheet" href="style.css"> <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
 
-// Configuración de tu base de datos Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
-  authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
-  projectId: "fumigadora-tecnoplagas",
-  storageBucket: "fumigadora-tecnoplagas.firebasestorage.app",
-  messagingSenderId: "510795344519",
-  appId: "1:510795344519:web:9991541f95af051f12a622"
-};
+  <div class="no-print container">
+    <h2>Generación de Certificados de Fumigación</h2>
+    <hr>
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    <form id="certificado-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="id-certificado">Número de Certificado:</label>
+          <input type="text" id="id-certificado" readonly style="background-color: #f3f4f6; font-weight: bold;">
+        </div>
+        <div class="form-group">
+          <label for="select-cliente">Cliente Destino:</label>
+          <select id="select-cliente" required>
+            <option value="">Seleccione un cliente...</option>
+          </select>
+        </div>
+      </div>
 
-// Referencias de los elementos del formulario en HTML
-const formCert = document.getElementById('certificado-form');
-const selectCliente = document.getElementById('select-cliente');
-const inputIdCertificado = document.getElementById('id-certificado');
-const tablaHistorialBody = document.getElementById('tabla-historial-body');
-const inputBuscar = document.getElementById('input-buscar');
-const selectProducto = document.getElementById('producto-utilizado');
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nombre-fantasia">Nombre de Fantasía:</label>
+          <input type="text" id="nombre-fantasia" placeholder="Opcional">
+        </div>
+        <div class="form-group">
+          <label for="cabezal">Placa Cabezal:</label>
+          <input type="text" id="cabezal" placeholder="N/A si no aplica">
+        </div>
+        <div class="form-group">
+          <label for="remolque">Placa Remolque / Contenedor:</label>
+          <input type="text" id="remolque" placeholder="N/A si no aplica">
+        </div>
+      </div>
 
-// Referencias de los campos de detalles químicos
-const inProdNombre = document.getElementById('form-prod-nombre');
-const inProdActivo = document.getElementById('form-prod-activo');
-const inProdMs = document.getElementById('form-prod-ms');
-const inProdLote = document.getElementById('form-prod-lote');
-const inProdDosis = document.getElementById('form-prod-dosis');
-const inProdVence = document.getElementById('form-prod-vence');
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fecha-servicio">Fecha de Aplicación:</label>
+          <input type="date" id="fecha-servicio" required>
+        </div>
+        <div class="form-group">
+          <label for="servicio-valido">Vencimiento del Servicio:</label>
+          <input type="date" id="servicio-valido" required>
+        </div>
+      </div>
 
-let totalCertificados = 0;
-let listaClientesGlobal = [];
-let listaCertificadosGlobal = [];
+      <div class="form-row">
+        <div class="form-group">
+          <label for="hora-inicio">Hora Inicio:</label>
+          <input type="time" id="hora-inicio" required>
+        </div>
+        <div class="form-group">
+          <label for="hora-finalizacion">Hora Finalización:</label>
+          <input type="time" id="hora-finalizacion" required>
+        </div>
+      </div>
 
-// Autocompletado de la ficha técnica al elegir el producto comercial
-selectProducto.addEventListener('change', () => {
-  const valor = selectProducto.value;
-  if (valor === "Finigen") {
-    inProdNombre.value = "Finigen"; inProdActivo.value = "Cipermetrina + Acetamiprid"; inProdMs.value = "4113-P-902"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "25/02/28";
-  } else if (valor === "Ekoset") {
-    inProdNombre.value = "EKOSET EC"; inProdActivo.value = "Permetrina + Tetrametrina"; inProdMs.value = "4122-P-698"; inProdDosis.value = "10 a 20 ml/L"; inProdLote.value = ""; inProdVence.value = "01/28";
-  } else if (valor === "Cybor") {
-    inProdNombre.value = "Cybor"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "1007-P-335"; inProdDosis.value = "10-20 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
-  } else if (valor === "Cynoff") {
-    inProdNombre.value = "Cynoff CE"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "MV-3382"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
-  } else {
-    inProdNombre.value = ""; inProdActivo.value = ""; inProdMs.value = ""; inProdDosis.value = ""; inProdLote.value = ""; inProdVence.value = "";
-  }
-});
+      <div class="form-row">
+        <div class="form-group">
+          <label for="tipo-servicio">Tipo de Servicio:</label>
+          <select id="tipo-servicio" required>
+            <option value="Fumigación de Vehículo de Carga">Fumigación de Vehículo de Carga</option>
+            <option value="Control de Plagas Comercial">Control de Plagas Comercial</option>
+            <option value="Control de Plagas Residencial">Control de Plagas Residencial</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="objetivo-control">Objetivo de Control:</label>
+          <select id="objetivo-control" required>
+            <option value="Desinsectación">Desinsectación</option>
+            <option value="Desratización">Desratización</option>
+            <option value="Sanitización">Sanitización</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="metodo-aplicacion">Método de Aplicación:</label>
+          <select id="metodo-aplicacion" required>
+            <option value="Aspersión">Aspersión</option>
+            <option value="Cebo Rodenticida">Cebo Rodenticida</option>
+            <option value="Termonebulización">Termonebulización</option>
+          </select>
+        </div>
+      </div>
 
-// Sincronización de Clientes en tiempo real
-onSnapshot(collection(db, "clientes"), (snapshot) => {
-  selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
-  listaClientesGlobal = [];
-  snapshot.forEach((docSnap) => {
-    const cliente = docSnap.data();
-    listaClientesGlobal.push({ id: docSnap.id, ...cliente });
-    const option = document.createElement('option');
-    option.value = docSnap.id; 
-    option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
-    selectCliente.appendChild(option);
-  });
-  
-  // Refrescar visualmente la tabla de consulta si los certificados ya se mapearon
-  if(listaCertificadosGlobal.length > 0) {
-    renderTablaHistorial(listaCertificadosGlobal);
-  }
-});
+      <div class="form-group">
+        <label for="plagas-controla">Plagas a Controlar / Detalles:</label>
+        <input type="text" id="plagas-controla" required placeholder="Ej: Insectos rastreros, voladores, roedores...">
+      </div>
 
-// Generador automático del número consecutivo para nuevos certificados
-onSnapshot(collection(db, "certificados"), (snapshot) => {
-  totalCertificados = snapshot.size;
-  const numeroSiguiente = totalCertificados + 1;
-  const formatoNumero = String(numeroSiguiente).padStart(6, '0');
-  if(!formCert.dataset.editMode) {
-    inputIdCertificado.value = `CERT-${formatoNumero}`;
-  }
-});
+      <fieldset style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px; margin-top: 15px;">
+        <legend style="padding: 0 8px; font-weight: bold; color: #1e293b;">Ficha Técnica del Producto Químico</legend>
+        
+        <div class="form-group">
+          <label for="producto-utilizado">Selección Rápida de Producto Comercial:</label>
+          <select id="producto-utilizado" required>
+            <option value="">Seleccione un producto...</option>
+            <option value="Finigen">Finigen</option>
+            <option value="Ekoset">Ekoset</option>
+            <option value="Cybor">Cybor</option>
+            <option value="Cynoff">Cynoff</option>
+            <option value="Otro">Otro (Manual)</option>
+          </select>
+        </div>
 
-// ESCUCHADOR PROTEGIDO: Descarga historial de certificados de forma asíncrona segura
-onSnapshot(collection(db, "certificados"), (snapshot) => {
-  listaCertificadosGlobal = [];
-  
-  if(snapshot.empty) {
-    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
-    return;
-  }
+        <div class="form-row" style="margin-top: 10px;">
+          <div class="form-group">
+            <label>Nombre Comercial:</label>
+            <input type="text" id="form-prod-nombre" required>
+          </div>
+          <div class="form-group">
+            <label>Ingrediente Activo:</label>
+            <input type="text" id="form-prod-activo" required>
+          </div>
+          <div class="form-group">
+            <label>Registro M.S.:</label>
+            <input type="text" id="form-prod-ms" required>
+          </div>
+        </div>
 
-  snapshot.forEach((docSnap) => {
-    try {
-      const cert = docSnap.data();
-      if (!cert) return;
+        <div class="form-row">
+          <div class="form-group">
+            <label>Dosis Recomendada:</label>
+            <input type="text" id="form-prod-dosis" required>
+          </div>
+          <div class="form-group">
+            <label>Lote:</label>
+            <input type="text" id="form-prod-lote" placeholder="Opcional">
+          </div>
+          <div class="form-group">
+            <label>Vencimiento de Producto:</label>
+            <input type="text" id="form-prod-vence" required>
+          </div>
+        </div>
+      </fieldset>
 
-      // Extracción blindada del ID del Cliente sin colgar el bucle principal
-      let idClienteRelacionado = "";
-      if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
-        idClienteRelacionado = cert.Nombre.id;
-      } else if (cert.Nombre && typeof cert.Nombre === 'string') {
-        idClienteRelacionado = cert.Nombre.split('/').pop();
-      }
+      <button type="submit" style="margin-top: 20px; padding: 12px 24px; font-weight: bold; cursor: pointer;">
+        💾 Guardar y Emitir Impresión
+      </button>
+    </form>
 
-      listaCertificadosGlobal.push({
-        id: docSnap.id,
-        clienteId: idClienteRelacionado,
-        clienteNombre: "Cargando datos...", 
-        direccion: cert.Direccion || "---", 
-        fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
-        vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
-        producto: cert["Producto utilizado"] || '---',
-        cabezal: cert.Cabezal || 'N/A',
-        remolque: cert.Remolque || 'N/A',
-        fantasia: cert["Nombre de fantasia"] || '---',
-        tipo: cert["Tipo de servicio"] || '---',
-        metodo: cert["Metodo de aplicacion"] || '---',
-        objetivo: cert["Objetivo de Control"] || '---',
-        plagas: cert["Plagas que controla"] || '---',
-        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
-        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
-        pNombre: cert["Nombre del producto"] || '---',
-        pActivo: cert["Ingrediente Activo"] || '---',
-        pReg: cert["Registro M.S."] || '---',
-        pLote: cert["Lote del producto"] || '---',
-        pDosis: cert["Dosis recomendada"] || '---',
-        pVence: cert["Producto vencimiento"] || '---'
-      });
-    } catch (e) {
-      console.warn("Fila omitida de forma automática por inconsistencias en la base de datos:", docSnap.id);
-    }
-  });
-
-  // Ordenar de manera descendente (los más recientes arriba)
-  listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
-  renderTablaHistorial(listaCertificadosGlobal);
-});
-
-// Pintar filas en la tabla del HTML
-function renderTablaHistorial(lista) {
-  tablaHistorialBody.innerHTML = "";
-  
-  if(lista.length === 0) {
-    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros coincidentes.</td></tr>`;
-    return;
-  }
-
-  lista.forEach(cert => {
-    // Intercambiar ID por el nombre real almacenado localmente
-    if (cert.clienteId) {
-      const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
-      if (match) {
-        cert.clienteNombre = match.nombre || "Sin nombre asignado";
-        cert.direccion = match.direccion || "---";
-      } else {
-        cert.clienteNombre = "Cliente ID: " + cert.clienteId;
-      }
-    } else {
-      cert.clienteNombre = "No especificado";
-    }
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><strong>${cert.id}</strong></td>
-      <td>${cert.clienteNombre}</td>
-      <td>${cert.fecha}</td>
-      <td><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${cert.pNombre}</span></td>
-      <td><button class="btn-print-old" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Re-Imprimir</button></td>
-    `;
-    tablaHistorialBody.appendChild(tr);
-  });
-}
-
-// Filtro de búsqueda en tiempo real (por ID de certificado o por nombre del cliente)
-inputBuscar.addEventListener('input', (e) => {
-  const termino = e.target.value.toLowerCase().trim();
-  const filtrados = listaCertificadosGlobal.filter(c => 
-    c.id.toLowerCase().includes(termino) || 
-    c.clienteNombre.toLowerCase().includes(termino)
-  );
-  renderTablaHistorial(filtrados);
-});
-
-// Acción del botón para volver a imprimir un registro viejo
-window.ejecutarReimpresionDirecta = async function(idCert) {
-  const cert = listaCertificadosGlobal.find(c => c.id === idCert);
-  if (!cert) {
-    alert("Certificado no localizado.");
-    return;
-  }
-
-  // Comprobación de seguridad para recuperar la dirección del cliente si no se cargó previamente
-  if (cert.direccion === "---" && cert.clienteId) {
-    try {
-      const snap = await getDoc(doc(db, "clientes", cert.clienteId));
-      if(snap.exists()) {
-        cert.direccion = snap.data().direccion || "---";
-      }
-    } catch(err) {
-      console.error("No se pudo obtener la dirección extendida del cliente:", err);
-    }
-  }
-
-  prepararYDispararImpresion(cert);
-};
-
-// Formatear los datos del certificado en la vista invisible e invocar la ventana de impresión
-function prepararYDispararImpresion(cert) {
-  try {
-    document.getElementById('print-num-cert').innerText = cert.id || '---';
-    document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
-    document.getElementById('print-fantasia').innerText = cert.fantasia || cert.clienteNombre || '---';
-    document.getElementById('print-direccion').innerText = cert.direccion || '---';
-    document.getElementById('print-fecha').innerText = cert.fecha || '---';
-    document.getElementById('print-vence').innerText = cert.vence || '---';
-    document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00') + " Hrs";
-    document.getElementById('print-fin').innerText = (cert.horaFin || '00:00') + " Hrs";
-    document.getElementById('print-tipo').innerText = cert.tipo || '---';
-    document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
-    document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
-    document.getElementById('print-plagas').innerText = cert.plagas || '---';
-
-    document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
-    document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
-    document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
-
-    document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
-    document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
-
-    document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
-    document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
-    document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
-    document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
-    document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
-    document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
-
-    // Construcción dinámica del código QR sin saturar la memoria caché del navegador de la tablet
-    const qrContainer = document.getElementById('qrcode');
-    if (qrContainer) {
-      qrContainer.innerHTML = ""; 
+    <div class="historial-container" style="margin-top: 40px;">
+      <h3>Historial de Certificados</h3>
+      <input type="text" id="input-buscar" placeholder="🔍 Buscar por ID de Certificado o Nombre de Cliente..." style="width: 100%; padding: 10px; margin-bottom: 15px;">
       
-      const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 22);
-      const textoQrPublico = `TECNOPLAGAS\nID:${cert.id}\nCli:${cliLimpio}\nCab:${cert.cabezal}\nRem:${cert.remolque}\nFec:${cert.fecha}\nVen:${cert.vence}`;
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 10px;">ID Certificado</th>
+            <th style="padding: 10px;">Cliente</th>
+            <th style="padding: 10px;">Fecha Servicio</th>
+            <th style="padding: 10px;">Producto</th>
+            <th style="padding: 10px;">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial-body">
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 20px; color: #64748b;">
+              Cargando historial de certificados...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-      const InstanciaQRCode = window.QRCode || QRCode;
-      if (typeof InstanciaQRCode !== 'undefined') {
-        new InstanciaQRCode(qrContainer, {
-          text: textoQrPublico,
-          width: 110,
-          height: 110,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: 0 // Forzado a nivel bajo para acelerar el renderizado en móviles/tablets
-        });
-      }
-    }
+  <div id="vista-impresion" class="only-print">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h2>CERTIFICADO DE FUMIGACIÓN</h2>
+      <p><strong>TECNOPLAGAS S.A.</strong> | Tel: +506 0000-0000</p>
+      <h3>N° Certificado: <span id="print-num-cert">---</span></h3>
+    </div>
 
-    // Pequeño retardo para asegurar que el QR se haya dibujado completamente antes de lanzar la ventana de impresión
-    setTimeout(() => {
-      window.print();
-    }, 400);
+    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 25px; padding: 5px;">
+      <tr>
+        <td colspan="2"><strong>Cliente / Razón Social:</strong> <span id="print-cliente">---</span></td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">---</span></td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>Dirección Física:</strong> <span id="print-direccion">---</span></td>
+      </tr>
+      <tr>
+        <td><strong>Fecha del Servicio:</strong> <span id="print-fecha">---</span></td>
+        <td><strong>Servicio Válido Hasta:</strong> <span id="print-vence">---</span></td>
+      </tr>
+      <tr>
+        <td><strong>Hora de Inicio:</strong> <span id="print-inicio">---</span></td>
+        <td><strong>Hora de Finalización:</strong> <span id="print-fin">---</span></td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
+      </tr>
+      <tr>
+        <td><strong>Placa Cabezal:</strong> <span id="print-cabezal">---</span></td>
+        <td><strong>Placa Remolque:</strong> <span id="print-remolque">---</span></td>
+      </tr>
+      <tr>
+        <td colspan="2"><strong>Plagas de Control Específico:</strong> <span id="print-plagas">---</span></td>
+      </tr>
+    </table>
 
-  } catch (error) {
-    alert("Error al preparar la hoja de impresión: " + error.message);
-  }
-}
+    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+      <tr style="background-color: #f1f5f9;">
+        <th width="50%">Objetivo del Control</th>
+        <th width="50%">Método de Aplicación</th>
+      </tr>
+      <tr>
+        <td style="padding: 8px; line-height: 1.8;">
+          <div id="chk-desinsectacion">[ ] Desinsectación</div>
+          <div id="chk-desratizacion">[ ] Desratización</div>
+          <div id="chk-sanitizacion">[ ] Sanitización</div>
+        </td>
+        <td style="padding: 8px; line-height: 1.8;">
+          <div id="chk-aspersion">[ ] Aspersión</div>
+          <div id="chk-cebo">[ ] Cebo Rodenticida</div>
+          <div id="chk-termonebulizacion">[ ] Termonebulización</div>
+        </td>
+      </tr>
+    </table>
 
-window.prepararYDispararImpresion = prepararYDispararImpresion;
+    <h4>Detalle de Producto Químico Utilizado</h4>
+    <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+      <tr style="background-color: #f1f5f9;">
+        <th>Producto</th>
+        <th>Ingrediente Activo</th>
+        <th>Registro M.S.</th>
+        <th>Lote</th>
+        <th>Dosis</th>
+        <th>Vence Prod.</th>
+      </tr>
+      <tr>
+        <td id="td-prod-nombre" style="padding:5px;">---</td>
+        <td id="td-prod-activo" style="padding:5px;">---</td>
+        <td id="td-prod-ms" style="padding:5px;">---</td>
+        <td id="td-prod-lote" style="padding:5px;">---</td>
+        <td id="td-prod-dosis" style="padding:5px;">---</td>
+        <td id="td-prod-vence" style="padding:5px;">---</td>
+      </tr>
+    </table>
 
-// Procesar el envío del formulario para crear un nuevo registro
-formCert.addEventListener('submit', async (e) => {
-  e.preventDefault();
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; border-top: 1px dashed #000; padding-top: 20px;">
+      <div style="font-size: 11px; max-width: 70%;">
+        <p>Este documento certifica que las áreas descritas han sido tratadas conforme a las normas del Ministerio de Salud.</p>
+        <p style="margin-top: 30px;">__________________________________________<br>Firma del Técnico Aplicador</p>
+      </div>
+      <div id="qrcode" style="padding: 5px; background: #fff;"></div>
+    </div>
+  </div>
 
-  const idCertificadoValue = inputIdCertificado.value;
-  const clienteSeleccionadoId = selectCliente.value;
-  const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
-
-  const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
-  const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
-  
-  const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
-  const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
-  const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
-  const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
-
-  const payloadCertificado = {
-    IdCertificados: idCertificadoValue,
-    Cabezal: document.getElementById('cabezal').value.trim(),
-    Remolque: document.getElementById('remolque').value.trim(),
-    "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
-    "Tipo de servicio": document.getElementById('tipo-servicio').value,
-    "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
-    "Objetivo de Control": document.getElementById('objetivo-control').value,
-    "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-    "Producto utilizado": selectProducto.value,
-    "Fecha del Servicio": Timestamp.fromDate(fServicio),
-    "Servicio valido": Timestamp.fromDate(fValido),
-    "Hora de Inicio": Timestamp.fromDate(hInicio),
-    "Hora Finalizacion": Timestamp.fromDate(hFin),
-    Nombre: doc(db, "clientes", clienteSeleccionadoId),
-    
-    "Nombre del producto": inProdNombre.value.trim(),
-    "Ingrediente Activo": inProdActivo.value.trim(),
-    "Registro M.S.": inProdMs.value.trim(),
-    "Lote del producto": inProdLote.value.trim(),
-    "Dosis recomendada": inProdDosis.value.trim(),
-    "Producto vencimiento": inProdVence.value.trim(),
-    "Codigo de barras": idCertificadoValue
-  };
-
-  try {
-    await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
-    
-    // Crear objeto simulado para disparar la impresión inmediatamente después de guardar
-    const certMock = {
-      id: idCertificadoValue,
-      clienteNombre: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
-      direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
-      fecha: fServicio.toLocaleDateString('es-CR'),
-      vence: fValido.toLocaleDateString('es-CR'),
-      producto: selectProducto.value,
-      cabezal: payloadCertificado.Cabezal,
-      remolque: payloadCertificado.Remolque,
-      fantasia: payloadCertificado["Nombre de fantasia"],
-      tipo: payloadCertificado["Tipo de servicio"],
-      metodo: payloadCertificado["Metodo de aplicacion"],
-      objetivo: payloadCertificado["Objetivo de Control"],
-      plagas: payloadCertificado["Plagas que controla"],
-      horaInicio: hInicioStr,
-      horaFin: hFinStr,
-      pNombre: payloadCertificado["Nombre del producto"],
-      pActivo: payloadCertificado["Ingrediente Activo"],
-      pReg: payloadCertificado["Registro M.S."],
-      pLote: payloadCertificado["Lote del producto"],
-      pDosis: payloadCertificado["Dosis recomendada"],
-      pVence: payloadCertificado["Producto vencimiento"]
-    };
-
-    prepararYDispararImpresion(certMock);
-    formCert
+  <script type="module" src="certificados.js"></script>
+</body>
+</html>
