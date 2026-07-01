@@ -115,7 +115,7 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (err) {
-      console.error("Error procesando fila de certificado individual:", err);
+      console.error("Error procesando fila:", err);
     }
   }
 
@@ -146,7 +146,6 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// FUNCIÓN LLAMADA DIRECTAMENTE POR EL ATRIBUTO ONCLICK (INMUNE A FALLOS DE NAVEGADOR)
 window.ejecutarReimpresionDirecta = function(idCert) {
   const certEncontrado = listaCertificadosGlobal.find(c => c.id === idCert);
   if (certEncontrado) {
@@ -186,49 +185,37 @@ function prepararYDispararImpresion(cert) {
     document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Generación del código QR con control de excepciones por si la librería falla
+    // Generación del código QR optimizado para evitar desbordes (Overflow)
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
-      const textoQrPublico = `TECNOPLAGAS C.R.C - CERTIFICADO VÁLIDO\n` +
-                             `--------------------------------------\n` +
-                             `ID Certificado: ${cert.id}\n` +
-                             `Placa Cabezal: ${cert.cabezal}\n` +
-                             `Placa Remolque: ${cert.remolque}\n` +
-                             `Fecha Fumigación: ${cert.fecha}\n` +
-                             `Válido Hasta: ${cert.vence}`;
+      
+      // Texto optimizado y recortado para cumplir estrictamente con los límites de la librería
+      const textoQrPublico = `TECNOPLAGAS CR\nID: ${cert.id}\nCliente: ${cert.cliente.substring(0, 30)}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nServicio: ${cert.fecha}\nVence: ${cert.vence}`;
 
-      if (typeof QRCode !== 'undefined') {
-        new QRCode(qrContainer, {
+      const InstanciaQRCode = window.QRCode || QRCode;
+      
+      if (typeof InstanciaQRCode !== 'undefined') {
+        new InstanciaQRCode(qrContainer, {
           text: textoQrPublico,
-          width: 110,
-          height: 110,
+          width: 120,
+          height: 120,
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: 1
-        });
-      } else if (typeof window.QRCode !== 'undefined') {
-        new window.QRCode(qrContainer, {
-          text: textoQrPublico,
-          width: 110,
-          height: 110,
-          colorDark: "#000000",
-          colorLight: "#ffffff",
-          correctLevel: 1
+          correctLevel: 0 // Cambiado a nivel bajo (L) para admitir cadenas largas sin reventar la memoria
         });
       } else {
-        console.warn("La librería QRCode no está lista o disponible en el objeto global.");
+        console.warn("La librería QRCode no está disponible en la ventana actual.");
       }
     }
 
-    // Disparador forzado de impresión nativa
     setTimeout(() => {
       window.print();
     }, 500);
 
   } catch (error) {
-    console.error("Error crítico en la renderización del documento imprimible:", error);
-    alert("Ocurrió un error al preparar la vista de impresión: " + error.message);
+    console.error("Error crítico en impresión:", error);
+    alert("Error al preparar impresión: " + error.message);
   }
 }
 
