@@ -79,6 +79,7 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
     return;
   }
 
+  // Mapeo corregido campo por campo para coincidir exactamente con el objeto de impresion
   for (const docSnap of snapshot.docs) {
     const cert = docSnap.data();
     let nombreClienteStr = "Cargando...";
@@ -148,16 +149,16 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// DISPARADOR ROBUSTO PARA HISTORIAL Y CONSULTAS (USO EXCLUSIVO DE ARRAY GLOBAL)
-tablaHistorialBody.addEventListener('click', (e) => {
-  if (e.target.classList.contains('btn-print-old')) {
+// ESCUCHADOR ROBUSTO COMPATIBLE CON CHROME DE TABLETS
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.classList.contains('btn-print-old')) {
     e.preventDefault();
     const idCert = e.target.getAttribute('data-id');
     const certEncontrado = listaCertificadosGlobal.find(c => c.id === idCert);
     if (certEncontrado) {
       prepararYDispararImpresion(certEncontrado);
     } else {
-      alert("No se cargaron los datos completos de este certificado aún. Reintente en un segundo.");
+      alert("Cargando datos del certificado... Por favor intente de nuevo.");
     }
   }
 });
@@ -169,8 +170,8 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('print-direccion').innerText = cert.direccion;
   document.getElementById('print-fecha').innerText = cert.fecha;
   document.getElementById('print-vence').innerText = cert.vence;
-  document.getElementById('print-inicio').innerText = cert.horaInicio + " Hrs";
-  document.getElementById('print-fin').innerText = cert.horaFin + " Hrs";
+  document.getElementById('print-inicio').innerText = cert.horaInicio;
+  document.getElementById('print-fin').innerText = cert.horaFin;
   document.getElementById('print-tipo').innerText = cert.tipo;
   document.getElementById('print-cabezal').innerText = cert.cabezal;
   document.getElementById('print-remolque').innerText = cert.remolque;
@@ -215,7 +216,6 @@ function prepararYDispararImpresion(cert) {
     });
   }
 
-  // Da tiempo óptimo para que la tablet pinte el QR antes de abrir la cola de impresión
   setTimeout(() => {
     window.print();
   }, 600);
@@ -264,7 +264,6 @@ formCert.addEventListener('submit', async (e) => {
   };
 
   try {
-    // Guarda de forma asíncrona en Firebase
     await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
     
     const certMock = {
@@ -281,8 +280,8 @@ formCert.addEventListener('submit', async (e) => {
       metodo: payloadCertificado["Metodo de aplicacion"],
       objetivo: payloadCertificado["Objetivo de Control"],
       plagas: payloadCertificado["Plagas que controla"],
-      horaInicio: hInicioStr,
-      horaFin: hFinStr,
+      horaInicio: hInicioStr + " Hrs",
+      horaFin: hFinStr + " Hrs",
       pNombre: payloadCertificado["Nombre del producto"],
       pActivo: payloadCertificado["Ingrediente Activo"],
       pReg: payloadCertificado["Registro M.S."],
@@ -292,12 +291,10 @@ formCert.addEventListener('submit', async (e) => {
       barcode: idCertificadoValue
     };
 
-    // Imprime inmediatamente sin alertas que bloqueen la cola de la tablet
     prepararYDispararImpresion(certMock);
-    
     formCert.reset();
   } catch (error) {
     console.error("Error en Firebase: ", error);
-    alert("Error al guardar el certificado en la base de datos.");
+    alert("Error al guardar el certificado.");
   }
 });
