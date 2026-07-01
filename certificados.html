@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Emisión y Consulta de Certificados</title>
-  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     /* ==========================================================================
        1. ESTILOS DE LA PANTALLA DE TRABAJO (LO QUE VES EN LA TABLET)
@@ -154,9 +154,19 @@
     .header-pdf h1 { margin: 0; font-size: 20px; font-weight: bold; }
     .header-pdf p { margin: 2px 0; font-size: 11px; }
     
-    .barcode-container {
-      text-align: center;
+    /* Contenedor del QR de Autenticidad Tecnoplagas */
+    .qr-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       margin: 10px 0;
+    }
+    .qr-container p {
+      font-size: 10px;
+      margin: 4px 0 0 0;
+      font-weight: bold;
+      color: #444;
     }
 
     .title-pdf { 
@@ -328,9 +338,8 @@
             <label for="form-prod-vence">Vencimiento del Producto</label>
             <input type="text" id="form-prod-vence" placeholder="Ej: 25/02/2028" required>
           </div>
-
         </div>
-        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
+        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado Validado</button>
       </form>
     </div>
 
@@ -364,8 +373,9 @@
         <p>Permiso Sanitario: ARSLU-3160-02-2025 | Código SIIU: 8129.0 Grupo de Riesgo: B</p>
       </div>
       
-      <div class="barcode-container">
-        <svg id="barcode"></svg>
+      <div class="qr-container">
+        <div id="qrcode"></div>
+        <p>Escanee para validar Vigencia y Datos del Vehículo</p>
       </div>
 
       <div class="title-pdf">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</div>
