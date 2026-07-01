@@ -3,6 +3,7 @@ import {
   getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Configuración de Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -15,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Referencias del DOM
 const formCert = document.getElementById('certificado-form');
 const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
@@ -22,6 +24,7 @@ const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
 const selectProducto = document.getElementById('producto-utilizado');
 
+// Campos de producto químico
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
@@ -33,6 +36,7 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
+// Autocompletar datos del producto seleccionado
 selectProducto.addEventListener('change', () => {
   const valor = selectProducto.value;
   if (valor === "Finigen") {
@@ -48,6 +52,7 @@ selectProducto.addEventListener('change', () => {
   }
 });
 
+// Cargar Clientes en Tiempo Real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -61,6 +66,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   });
 });
 
+// Generar Consecutivo Automático
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -70,28 +76,29 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
+// SOLUCIÓN AL ARREGLO DE CONSULTA: Carga segura y paralela sin bloqueos
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
-  listaCertificadosGlobal = [];
   if(snapshot.empty) {
     tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
     return;
   }
 
-  for (const docSnap of snapshot.docs) {
+  // Ejecución controlada con promesas individuales para evitar colgar el bucle
+  const promesas = snapshot.docs.map(async (docSnap) => {
     try {
       const cert = docSnap.data();
       let nombreClienteStr = "Cliente no asignado";
       let direccionClienteStr = "---";
 
       if (cert.Nombre && cert.Nombre.path) {
-        const clienteSnap = await getDoc(cert.Nombre);
-        if (clienteSnap.exists()) {
+        const clienteSnap = await getDoc(cert.Nombre).catch(() => null);
+        if (clienteSnap && clienteSnap.exists()) {
           nombreClienteStr = clienteSnap.data().nombre || "Sin nombre";
           direccionClienteStr = clienteSnap.data().direccion || "---";
         }
       }
 
-      listaCertificadosGlobal.push({
+      return {
         id: docSnap.id,
         cliente: nombreClienteStr,
         direccion: direccionClienteStr,
@@ -113,12 +120,17 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
         pLote: cert["Lote del producto"] || '---',
         pDosis: cert["Dosis recomendada"] || '---',
         pVence: cert["Producto vencimiento"] || '---'
-      });
-    } catch (err) {
-      console.error("Error procesando fila:", err);
+      };
+    } catch (e) {
+      console.error("Certificado dañado ignorado para no romper la lista: ", docSnap.id, e);
+      return null;
     }
-  }
+  });
 
+  const resultados = await Promise.all(promesas);
+  listaCertificadosGlobal = resultados.filter(item => item !== null);
+
+  // Ordenar del más nuevo al más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
@@ -138,6 +150,7 @@ function renderTablaHistorial(lista) {
   });
 }
 
+// Input de búsqueda en tiempo real
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -146,14 +159,20 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
+// Disparador del botón de la tabla (Inmune a fallos del DOM)
 window.ejecutarReimpresionDirecta = function(idCert) {
   const certEncontrado = listaCertificadosGlobal.find(c => c.id === idCert);
   if (certEncontrado) {
     prepararYDispararImpresion(certEncontrado);
   } else {
-    alert("Error: No se pudieron recuperar los datos locales de este certificado.");
+    alert("Error: No se localizaron los datos de este certificado.");
   }
 };
+
+// Remover acentos para que el QR procese cadenas limpias rápidamente
+function limpiarTextoQR(txt) {
+  return txt.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+}
 
 function prepararYDispararImpresion(cert) {
   try {
@@ -185,42 +204,41 @@ function prepararYDispararImpresion(cert) {
     document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Generación del código QR optimizado para evitar desbordes (Overflow)
+    // SOLUCIÓN DEFINITIVA AL OVERFLOW DEL QR
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
       
-      // Texto optimizado y recortado para cumplir estrictamente con los límites de la librería
-      const textoQrPublico = `TECNOPLAGAS CR\nID: ${cert.id}\nCliente: ${cert.cliente.substring(0, 30)}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nServicio: ${cert.fecha}\nVence: ${cert.vence}`;
+      const clienteQR = limpiarTextoQR(cert.cliente);
+      const textoQrPublico = `TECNOPLAGAS\nID:${cert.id}\nCli:${clienteQR}\nCab:${cert.cabezal}\nRem:${cert.remolque}\nFec:${cert.fecha}\nVen:${cert.vence}`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
       
       if (typeof InstanciaQRCode !== 'undefined') {
         new InstanciaQRCode(qrContainer, {
           text: textoQrPublico,
-          width: 120,
-          height: 120,
+          width: 115,
+          height: 115,
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: 0 // Cambiado a nivel bajo (L) para admitir cadenas largas sin reventar la memoria
+          correctLevel: 0 // Forzado a Nivel L (Bajo) para evitar desbordes de texto
         });
-      } else {
-        console.warn("La librería QRCode no está disponible en la ventana actual.");
       }
     }
 
     setTimeout(() => {
       window.print();
-    }, 500);
+    }, 450);
 
   } catch (error) {
-    console.error("Error crítico en impresión:", error);
-    alert("Error al preparar impresión: " + error.message);
+    console.error("Error crítico en la preparación del documento:", error);
+    alert("Ocurrió un error al preparar la vista de impresión: " + error.message);
   }
 }
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
+// Guardar e Imprimir Formulario Principal
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -243,55 +261,4 @@ formCert.addEventListener('submit', async (e) => {
     "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
     "Tipo de servicio": document.getElementById('tipo-servicio').value,
     "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
-    "Objetivo de Control": document.getElementById('objetivo-control').value,
-    "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-    "Producto utilizado": selectProducto.value,
-    "Fecha del Servicio": Timestamp.fromDate(fServicio),
-    "Servicio valido": Timestamp.fromDate(fValido),
-    "Hora de Inicio": Timestamp.fromDate(hInicio),
-    "Hora Finalizacion": Timestamp.fromDate(hFin),
-    Nombre: doc(db, "clientes", clienteSeleccionadoId),
-    
-    "Nombre del producto": inProdNombre.value.trim(),
-    "Ingrediente Activo": inProdActivo.value.trim(),
-    "Registro M.S.": inProdMs.value.trim(),
-    "Lote del producto": inProdLote.value.trim(),
-    "Dosis recomendada": inProdDosis.value.trim(),
-    "Producto vencimiento": inProdVence.value.trim(),
-    "Codigo de barras": idCertificadoValue
-  };
-
-  try {
-    await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
-    
-    const certMock = {
-      id: idCertificadoValue,
-      cliente: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
-      direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
-      fecha: fServicio.toLocaleDateString('es-CR'),
-      vence: fValido.toLocaleDateString('es-CR'),
-      producto: selectProducto.value,
-      cabezal: payloadCertificado.Cabezal,
-      remolque: payloadCertificado.Remolque,
-      fantasia: payloadCertificado["Nombre de fantasia"],
-      tipo: payloadCertificado["Tipo de servicio"],
-      metodo: payloadCertificado["Metodo de aplicacion"],
-      objetivo: payloadCertificado["Objetivo de Control"],
-      plagas: payloadCertificado["Plagas que controla"],
-      horaInicio: hInicioStr,
-      horaFin: hFinStr,
-      pNombre: payloadCertificado["Nombre del producto"],
-      pActivo: payloadCertificado["Ingrediente Activo"],
-      pReg: payloadCertificado["Registro M.S."],
-      pLote: payloadCertificado["Lote del producto"],
-      pDosis: payloadCertificado["Dosis recomendada"],
-      pVence: payloadCertificado["Producto vencimiento"]
-    };
-
-    prepararYDispararImpresion(certMock);
-    formCert.reset();
-  } catch (error) {
-    console.error("Error al guardar:", error);
-    alert("Error al guardar el certificado en la base de datos.");
-  }
-});
+    "Objetivo de Control": document
