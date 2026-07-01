@@ -185,15 +185,20 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // GENERADOR DINÁMICO DEL CÓDIGO QR
+  // GENERADOR DINÁMICO DEL CÓDIGO QR (CORREGIDO CON TEXTO PLANO SEGURO)
   const qrContainer = document.getElementById('qrcode');
   qrContainer.innerHTML = ""; 
   
-  // URL incrustada con los datos dinámicos solicitados para el QR público
-  const urlValidacion = `https://consultas.tecnoplagas.com/validar?id=${encodeURIComponent(cert.id)}&cabezal=${encodeURIComponent(cert.cabezal)}&remolque=${encodeURIComponent(cert.remolque)}&fumigado=${encodeURIComponent(cert.fecha)}&vence=${encodeURIComponent(cert.vence)}`;
+  const textoQrPublico = `TECNOPLAGAS C.R.C - CERTIFICADO VÁLIDO\n` +
+                         `--------------------------------------\n` +
+                         `ID Certificado: ${cert.id}\n` +
+                         `Placa Cabezal: ${cert.cabezal}\n` +
+                         `Placa Remolque: ${cert.remolque}\n` +
+                         `Fecha Fumigación: ${cert.fecha}\n` +
+                         `Válido Hasta: ${cert.vence}`;
 
   new QRCode(qrContainer, {
-    text: urlValidacion,
+    text: textoQrPublico,
     width: 100,
     height: 100,
     colorDark: "#000000",
@@ -201,7 +206,7 @@ function prepararYDispararImpresion(cert) {
     correctLevel: QRCode.CorrectLevel.M
   });
 
-  // CORRECCIÓN CLAVE: Esperamos 350 milisegundos para que el navegador dibuje el QR antes de abrir el PDF
+  // Esperamos 350 milisegundos para renderizar los píxeles antes de mandar a impresión
   setTimeout(() => {
     window.print();
   }, 350);
