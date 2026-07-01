@@ -286,15 +286,42 @@
           </div>
           
           <div class="full-width">
-            <label for="producto-utilizado">Producto Utilizado</label>
+            <label for="producto-utilizado">Línea/Marca Comercial Comercial</label>
             <select id="producto-utilizado" required>
-              <option value="">Seleccione el producto químico...</option>
-              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid) | Dosis: 5-10 ml/L</option>
-              <option value="Ekoset">EKOSET EC (Permetrina + Tetrametrina + Butóxido De Piperonilo) | Dosis: 10 a 20 ml/L</option>
-              <option value="Cybor">Cybor (Cipermetrina) | Dosis: 10-20 ml/L</option>
-              <option value="Cynoff">Cynoff CE (Cipermetrina) | Dosis: 5-10 ml/L</option>
+              <option value="">Seleccione una opción comercial de referencia...</option>
+              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid)</option>
+              <option value="Ekoset">EKOSET EC (Permetrina + Tetrametrina)</option>
+              <option value="Cybor">Cybor (Cipermetrina)</option>
+              <option value="Cynoff">Cynoff CE (Cipermetrina)</option>
+              <option value="Otro">Otro Producto (Especificar abajo)</option>
             </select>
           </div>
+
+          <div>
+            <label for="form-prod-nombre">Nombre de Producto Química</label>
+            <input type="text" id="form-prod-nombre" placeholder="Ej: Finigen" required>
+          </div>
+          <div>
+            <label for="form-prod-activo">Ingrediente Activo</label>
+            <input type="text" id="form-prod-activo" placeholder="Ej: Cipermetrina + Acetamiprid" required>
+          </div>
+          <div>
+            <label for="form-prod-ms">Registro M.S.</label>
+            <input type="text" id="form-prod-ms" placeholder="Ej: 4113-P-902" required>
+          </div>
+          <div>
+            <label for="form-prod-lote">Lote del Producto</label>
+            <input type="text" id="form-prod-lote" placeholder="Ej: L24099" required>
+          </div>
+          <div>
+            <label for="form-prod-dosis">Dosis Recomendada</label>
+            <input type="text" id="form-prod-dosis" placeholder="Ej: 5-10 ml/L" required>
+          </div>
+          <div>
+            <label for="form-prod-vence">Vencimiento del Producto</label>
+            <input type="text" id="form-prod-vence" placeholder="Ej: 25/02/2028 o mm/aa" required>
+          </div>
+
         </div>
         <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
       </form>
@@ -329,7 +356,7 @@
         <p>Tres Ríos, La Unión, Cartago | Teléfonos: 7232-5001 / 8987-7776</p>
         <p>Permiso Sanitario: ARSLU-3160-02-2025 | Código SIIU: 8129.0 Grupo de Riesgo: B</p>
       </div>
-      <div class="title-pdf">CERTIFICADO MANEISO INTEGRADO DE PLAGAS</div>
+      <div class="title-pdf">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</div>
       <h2 style="text-align: center; font-family: monospace; margin: 0 0 10px 0;" id="print-num-cert">CERT-000000</h2>
 
       <div class="box-pdf">
