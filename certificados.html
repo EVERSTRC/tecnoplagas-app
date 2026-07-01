@@ -149,10 +149,10 @@
             <label for="producto-utilizado">Producto Utilizado</label>
             <select id="producto-utilizado" required>
               <option value="">Seleccione el producto químico...</option>
-              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid)</option>
-              <option value="Ekoset">EKOSET EC (Permetrina + Tetrametrina + Butóxido De Piperonilo)</option>
-              <option value="Cybor">Cybor (Cipermetrina)</option>
-              <option value="Cynoff">Cynoff CE (Cipermetrina)</option>
+              <option value="Finigen">Finigen (Cipermetrina + Acetamiprid) | Dosis: 5-10 ml/L</option>
+              <option value="Ekoset">EKOSET EC (Permetrina + Tetrametrina + Butóxido De Piperonilo) | Dosis: 10 a 20 ml/L</option>
+              <option value="Cybor">Cybor (Cipermetrina) | Dosis: 10-20 ml/L</option>
+              <option value="Cynoff">Cynoff CE (Cipermetrina) | Dosis: 5-10 ml/L</option>
             </select>
           </div>
         </div>
@@ -280,7 +280,9 @@
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-      event.target.classList.add('active');
+      if(event && event.target) {
+        event.target.classList.add('active');
+      }
       document.getElementById(tabId).classList.add('active');
     }
   </script>
