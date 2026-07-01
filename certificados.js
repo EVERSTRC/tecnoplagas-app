@@ -33,7 +33,7 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-// Autocompletado de productos
+// Autocompletado de productos químicos comerciales
 selectProducto.addEventListener('change', () => {
   const valor = selectProducto.value;
   if (valor === "Finigen") {
@@ -49,7 +49,7 @@ selectProducto.addEventListener('change', () => {
   }
 });
 
-// Carga de clientes en memoria local
+// Sincronización de Clientes en Memoria Local de la App
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -62,13 +62,12 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
     selectCliente.appendChild(option);
   });
   
-  // Si los certificados ya se mapearon, actualiza sus nombres de forma reactiva
   if(listaCertificadosGlobal.length > 0) {
     renderTablaHistorial(listaCertificadosGlobal);
   }
 });
 
-// Consecutivo automático
+// Consecutivo Automático de Certificado Nuevo
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -78,7 +77,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// SOLUCIÓN TOTAL A LA CONSULTA: Mapeo nativo ultra seguro sin cuelgues por tipos de datos
+// ESCUCHADOR PROTEGIDO: Consulta y procesa la colección sin riesgo a cuelgues de interfaz
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -90,8 +89,9 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   snapshot.forEach((docSnap) => {
     try {
       const cert = docSnap.data();
-      
-      // Validación estricta del objeto de referencia de Firebase
+      if (!cert) return;
+
+      // Desestructuración defensiva del ID de referencia de cliente
       let idClienteRelacionado = "";
       if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
         idClienteRelacionado = cert.Nombre.id;
@@ -102,7 +102,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       listaCertificadosGlobal.push({
         id: docSnap.id,
         clienteId: idClienteRelacionado,
-        clienteNombre: "Asignando cliente...", 
+        clienteNombre: "Cargando datos...", 
         direccion: cert.Direccion || "---", 
         fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
@@ -121,19 +121,18 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pReg: cert["Registro M.S."] || '---',
         pLote: cert["Lote del producto"] || '---',
         pDosis: cert["Dosis recomendada"] || '---',
-        pVence: cert["Producto vencimiento"] || '---',
-        rawRef: cert.Nombre
+        pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.error("Fila omitida de forma segura para proteger la tabla:", e);
+      console.warn("Certificado omitido preventivamente en la lista:", docSnap.id);
     }
   });
 
-  // Ordenar del más nuevo al más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
+// Renderizado reactivo de las celdas en el cuerpo del historial
 function renderTablaHistorial(lista) {
   tablaHistorialBody.innerHTML = "";
   
@@ -143,14 +142,13 @@ function renderTablaHistorial(lista) {
   }
 
   lista.forEach(cert => {
-    // Intercambio veloz de ID por Nombre usando la memoria del snapshot de clientes
     if (cert.clienteId) {
       const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
       if (match) {
         cert.clienteNombre = match.nombre || "Sin nombre";
         cert.direccion = match.direccion || "---";
       } else {
-        cert.clienteNombre = "Cliente id: " + cert.clienteId;
+        cert.clienteNombre = "ID: " + cert.clienteId;
       }
     } else {
       cert.clienteNombre = "No asignado";
@@ -168,7 +166,7 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// Buscador instantáneo en la tabla
+// Búsqueda cruzada instantánea sin peticiones extras al servidor
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -178,15 +176,14 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// Ejecución limpia del botón re-imprimir
+// Callback nativo expuesto a eventos inline de los botones del DOM
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
-    alert("Certificado no encontrado.");
+    alert("Certificado no localizado.");
     return;
   }
 
-  // Búsqueda de seguridad por si la dirección falta en el registro cruzado
   if (cert.direccion === "---" && cert.clienteId) {
     try {
       const snap = await getDoc(doc(db, "clientes", cert.clienteId));
@@ -194,13 +191,14 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
         cert.direccion = snap.data().direccion || "---";
       }
     } catch(err) {
-      console.warn("No se pudo extraer la dirección complementaria:", err);
+      console.error(err);
     }
   }
 
   prepararYDispararImpresion(cert);
 };
 
+// Inyección de textos planos en el formato de impresión y despliegue del driver
 function prepararYDispararImpresion(cert) {
   try {
     document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -231,11 +229,10 @@ function prepararYDispararImpresion(cert) {
     document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Construcción limpia del QR a nivel bajo para no generar desbordes en el navegador
+    // Manejo de QR blindado contra desborde por límites de longitud del string
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
-      
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 22);
       const textoQrPublico = `TECNOPLAGAS\nID:${cert.id}\nCli:${cliLimpio}\nCab:${cert.cabezal}\nRem:${cert.remolque}\nFec:${cert.fecha}\nVen:${cert.vence}`;
 
@@ -257,14 +254,13 @@ function prepararYDispararImpresion(cert) {
     }, 400);
 
   } catch (error) {
-    console.error("Error crítico en renderizado de impresión:", error);
-    alert("Error al intentar imprimir el documento: " + error.message);
+    alert("Error al formatear la hoja de impresión: " + error.message);
   }
 }
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardar nuevo certificado
+// Guardar y Registrar un nuevo Documento Certificado
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -335,7 +331,6 @@ formCert.addEventListener('submit', async (e) => {
     prepararYDispararImpresion(certMock);
     formCert.reset();
   } catch (error) {
-    console.error("Error al guardar:", error);
     alert("Error al guardar el certificado en la base de datos.");
   }
 });
