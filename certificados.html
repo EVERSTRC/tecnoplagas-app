@@ -36,7 +36,7 @@
     .btn-back { 
       background: #64748b; 
       color: white; 
-      padding: 10px 166px; 
+      padding: 10px 16px; 
       border-radius: 6px; 
       font-weight: bold; 
       text-decoration: none; 
@@ -150,15 +150,13 @@
       font-size: 13px; 
       line-height: 1.4; 
     }
-    .header-pdf { text-align: center; margin-bottom: 15px; position: relative; }
+    .header-pdf { text-align: center; margin-bottom: 15px; }
     .header-pdf h1 { margin: 0; font-size: 20px; font-weight: bold; }
     .header-pdf p { margin: 2px 0; font-size: 11px; }
     
-    /* Contenedor del código de barras en la esquina superior del papel */
     .barcode-container {
       text-align: center;
-      margin-top: 5px;
-      margin-bottom: 5px;
+      margin: 10px 0;
     }
 
     .title-pdf { 
@@ -213,7 +211,7 @@
 
   <div class="container">
     <div class="top-bar">
-      <h2>📄 Módulo de Certificados (Con Código de Seguridad)</h2>
+      <h2>📄 Módulo de Certificados</h2>
       <a href="index.html" class="btn-back">🏠 Menú Inicio</a>
     </div>
 
@@ -330,8 +328,9 @@
             <label for="form-prod-vence">Vencimiento del Producto</label>
             <input type="text" id="form-prod-vence" placeholder="Ej: 25/02/2028" required>
           </div>
+
         </div>
-        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado Seguro</button>
+        <button type="submit" class="btn-submit">💾 Guardar e Imprimir Certificado</button>
       </form>
     </div>
 
