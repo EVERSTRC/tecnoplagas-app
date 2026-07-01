@@ -3,6 +3,7 @@ import {
   getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// Configuración de tu base de datos Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -15,6 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Referencias de los elementos del formulario en HTML
 const formCert = document.getElementById('certificado-form');
 const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
@@ -22,6 +24,7 @@ const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
 const selectProducto = document.getElementById('producto-utilizado');
 
+// Referencias de los campos de detalles químicos
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
@@ -33,31 +36,37 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-selectProducto.addEventListener('change', () => {
-  const valor = selectProducto.value;
-  if (valor === "Finigen") {
-    inProdNombre.value = "Finigen"; inProdActivo.value = "Cipermetrina + Acetamiprid"; inProdMs.value = "4113-P-902"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "25/02/28";
-  } else if (valor === "Ekoset") {
-    inProdNombre.value = "EKOSET EC"; inProdActivo.value = "Permetrina + Tetrametrina"; inProdMs.value = "4122-P-698"; inProdDosis.value = "10 a 20 ml/L"; inProdLote.value = ""; inProdVence.value = "01/28";
-  } else if (valor === "Cybor") {
-    inProdNombre.value = "Cybor"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "1007-P-335"; inProdDosis.value = "10-20 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
-  } else if (valor === "Cynoff") {
-    inProdNombre.value = "Cynoff CE"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "MV-3382"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
-  } else {
-    inProdNombre.value = ""; inProdActivo.value = ""; inProdMs.value = ""; inProdDosis.value = ""; inProdLote.value = ""; inProdVence.value = "";
-  }
-});
+// Autocompletado de la ficha técnica al elegir el producto comercial
+if (selectProducto) {
+  selectProducto.addEventListener('change', () => {
+    const valor = selectProducto.value;
+    if (valor === "Finigen") {
+      if(inProdNombre) inProdNombre.value = "Finigen"; if(inProdActivo) inProdActivo.value = "Cipermetrina + Acetamiprid"; if(inProdMs) inProdMs.value = "4113-P-902"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "25/02/28";
+    } else if (valor === "Ekoset" || valor === "EKOSET EC") {
+      if(inProdNombre) inProdNombre.value = "EKOSET EC"; if(inProdActivo) inProdActivo.value = "Permetrina + Tetrametrina"; if(inProdMs) inProdMs.value = "4122-P-698"; if(inProdDosis) inProdDosis.value = "10 a 20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "01/28";
+    } else if (valor === "Cybor") {
+      if(inProdNombre) inProdNombre.value = "Cybor"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "1007-P-335"; if(inProdDosis) inProdDosis.value = "10-20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
+    } else if (valor === "Cynoff" || valor === "Cynoff CE") {
+      if(inProdNombre) inProdNombre.value = "Cynoff CE"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "MV-3382"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
+    } else {
+      if(inProdNombre) inProdNombre.value = ""; if(inProdActivo) inProdActivo.value = ""; if(inProdMs) inProdMs.value = ""; if(inProdDosis) inProdDosis.value = ""; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "";
+    }
+  });
+}
 
+// Sincronización de Clientes en tiempo real
 onSnapshot(collection(db, "clientes"), (snapshot) => {
-  selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+  if (selectCliente) selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
   snapshot.forEach((docSnap) => {
     const cliente = docSnap.data();
     listaClientesGlobal.push({ id: docSnap.id, ...cliente });
-    const option = document.createElement('option');
-    option.value = docSnap.id; 
-    option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
-    selectCliente.appendChild(option);
+    if (selectCliente) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
+      selectCliente.appendChild(option);
+    }
   });
   
   if(listaCertificadosGlobal.length > 0) {
@@ -65,21 +74,22 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
+// Generador automático del número consecutivo para nuevos certificados
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
   const formatoNumero = String(numeroSiguiente).padStart(6, '0');
-  if(!formCert.dataset.editMode) {
+  if(formCert && !formCert.dataset.editMode && inputIdCertificado) {
     inputIdCertificado.value = `CERT-${formatoNumero}`;
   }
 });
 
-// LECTOR BLINDADO: Extrae datos fila por fila de forma ultra protegida contra valores nulos
+// ESCUCHADOR PROTEGIDO: Descarga historial de certificados evitando cuelgues si hay datos nulos
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
   if(snapshot.empty) {
-    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
+    if (tablaHistorialBody) tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
     return;
   }
 
@@ -102,7 +112,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         direccion: cert.Direccion || "---", 
         fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
-        producto: cert["Producto utilizado"] || '---',
+        producto: cert["Nombre del producto"] || cert["Producto utilizado"] || '---',
         cabezal: cert.Cabezal || 'N/A',
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
@@ -120,7 +130,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.warn("Certificado omitido en la lista para evitar errores:", docSnap.id);
+      console.warn("Fila omitida automáticamente por inconsistencias:", docSnap.id);
     }
   });
 
@@ -128,11 +138,13 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
+// Pinta las filas de la tabla respetando el formato visual exacto de tus capturas
 function renderTablaHistorial(lista) {
+  if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
   
   if(lista.length === 0) {
-    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>`;
+    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros coincidentes.</td></tr>`;
     return;
   }
 
@@ -140,13 +152,25 @@ function renderTablaHistorial(lista) {
     if (cert.clienteId) {
       const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
       if (match) {
-        cert.clienteNombre = match.nombre || "Sin nombre";
+        cert.clienteNombre = match.nombre || "Sin nombre asignado";
         cert.direccion = match.direccion || "---";
       } else {
-        cert.clienteNombre = "ID: " + cert.clienteId;
+        cert.clienteNombre = "Cliente ID: " + cert.clienteId;
       }
     } else {
-      cert.clienteNombre = "No asignado";
+      cert.clienteNombre = "No especificado";
+    }
+
+    // Configuración dinámica de estilos para las insignias de productos según tu captura
+    let badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
+    if (cert.pNombre.includes("Finigen")) {
+      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
+    } else if (cert.pNombre.includes("Cynoff")) {
+      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
+    } else if (cert.pNombre.includes("EKOSET")) {
+      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
+    } else if (cert.pNombre.includes("Cybor")) {
+      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
     }
 
     const tr = document.createElement('tr');
@@ -154,22 +178,26 @@ function renderTablaHistorial(lista) {
       <td><strong>${cert.id}</strong></td>
       <td>${cert.clienteNombre}</td>
       <td>${cert.fecha}</td>
-      <td><span style="background:#e0f2fe; color:#0369a1; padding:3px 8px; border-radius:4px; font-size:12px; font-weight:bold;">${cert.pNombre}</span></td>
-      <td><button class="btn-print-old" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Re-Imprimir</button></td>
+      <td><span style="${badgeStyle}">${cert.pNombre}</span></td>
+      <td><button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Re-Imprimir</button></td>
     `;
     tablaHistorialBody.appendChild(tr);
   });
 }
 
-inputBuscar.addEventListener('input', (e) => {
-  const termino = e.target.value.toLowerCase().trim();
-  const filtrados = listaCertificadosGlobal.filter(c => 
-    c.id.toLowerCase().includes(termino) || 
-    c.clienteNombre.toLowerCase().includes(termino)
-  );
-  renderTablaHistorial(filtrados);
-});
+// Filtro de búsqueda en tiempo real
+if (inputBuscar) {
+  inputBuscar.addEventListener('input', (e) => {
+    const termino = e.target.value.toLowerCase().trim();
+    const filtrados = listaCertificadosGlobal.filter(c => 
+      c.id.toLowerCase().includes(termino) || 
+      c.clienteNombre.toLowerCase().includes(termino)
+    );
+    renderTablaHistorial(filtrados);
+  });
+}
 
+// Acción de re-impresión directa
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
@@ -191,35 +219,36 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
+// Envía la información a los elementos contenedores de la impresión
 function prepararYDispararImpresion(cert) {
   try {
-    document.getElementById('print-num-cert').innerText = cert.id || '---';
-    document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
-    document.getElementById('print-fantasia').innerText = cert.fantasia || cert.clienteNombre || '---';
-    document.getElementById('print-direccion').innerText = cert.direccion || '---';
-    document.getElementById('print-fecha').innerText = cert.fecha || '---';
-    document.getElementById('print-vence').innerText = cert.vence || '---';
-    document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00') + " Hrs";
-    document.getElementById('print-fin').innerText = (cert.horaFin || '00:00') + " Hrs";
-    document.getElementById('print-tipo').innerText = cert.tipo || '---';
-    document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
-    document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
-    document.getElementById('print-plagas').innerText = cert.plagas || '---';
+    if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
+    if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || cert.clienteNombre || '---';
+    if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
+    if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
+    if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00') + " Hrs";
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = (cert.horaFin || '00:00') + " Hrs";
+    if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
+    if(document.getElementById('print-cabezal')) document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
+    if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
+    if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
-    document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
-    document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
+    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
+    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
-    document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
-    document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    if(document.getElementById('chk-aspersion')) document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
+    if(document.getElementById('chk-cebo')) document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
+    if(document.getElementById('chk-termonebulizacion')) document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
 
-    document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
-    document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
-    document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
-    document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
-    document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
-    document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
+    if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
+    if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
+    if(document.getElementById('td-prod-ms')) document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
+    if(document.getElementById('td-prod-lote')) document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
+    if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
+    if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
@@ -245,82 +274,85 @@ function prepararYDispararImpresion(cert) {
     }, 400);
 
   } catch (error) {
-    alert("Error al formatear la hoja de impresión: " + error.message);
+    console.error("Error al preparar la impresión:", error);
   }
 }
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-formCert.addEventListener('submit', async (e) => {
-  e.preventDefault();
+// Guardado del formulario
+if (formCert) {
+  formCert.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  const idCertificadoValue = inputIdCertificado.value;
-  const clienteSeleccionadoId = selectCliente.value;
-  const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
+    const idCertificadoValue = inputIdCertificado.value;
+    const clienteSeleccionadoId = selectCliente.value;
+    const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
 
-  const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
-  const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
-  
-  const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
-  const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
-  const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
-  const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
-
-  const payloadCertificado = {
-    IdCertificados: idCertificadoValue,
-    Cabezal: document.getElementById('cabezal').value.trim(),
-    Remolque: document.getElementById('remolque').value.trim(),
-    "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
-    "Tipo de servicio": document.getElementById('tipo-servicio').value,
-    "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
-    "Objetivo de Control": document.getElementById('objetivo-control').value,
-    "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-    "Producto utilizado": selectProducto.value,
-    "Fecha del Servicio": Timestamp.fromDate(fServicio),
-    "Servicio valido": Timestamp.fromDate(fValido),
-    "Hora de Inicio": Timestamp.fromDate(hInicio),
-    "Hora Finalizacion": Timestamp.fromDate(hFin),
-    Nombre: doc(db, "clientes", clienteSeleccionadoId),
+    const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
+    const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
     
-    "Nombre del producto": inProdNombre.value.trim(),
-    "Ingrediente Activo": inProdActivo.value.trim(),
-    "Registro M.S.": inProdMs.value.trim(),
-    "Lote del producto": inProdLote.value.trim(),
-    "Dosis recomendada": inProdDosis.value.trim(),
-    "Producto vencimiento": inProdVence.value.trim(),
-    "Codigo de barras": idCertificadoValue
-  };
+    const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
+    const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
+    const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
+    const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-  try {
-    await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
-    
-    const certMock = {
-      id: idCertificadoValue,
-      clienteNombre: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
-      direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
-      fecha: fServicio.toLocaleDateString('es-CR'),
-      vence: fValido.toLocaleDateString('es-CR'),
-      producto: selectProducto.value,
-      cabezal: payloadCertificado.Cabezal,
-      remolque: payloadCertificado.Remolque,
-      fantasia: payloadCertificado["Nombre de fantasia"],
-      tipo: payloadCertificado["Tipo de servicio"],
-      metodo: payloadCertificado["Metodo de aplicacion"],
-      objetivo: payloadCertificado["Objetivo de Control"],
-      plagas: payloadCertificado["Plagas que controla"],
-      horaInicio: hInicioStr,
-      horaFin: hFinStr,
-      pNombre: payloadCertificado["Nombre del producto"],
-      pActivo: payloadCertificado["Ingrediente Activo"],
-      pReg: payloadCertificado["Registro M.S."],
-      pLote: payloadCertificado["Lote del producto"],
-      pDosis: payloadCertificado["Dosis recomendada"],
-      pVence: payloadCertificado["Producto vencimiento"]
+    const payloadCertificado = {
+      IdCertificados: idCertificadoValue,
+      Cabezal: document.getElementById('cabezal').value.trim(),
+      Remolque: document.getElementById('remolque').value.trim(),
+      "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
+      "Tipo de servicio": document.getElementById('tipo-servicio').value,
+      "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
+      "Objetivo de Control": document.getElementById('objetivo-control').value,
+      "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
+      "Producto utilizado": selectProducto.value,
+      "Fecha del Servicio": Timestamp.fromDate(fServicio),
+      "Servicio valido": Timestamp.fromDate(fValido),
+      "Hora de Inicio": Timestamp.fromDate(hInicio),
+      "Hora Finalizacion": Timestamp.fromDate(hFin),
+      Nombre: doc(db, "clientes", clienteSeleccionadoId),
+      
+      "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
+      "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
+      "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
+      "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
+      "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
+      "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
+      "Codigo de barras": idCertificadoValue
     };
 
-    prepararYDispararImpresion(certMock);
-    formCert.reset();
-  } catch (error) {
-    alert("Error al guardar el certificado en la base de datos.");
-  }
-});
+    try {
+      await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
+      
+      const certMock = {
+        id: idCertificadoValue,
+        clienteNombre: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
+        direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
+        fecha: fServicio.toLocaleDateString('es-CR'),
+        vence: fValido.toLocaleDateString('es-CR'),
+        producto: selectProducto.value,
+        cabezal: payloadCertificado.Cabezal,
+        remolque: payloadCertificado.Remolque,
+        fantasia: payloadCertificado["Nombre de fantasia"],
+        tipo: payloadCertificado["Tipo de servicio"],
+        metodo: payloadCertificado["Metodo de aplicacion"],
+        objetivo: payloadCertificado["Objetivo de Control"],
+        plagas: payloadCertificado["Plagas que controla"],
+        horaInicio: hInicioStr,
+        horaFin: hFinStr,
+        pNombre: payloadCertificado["Nombre del producto"],
+        pActivo: payloadCertificado["Ingrediente Activo"],
+        pReg: payloadCertificado["Registro M.S."],
+        pLote: payloadCertificado["Lote del producto"],
+        pDosis: payloadCertificado["Dosis recomendada"],
+        pVence: payloadCertificado["Producto vencimiento"]
+      };
+
+      prepararYDispararImpresion(certMock);
+      formCert.reset();
+    } catch (error) {
+      alert("Error al guardar el certificado en la base de datos.");
+    }
+  });
+}
