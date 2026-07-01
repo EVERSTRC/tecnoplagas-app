@@ -20,12 +20,34 @@ const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
 const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
+const selectProducto = document.getElementById('producto-utilizado');
+
+const inProdNombre = document.getElementById('form-prod-nombre');
+const inProdActivo = document.getElementById('form-prod-activo');
+const inProdMs = document.getElementById('form-prod-ms');
+const inProdLote = document.getElementById('form-prod-lote');
+const inProdDosis = document.getElementById('form-prod-dosis');
+const inProdVence = document.getElementById('form-prod-vence');
 
 let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-// 1. CARGAR CLIENTES EN TIEMPO REAL AL MENÚ SELECT
+selectProducto.addEventListener('change', () => {
+  const valor = selectProducto.value;
+  if (valor === "Finigen") {
+    inProdNombre.value = "Finigen"; inProdActivo.value = "Cipermetrina + Acetamiprid"; inProdMs.value = "4113-P-902"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "25/02/28";
+  } else if (valor === "Ekoset") {
+    inProdNombre.value = "EKOSET EC"; inProdActivo.value = "Permetrina + Tetrametrina"; inProdMs.value = "4122-P-698"; inProdDosis.value = "10 a 20 ml/L"; inProdLote.value = ""; inProdVence.value = "01/28";
+  } else if (valor === "Cybor") {
+    inProdNombre.value = "Cybor"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "1007-P-335"; inProdDosis.value = "10-20 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
+  } else if (valor === "Cynoff") {
+    inProdNombre.value = "Cynoff CE"; inProdActivo.value = "Cipermetrina"; inProdMs.value = "MV-3382"; inProdDosis.value = "5-10 ml/L"; inProdLote.value = ""; inProdVence.value = "02/28";
+  } else {
+    inProdNombre.value = ""; inProdActivo.value = ""; inProdMs.value = ""; inProdDosis.value = ""; inProdLote.value = ""; inProdVence.value = "";
+  }
+});
+
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -39,7 +61,6 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   });
 });
 
-// 2. CONSECUTIVO AUTOMÁTICO DE CERTIFICADOS
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -49,7 +70,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// 3. CONSULTA HISTÓRICA EN TIEMPO REAL (LEYENDO LOS CAMPOS NUEVOS DE FIRESTORE)
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
   listaCertificadosGlobal = [];
   tablaHistorialBody.innerHTML = "";
@@ -64,7 +84,6 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
     let nombreClienteStr = "Cargando...";
     let direccionClienteStr = "---";
 
-    // Validar referencia del campo Nombre
     if (cert.Nombre && cert.Nombre.path) {
       const clienteSnap = await getDoc(cert.Nombre);
       if (clienteSnap.exists()) {
@@ -92,17 +111,16 @@ onSnapshot(collection(db, "certificados"), async (snapshot) => {
       horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
       horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
       
-      // Mapeo directo de los nuevos campos agregados a Firestore
       pNombre: cert["Nombre del producto"] || '---',
       pActivo: cert["Ingrediente Activo"] || '---',
       pReg: cert["Registro M.S."] || '---',
       pLote: cert["Lote del producto"] || '---',
       pDosis: cert["Dosis recomendada"] || '---',
-      pVence: cert["Producto vencimiento"] || '---'
+      pVence: cert["Producto vencimiento"] || '---',
+      barcode: cert["Codigo de barras"] || docSnap.id
     });
   }
 
-  // Ordenar de más reciente a más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
@@ -122,7 +140,6 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// 4. FILTRADO / BUSCADOR EN TIEMPO REAL
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -131,7 +148,6 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// 5. ACCIÓN BOTÓN RE-IMPRIMIR (CON TU EXCELENTE DISEÑO ORIGINAL)
 tablaHistorialBody.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-print-old')) {
     const idCert = e.target.getAttribute('data-id');
@@ -154,17 +170,14 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('print-remolque').innerText = cert.remolque;
   document.getElementById('print-plagas').innerText = cert.plagas;
 
-  // Marcar Casillas Objetivos [X]
   document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
   document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
   document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
-  // Marcar Casillas Métodos [X]
   document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
   document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
   document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
 
-  // Llenar la tabla del PDF con los valores exactos que vienen desde la base de datos
   document.getElementById('td-prod-nombre').innerText = cert.pNombre;
   document.getElementById('td-prod-activo').innerText = cert.pActivo;
   document.getElementById('td-prod-ms').innerText = cert.pReg;
@@ -172,10 +185,22 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
+  // GENERAR EL CÓDIGO DE BARRAS DE SEGURIDAD EN EL SVG
+  try {
+    JsBarcode("#barcode", cert.id, {
+      format: "CODE128",
+      lineColor: "#000",
+      width: 2,
+      height: 45,
+      displayValue: true
+    });
+  } catch (error) {
+    console.error("Error al renderizar barra: ", error);
+  }
+
   window.print();
 }
 
-// 6. GUARDAR NUEVO CERTIFICADO EN FIRESTORE (REPARTIENDO LOS DATOS INDIVIDUALES)
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -188,27 +213,6 @@ formCert.addEventListener('submit', async (e) => {
   const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-inicio').value);
   const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-finalizacion').value);
 
-  const productoSeleccionado = document.getElementById('producto-utilizado').value;
-
-  // Lógica técnica automática para desglosar datos de los productos comerciales
-  let detNombre = "---", detActivo = "---", detReg = "---", detLote = "---", detDosis = "---", detVence = "---";
-
-  switch (productoSeleccionado) {
-    case "Finigen":
-      detNombre = "Finigen"; detActivo = "Cipermetrina + Acetamiprid"; detReg = "4113-P-902"; detLote = "2301234"; detDosis = "5-10 ml/L"; detVence = "25/02/28";
-      break;
-    case "Ekoset":
-      detNombre = "EKOSET EC"; detActivo = "Permetrina + Tetrametrina + Butóxido De Piperonilo"; detReg = "4122-P-698"; detLote = "053044"; detDosis = "10 a 20 ml/L"; detVence = "01/28";
-      break;
-    case "Cybor":
-      detNombre = "Cybor"; detActivo = "Cipermetrina"; detReg = "1007-P-335"; detLote = "7503007072016"; detDosis = "10-20 ml/L"; detVence = "02/28";
-      break;
-    case "Cynoff":
-      detNombre = "Cynoff CE"; detActivo = "Cipermetrina"; detReg = "MV-3382"; detLote = "7443001690314"; detDosis = "5-10 ml/L"; detVence = "02/28";
-      break;
-  }
-
-  // Mapeo de campos estructurado con exactitud para tu base de datos de Firestore
   const payloadCertificado = {
     IdCertificados: idCertificadoValue,
     Cabezal: document.getElementById('cabezal').value.trim(),
@@ -218,34 +222,34 @@ formCert.addEventListener('submit', async (e) => {
     "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
     "Objetivo de Control": document.getElementById('objetivo-control').value,
     "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-    "Producto utilizado": productoSeleccionado,
+    "Producto utilizado": selectProducto.value,
     "Fecha del Servicio": Timestamp.fromDate(fServicio),
     "Servicio valido": Timestamp.fromDate(fValido),
     "Hora de Inicio": Timestamp.fromDate(hInicio),
     "Hora Finalizacion": Timestamp.fromDate(hFin),
     Nombre: doc(db, "clientes", clienteSeleccionadoId),
     
-    // Guardado de tus nuevos campos de texto agregados
-    "Nombre del producto": detNombre,
-    "Ingrediente Activo": detActivo,
-    "Registro M.S.": detReg,
-    "Lote del producto": detLote,
-    "Dosis recomendada": detDosis,
-    "Producto vencimiento": detVence,
-    "Codigo de barras": ""
+    "Nombre del producto": inProdNombre.value.trim(),
+    "Ingrediente Activo": inProdActivo.value.trim(),
+    "Registro M.S.": inProdMs.value.trim(),
+    "Lote del producto": inProdLote.value.trim(),
+    "Dosis recomendada": inProdDosis.value.trim(),
+    "Producto vencimiento": inProdVence.value.trim(),
+    
+    // GUARDAR EL CÓDIGO ÚNICO EN EL CAMPO SOLICITADO
+    "Codigo de barras": idCertificadoValue
   };
 
   try {
     await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
     
-    // Objeto temporal completo para mandar a la impresión inmediatamente
     const certMock = {
       id: idCertificadoValue,
       cliente: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
       direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
       fecha: fServicio.toLocaleDateString('es-CR'),
       vence: fValido.toLocaleDateString('es-CR'),
-      producto: productoSeleccionado,
+      producto: selectProducto.value,
       cabezal: payloadCertificado.Cabezal,
       remolque: payloadCertificado.Remolque,
       fantasia: payloadCertificado["Nombre de fantasia"],
@@ -255,12 +259,13 @@ formCert.addEventListener('submit', async (e) => {
       plagas: payloadCertificado["Plagas que controla"],
       horaInicio: document.getElementById('hora-inicio').value,
       horaFin: document.getElementById('hora-finalizacion').value,
-      pNombre: detNombre,
-      pActivo: detActivo,
-      pReg: detReg,
-      pLote: detLote,
-      pDosis: detDosis,
-      pVence: detVence
+      pNombre: payloadCertificado["Nombre del producto"],
+      pActivo: payloadCertificado["Ingrediente Activo"],
+      pReg: payloadCertificado["Registro M.S."],
+      pLote: payloadCertificado["Lote del producto"],
+      pDosis: payloadCertificado["Dosis recomendada"],
+      pVence: payloadCertificado["Producto vencimiento"],
+      barcode: idCertificadoValue
     };
 
     alert("¡Certificado guardado con éxito!");
