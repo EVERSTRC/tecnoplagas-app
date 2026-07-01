@@ -185,23 +185,26 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // GENERADOR DINÁMICO DEL CÓDIGO QR ANTICLONACIÓN
+  // GENERADOR DINÁMICO DEL CÓDIGO QR
   const qrContainer = document.getElementById('qrcode');
-  qrContainer.innerHTML = ""; // Limpia el QR del certificado anterior
+  qrContainer.innerHTML = ""; 
   
-  // URL que visitará el cliente/inspector con los datos incrustados de forma segura
+  // URL incrustada con los datos dinámicos solicitados para el QR público
   const urlValidacion = `https://consultas.tecnoplagas.com/validar?id=${encodeURIComponent(cert.id)}&cabezal=${encodeURIComponent(cert.cabezal)}&remolque=${encodeURIComponent(cert.remolque)}&fumigado=${encodeURIComponent(cert.fecha)}&vence=${encodeURIComponent(cert.vence)}`;
 
   new QRCode(qrContainer, {
     text: urlValidacion,
-    width: 90,
-    height: 90,
+    width: 100,
+    height: 100,
     colorDark: "#000000",
     colorLight: "#ffffff",
     correctLevel: QRCode.CorrectLevel.M
   });
 
-  window.print();
+  // CORRECCIÓN CLAVE: Esperamos 350 milisegundos para que el navegador dibuje el QR antes de abrir el PDF
+  setTimeout(() => {
+    window.print();
+  }, 350);
 }
 
 formCert.addEventListener('submit', async (e) => {
