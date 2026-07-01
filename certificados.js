@@ -33,7 +33,6 @@ let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
-// Autocompletar sugerencias pero permitiendo cambios manuales en tablet
 selectProducto.addEventListener('change', () => {
   const valor = selectProducto.value;
   if (valor === "Finigen") {
@@ -49,7 +48,6 @@ selectProducto.addEventListener('change', () => {
   }
 });
 
-// 1. CARGAR CLIENTES EN TIEMPO REAL
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -63,7 +61,6 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   });
 });
 
-// 2. CONSECUTIVO AUTOMÁTICO
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
@@ -73,7 +70,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// 3. CONSULTA HISTÓRICA EN TIEMPO REAL
 onSnapshot(collection(db, "certificados"), async (snapshot) => {
   listaCertificadosGlobal = [];
   tablaHistorialBody.innerHTML = "";
@@ -189,18 +185,21 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // Renderizar el Código de Barras de forma segura
-  try {
-    JsBarcode("#barcode", cert.id, {
-      format: "CODE128",
-      lineColor: "#000",
-      width: 2,
-      height: 40,
-      displayValue: true
-    });
-  } catch (err) {
-    console.error("Error barras:", err);
-  }
+  // GENERADOR DINÁMICO DEL CÓDIGO QR ANTICLONACIÓN
+  const qrContainer = document.getElementById('qrcode');
+  qrContainer.innerHTML = ""; // Limpia el QR del certificado anterior
+  
+  // URL que visitará el cliente/inspector con los datos incrustados de forma segura
+  const urlValidacion = `https://consultas.tecnoplagas.com/validar?id=${encodeURIComponent(cert.id)}&cabezal=${encodeURIComponent(cert.cabezal)}&remolque=${encodeURIComponent(cert.remolque)}&fumigado=${encodeURIComponent(cert.fecha)}&vence=${encodeURIComponent(cert.vence)}`;
+
+  new QRCode(qrContainer, {
+    text: urlValidacion,
+    width: 90,
+    height: 90,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.M
+  });
 
   window.print();
 }
