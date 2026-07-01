@@ -148,6 +148,7 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
+// ESCUCHA SEGURA PARA LOS BOTONES DEL HISTORIAL
 tablaHistorialBody.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-print-old')) {
     const idCert = e.target.getAttribute('data-id');
@@ -185,7 +186,6 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // GENERADOR DINÁMICO DEL CÓDIGO QR (TEXTO PLANO SEGURO)
   const qrContainer = document.getElementById('qrcode');
   qrContainer.innerHTML = ""; 
   
@@ -197,7 +197,6 @@ function prepararYDispararImpresion(cert) {
                          `Fecha Fumigación: ${cert.fecha}\n` +
                          `Válido Hasta: ${cert.vence}`;
 
-  // Validación robusta del objeto global de la librería
   const InstanciaQRCode = window.QRCode || QRCode;
   
   if (InstanciaQRCode) {
@@ -209,15 +208,16 @@ function prepararYDispararImpresion(cert) {
       colorLight: "#ffffff",
       correctLevel: 1
     });
-  } else {
-    console.error("La librería QRCode no ha cargado todavía.");
   }
 
-  // Esperamos 450 milisegundos para renderizar los píxeles antes de mandar a impresión
+  // Ejecuta la orden de impresión nativa en la tablet
   setTimeout(() => {
     window.print();
-  }, 450);
+  }, 500);
 }
+
+// EXPONER LA FUNCIÓN DE FORMA GLOBAL PARA EVITAR BLOQUEOS DEL CONTROLADOR MODULAR
+window.prepararYDispararImpresion = prepararYDispararImpresion;
 
 formCert.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -228,8 +228,12 @@ formCert.addEventListener('submit', async (e) => {
 
   const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
   const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
-  const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-inicio').value);
-  const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + document.getElementById('hora-finalizacion').value);
+  
+  // Captura robusta de horas
+  const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
+  const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
+  const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
+  const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
   const payloadCertificado = {
     IdCertificados: idCertificadoValue,
@@ -273,8 +277,8 @@ formCert.addEventListener('submit', async (e) => {
       metodo: payloadCertificado["Metodo de aplicacion"],
       objetivo: payloadCertificado["Objetivo de Control"],
       plagas: payloadCertificado["Plagas que controla"],
-      horaInicio: document.getElementById('hora-inicio').value,
-      horaFin: document.getElementById('hora-finalizacion').value,
+      horaInicio: hInicioStr,
+      horaFin: hFinStr,
       pNombre: payloadCertificado["Nombre del producto"],
       pActivo: payloadCertificado["Ingrediente Activo"],
       pReg: payloadCertificado["Registro M.S."],
@@ -285,10 +289,11 @@ formCert.addEventListener('submit', async (e) => {
     };
 
     alert("¡Certificado guardado con éxito!");
+    
+    // Dispara la impresión directamente
     prepararYDispararImpresion(certMock);
     
     formCert.reset();
-    window.location.href = "index.html";
   } catch (error) {
     console.error("Error en Firebase: ", error);
     alert("Error al guardar el certificado.");
