@@ -61,7 +61,8 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
     option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
     selectCliente.appendChild(option);
   });
-  // Si los certificados ya cargaron, refresca los nombres visibles de los clientes
+  
+  // Si los certificados ya se mapearon, actualiza sus nombres de forma reactiva
   if(listaCertificadosGlobal.length > 0) {
     renderTablaHistorial(listaCertificadosGlobal);
   }
@@ -77,7 +78,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   }
 });
 
-// ESCUCHADOR REPARADO: Carga síncrona inmediata en memoria sin esperas que congelen el DOM
+// SOLUCIÓN TOTAL A LA CONSULTA: Mapeo nativo ultra seguro sin cuelgues por tipos de datos
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -90,9 +91,9 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
     try {
       const cert = docSnap.data();
       
-      // Extrae la ID pura del cliente desde la referencia para no hacer consultas asíncronas lentas aquí
+      // Validación estricta del objeto de referencia de Firebase
       let idClienteRelacionado = "";
-      if (cert.Nombre && cert.Nombre.id) {
+      if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
         idClienteRelacionado = cert.Nombre.id;
       } else if (cert.Nombre && typeof cert.Nombre === 'string') {
         idClienteRelacionado = cert.Nombre.split('/').pop();
@@ -101,7 +102,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       listaCertificadosGlobal.push({
         id: docSnap.id,
         clienteId: idClienteRelacionado,
-        clienteNombre: "Cargando cliente...", 
+        clienteNombre: "Asignando cliente...", 
         direccion: cert.Direccion || "---", 
         fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
@@ -124,25 +125,35 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         rawRef: cert.Nombre
       });
     } catch (e) {
-      console.error("Fila omitida por error menor:", e);
+      console.error("Fila omitida de forma segura para proteger la tabla:", e);
     }
   });
 
+  // Ordenar del más nuevo al más viejo
   listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
 function renderTablaHistorial(lista) {
   tablaHistorialBody.innerHTML = "";
+  
+  if(lista.length === 0) {
+    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>`;
+    return;
+  }
+
   lista.forEach(cert => {
-    
-    // Cruce de datos ultrarrápido en memoria local
+    // Intercambio veloz de ID por Nombre usando la memoria del snapshot de clientes
     if (cert.clienteId) {
       const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
       if (match) {
         cert.clienteNombre = match.nombre || "Sin nombre";
         cert.direccion = match.direccion || "---";
+      } else {
+        cert.clienteNombre = "Cliente id: " + cert.clienteId;
       }
+    } else {
+      cert.clienteNombre = "No asignado";
     }
 
     const tr = document.createElement('tr');
@@ -157,7 +168,7 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// Buscador local instantáneo
+// Buscador instantáneo en la tabla
 inputBuscar.addEventListener('input', (e) => {
   const termino = e.target.value.toLowerCase().trim();
   const filtrados = listaCertificadosGlobal.filter(c => 
@@ -167,24 +178,23 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// Reimpresión directa sin trabas en el DOM
+// Ejecución limpia del botón re-imprimir
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
-    alert("Certificado no encontrado en memoria.");
+    alert("Certificado no encontrado.");
     return;
   }
 
-  // Si por alguna razón no se ha cruzado el nombre del cliente, lo busca en la base de datos de manera aislada antes de imprimir
-  if ((cert.clienteNombre === "Cargando cliente..." || cert.direccion === "---") && cert.rawRef) {
+  // Búsqueda de seguridad por si la dirección falta en el registro cruzado
+  if (cert.direccion === "---" && cert.clienteId) {
     try {
       const snap = await getDoc(doc(db, "clientes", cert.clienteId));
       if(snap.exists()) {
-        cert.clienteNombre = snap.data().nombre || "Sin nombre";
         cert.direccion = snap.data().direccion || "---";
       }
     } catch(err) {
-      console.warn("Fallo leve recuperando dirección:", err);
+      console.warn("No se pudo extraer la dirección complementaria:", err);
     }
   }
 
@@ -221,7 +231,7 @@ function prepararYDispararImpresion(cert) {
     document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Generación limpia del código QR sin sobrecargar memoria del navegador
+    // Construcción limpia del QR a nivel bajo para no generar desbordes en el navegador
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -247,8 +257,8 @@ function prepararYDispararImpresion(cert) {
     }, 400);
 
   } catch (error) {
-    console.error("Error crítico en renderizado imprimible:", error);
-    alert("Error al abrir impresión: " + error.message);
+    console.error("Error crítico en renderizado de impresión:", error);
+    alert("Error al intentar imprimir el documento: " + error.message);
   }
 }
 
