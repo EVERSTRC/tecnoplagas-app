@@ -148,12 +148,17 @@ inputBuscar.addEventListener('input', (e) => {
   renderTablaHistorial(filtrados);
 });
 
-// ESCUCHA SEGURA PARA LOS BOTONES DEL HISTORIAL
+// DISPARADOR ROBUSTO PARA HISTORIAL Y CONSULTAS (USO EXCLUSIVO DE ARRAY GLOBAL)
 tablaHistorialBody.addEventListener('click', (e) => {
   if (e.target.classList.contains('btn-print-old')) {
+    e.preventDefault();
     const idCert = e.target.getAttribute('data-id');
-    const cert = listaCertificadosGlobal.find(c => c.id === idCert);
-    if (cert) prepararYDispararImpresion(cert);
+    const certEncontrado = listaCertificadosGlobal.find(c => c.id === idCert);
+    if (certEncontrado) {
+      prepararYDispararImpresion(certEncontrado);
+    } else {
+      alert("No se cargaron los datos completos de este certificado aún. Reintente en un segundo.");
+    }
   }
 });
 
@@ -210,13 +215,12 @@ function prepararYDispararImpresion(cert) {
     });
   }
 
-  // Ejecuta la orden de impresión nativa en la tablet
+  // Da tiempo óptimo para que la tablet pinte el QR antes de abrir la cola de impresión
   setTimeout(() => {
     window.print();
-  }, 500);
+  }, 600);
 }
 
-// EXPONER LA FUNCIÓN DE FORMA GLOBAL PARA EVITAR BLOQUEOS DEL CONTROLADOR MODULAR
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
 formCert.addEventListener('submit', async (e) => {
@@ -229,7 +233,6 @@ formCert.addEventListener('submit', async (e) => {
   const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
   const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
   
-  // Captura robusta de horas
   const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
   const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
   const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
@@ -261,6 +264,7 @@ formCert.addEventListener('submit', async (e) => {
   };
 
   try {
+    // Guarda de forma asíncrona en Firebase
     await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
     
     const certMock = {
@@ -288,14 +292,12 @@ formCert.addEventListener('submit', async (e) => {
       barcode: idCertificadoValue
     };
 
-    alert("¡Certificado guardado con éxito!");
-    
-    // Dispara la impresión directamente
+    // Imprime inmediatamente sin alertas que bloqueen la cola de la tablet
     prepararYDispararImpresion(certMock);
     
     formCert.reset();
   } catch (error) {
     console.error("Error en Firebase: ", error);
-    alert("Error al guardar el certificado.");
+    alert("Error al guardar el certificado en la base de datos.");
   }
 });
