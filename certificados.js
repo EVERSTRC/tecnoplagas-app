@@ -185,7 +185,7 @@ function prepararYDispararImpresion(cert) {
   document.getElementById('td-prod-dosis').innerText = cert.pDosis;
   document.getElementById('td-prod-vence').innerText = cert.pVence;
 
-  // GENERADOR DINÁMICO DEL CÓDIGO QR (CORREGIDO CON TEXTO PLANO SEGURO)
+  // GENERADOR DINÁMICO DEL CÓDIGO QR (TEXTO PLANO SEGURO)
   const qrContainer = document.getElementById('qrcode');
   qrContainer.innerHTML = ""; 
   
@@ -197,19 +197,26 @@ function prepararYDispararImpresion(cert) {
                          `Fecha Fumigación: ${cert.fecha}\n` +
                          `Válido Hasta: ${cert.vence}`;
 
-  new QRCode(qrContainer, {
-    text: textoQrPublico,
-    width: 100,
-    height: 100,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.M
-  });
+  // Validación robusta del objeto global de la librería
+  const InstanciaQRCode = window.QRCode || QRCode;
+  
+  if (InstanciaQRCode) {
+    new InstanciaQRCode(qrContainer, {
+      text: textoQrPublico,
+      width: 110,
+      height: 110,
+      colorDark: "#000000",
+      colorLight: "#ffffff",
+      correctLevel: 1
+    });
+  } else {
+    console.error("La librería QRCode no ha cargado todavía.");
+  }
 
-  // Esperamos 350 milisegundos para renderizar los píxeles antes de mandar a impresión
+  // Esperamos 450 milisegundos para renderizar los píxeles antes de mandar a impresión
   setTimeout(() => {
     window.print();
-  }, 350);
+  }, 450);
 }
 
 formCert.addEventListener('submit', async (e) => {
