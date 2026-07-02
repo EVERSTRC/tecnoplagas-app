@@ -216,8 +216,8 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
     if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
     if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
-    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00') + " Hrs";
-    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = (cert.horaFin || '00:00') + " Hrs";
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00');
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = (cert.horaFin || '00:00');
     if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
     if(document.getElementById('print-cabezal')) document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
