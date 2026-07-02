@@ -238,15 +238,15 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // === SOLUCIÓN DEFINITIVA DEL QR ANTICLONACIÓN ===
+    // === SOLUCIÓN DEFINITIVA DEL QR ANTICLONACIÓN (OPCIÓN 1: NOTA DE TEXTO COMPATIBLE) ===
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
       
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
       
-      // Estructura limpia y compatible para el escaneo de celulares
-      const textoQrPublico = `TECNOPLAGAS C.R.C\n====================\nCERTIFICADO VALIDO\n====================\nNum: ${cert.id}\nCli: ${cliLimpio}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nFecha: ${cert.fecha}\nVence: ${cert.vence}\n====================\nPermiso: ARSLU-3160-02-2025`;
+      // Formato técnico estructurado "MEBKM" para forzar a las cámaras a abrir la nota informativa al instante
+      const textoQrPublico = `MEBKM:TITLE:TECNOPLAGAS C.R.C;;NOTE:Certificado: ${cert.id}\nCliente: ${cliLimpio}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nFecha: ${cert.fecha}\nVence: ${cert.vence}\nPermiso: ARSLU-3160-02-2025;;`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
       if (typeof InstanciaQRCode !== 'undefined') {
@@ -294,7 +294,7 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-    // Payload exacto estructurado según la captura que enviaste de tu base de datos
+    // Payload exacto estructurado según tus campos de Firestore
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
       Cabezal: document.getElementById('cabezal').value.trim(),
@@ -309,7 +309,7 @@ if (formCert) {
       "Servicio valido": Timestamp.fromDate(fValido),
       "Hora de Inicio": Timestamp.fromDate(hInicio),
       "Hora Finalizacion": Timestamp.fromDate(hFin),
-      Nombre: doc(db, "clientes", clienteSeleccionadoId), // Guarda como Reference nativo de Firestore
+      Nombre: doc(db, "clientes", clienteSeleccionadoId), // Guarda como Reference nativo
       
       "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
       "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
