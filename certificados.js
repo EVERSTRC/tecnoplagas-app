@@ -1,4 +1,6 @@
-// Importamos la configuración de Firebase compartida de tu proyecto
+// =========================================================================
+// 1. IMPORTACIONES OFICIALES DE FIREBASE (Módulo SDK Web)
+// =========================================================================
 import { db } from "./firebase-config.js"; 
 import { 
   collection, 
@@ -7,7 +9,7 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Diccionario Técnico de Agroquímicos (Auto-rellenado profesional)
+// Diccionario Técnico Obligatorio de Agroquímicos (Autocompletado)
 const infoProductos = {
   "Finigen": {
     nombre: "Finigen",
@@ -39,24 +41,30 @@ const infoProductos = {
   }
 };
 
+// Almacenamiento local temporal en la tablet
 let listaClientesLocal = [];
 let certificadosHistorial = [];
 
-// ==========================================
-// 1. INICIALIZACIÓN Y CARGA DE DATOS SEGURO
-// ==========================================
+// =========================================================================
+// 2. DISPARADOR DE ARRANQUE DE LA PÁGINA (DOMContentLoaded)
+// =========================================================================
 document.addEventListener("DOMContentLoaded", async () => {
-  // Ejecutamos primero lo local para garantizar que SIEMPRE aparezca el consecutivo de inmediato
-  generarConsecutivo();
+  console.log("Iniciando módulo de certificados desde cero...");
   
-  // Configuramos los eventos del formulario antes de llamar a Firebase
+  // A) Ejecuciones locales rápidas (Para que el Consecutivo SIEMPRE cargue al instante)
+  generarConsecutivo();
   configurarEventosFormulario();
 
-  // Llamamos a las funciones de Firebase de forma aislada para que si una tarda o falla, no dañe a la otra
+  // B) Peticiones asíncronas aisladas a Firebase (Si una falla, no congela a la otra)
   await cargarClientesSelector();
   escucharHistorialCertificados();
 });
 
+// =========================================================================
+// 3. LÓGICA DE NEGOCIO Y DATOS LOCALES
+// =========================================================================
+
+// Genera un identificador único en base a la fecha para evitar fraudes o duplicados
 function generarConsecutivo() {
   try {
     const ahora = new Date();
@@ -71,108 +79,17 @@ function generarConsecutivo() {
       inputCert.value = consecutivo;
     }
   } catch (err) {
-    console.error("Error generando consecutivo:", err);
+    console.error("Fallo al generar número consecutivo:", err);
   }
 }
 
-async function cargarClientesSelector() {
-  const selectCliente = document.getElementById("select-cliente");
-  if (!selectCliente) return;
-  
-  try {
-    const querySnapshot = await getDocs(collection(db, "clientes"));
-    selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
-    listaClientesLocal = [];
-
-    querySnapshot.forEach((doc) => {
-      const datos = doc.data();
-      const id = doc.id;
-      listaClientesLocal.push({ id, ...datos });
-
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = datos.nombre || datos.razonSocial || "Cliente sin nombre";
-      selectCliente.appendChild(option);
-    });
-  } catch (error) {
-    console.error("Error cargando clientes en el selector:", error);
-  }
-}
-
-// Carga el historial de certificados y ordena localmente en la tablet para evitar errores de índice
-function escucharHistorialCertificados() {
-  try {
-    const q = collection(db, "certificados");
-    
-    onSnapshot(q, (snapshot) => {
-      certificadosHistorial = [];
-      const tbody = document.getElementById("tabla-historial-body");
-      if (!tbody) return;
-      tbody.innerHTML = "";
-
-      if (snapshot.empty) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">No hay certificados registrados aún.</td></tr>`;
-        return;
-      }
-
-      snapshot.forEach((doc) => {
-        const cert = doc.data();
-        if (cert) {
-          certificadosHistorial.push({ idFirestore: doc.id, ...cert });
-        }
-      });
-
-      // Ordenar localmente (El más nuevo primero en la lista)
-      certificadosHistorial.sort((a, b) => {
-        const fechaA = new Date(a.fechaCaptura || a.fechaServicio || 0);
-        const fechaB = new Date(b.fechaCaptura || b.fechaServicio || 0);
-        return fechaB - fechaA;
-      });
-
-      // Pintar las filas en la tabla de consultas
-      certificadosHistorial.forEach((cert) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || '---'}</td>
-          <td>${cert.clienteNombre || '---'}</td>
-          <td>${cert.fechaServicio || '---'}</td>
-          <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || '---'}</span></td>
-          <td>
-            <button class="btn-reimprimir" data-id="${cert.idFirestore}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-              🖨️ Re-Imprimir
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // Vinculación segura de botones verdes de re-impresión
-      document.querySelectorAll(".btn-reimprimir").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          const idBusqueda = e.target.getAttribute("data-id");
-          const registroEncontrado = certificadosHistorial.find(c => c.idFirestore === idBusqueda);
-          if (registroEncontrado) {
-            prepararEImprimirHoja(registroEncontrado);
-          }
-        });
-      });
-    }, (error) => {
-      console.error("Error en Snapshot certificados:", error);
-    });
-  } catch (err) {
-    console.error("Error crítico en historial:", err);
-  }
-}
-
-// ==========================================
-// 2. LÓGICA INTERACTIVA DEL FORMULARIO
-// ==========================================
+// Configura las interacciones y los buscadores dentro de la interfaz de usuario
 function configurarEventosFormulario() {
+  // Cambio en selector de productos químicos
   const prodSelect = document.getElementById("producto-utilizado");
   if (prodSelect) {
     prodSelect.addEventListener("change", (e) => {
       const prodSeleccionado = e.target.value;
-      
       if (infoProductos[prodSeleccionado]) {
         const info = infoProductos[prodSeleccionado];
         document.getElementById("form-prod-nombre").value = info.nombre;
@@ -190,23 +107,20 @@ function configurarEventosFormulario() {
     });
   }
 
+  // Filtro de búsqueda en tiempo real dentro de la tabla del historial
   const inputBuscar = document.getElementById("input-buscar");
   if (inputBuscar) {
     inputBuscar.addEventListener("input", (e) => {
       const texto = e.target.value.toLowerCase().trim();
       const filas = document.querySelectorAll("#tabla-historial-body tr");
-
       filas.forEach(tr => {
         const textoFila = tr.textContent.toLowerCase();
-        if (textoFila.includes(texto)) {
-          tr.style.display = "";
-        } else {
-          tr.style.display = "none";
-        }
+        tr.style.display = textoFila.includes(texto) ? "" : "none";
       });
     });
   }
 
+  // Captura y envío del formulario a la base de datos
   const certForm = document.getElementById("certificado-form");
   if (certForm) {
     certForm.addEventListener("submit", async (e) => {
@@ -240,7 +154,7 @@ function configurarEventosFormulario() {
         quimicoDosis: document.getElementById("form-prod-dosis").value,
         quimicoLote: document.getElementById("form-prod-lote").value || "N/A",
         quimicoVence: document.getElementById("form-prod-vence").value,
-        fechaCaptura: new Date().toISOString()
+        fechaCaptura: new Date().toISOString() // Métrica para ordenar cronológicamente
       };
 
       try {
@@ -250,18 +164,112 @@ function configurarEventosFormulario() {
         document.getElementById("certificado-form").reset();
         generarConsecutivo();
       } catch (error) {
-        console.error("Error al salvar:", error);
-        alert("Hubo un percance al guardar.");
+        console.error("Error al almacenar el documento en Firestore:", error);
+        alert("Ocurrió un problema de red al guardar.");
       }
     });
   }
 }
 
-// ==========================================
-// 3. IMPRESIÓN Y QR ANTICLONACIÓN SEGURO
-// ==========================================
+// =========================================================================
+// 4. PERSISTENCIA DE DATOS DE FIREBASE
+// =========================================================================
+
+// Llena el selector desplegable con los clientes vigentes
+async function cargarClientesSelector() {
+  const selectCliente = document.getElementById("select-cliente");
+  if (!selectCliente) return;
+  try {
+    const querySnapshot = await getDocs(collection(db, "clientes"));
+    selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+    listaClientesLocal = [];
+
+    querySnapshot.forEach((doc) => {
+      const datos = doc.data();
+      const id = doc.id;
+      listaClientesLocal.push({ id, ...datos });
+
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = datos.nombre || datos.razonSocial || "Cliente sin nombre";
+      selectCliente.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error consultando la colección de clientes:", error);
+  }
+}
+
+// Escucha activa en tiempo real para pintar la consulta de certificados emitidos
+function escucharHistorialCertificados() {
+  try {
+    const coleccionRef = collection(db, "certificados");
+    
+    onSnapshot(coleccionRef, (snapshot) => {
+      certificadosHistorial = [];
+      const tbody = document.getElementById("tabla-historial-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      if (snapshot.empty) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">No hay certificados registrados aún.</td></tr>`;
+        return;
+      }
+
+      // Volcado seguro de documentos de Firebase
+      snapshot.forEach((doc) => {
+        const cert = doc.data();
+        if (cert) {
+          certificadosHistorial.push({ idFirestore: doc.id, ...cert });
+        }
+      });
+
+      // Ordenar localmente mediante JavaScript (El más reciente al tope de la lista)
+      certificadosHistorial.sort((a, b) => {
+        const tiempoA = new Date(a.fechaCaptura || a.fechaServicio || 0);
+        const tiempoB = new Date(b.fechaCaptura || b.fechaServicio || 0);
+        return tiempoB - tiempoA;
+      });
+
+      // Insertar filas dinámicas en el HTML de consulta
+      certificadosHistorial.forEach((cert) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || '---'}</td>
+          <td>${cert.clienteNombre || '---'}</td>
+          <td>${cert.fechaServicio || '---'}</td>
+          <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || '---'}</span></td>
+          <td>
+            <button class="btn-reimprimir" data-id="${cert.idFirestore}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+              🖨️ Re-Imprimir
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Asignación de eventos de re-impresión a los botones de la tabla recién renderizada
+      document.querySelectorAll(".btn-reimprimir").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idBusqueda = e.target.getAttribute("data-id");
+          const registroEncontrado = certificadosHistorial.find(c => c.idFirestore === idBusqueda);
+          if (registroEncontrado) {
+            prepararEImprimirHoja(registroEncontrado);
+          }
+        });
+      });
+    }, (error) => {
+      console.error("Error en el Snapshot en vivo de certificados:", error);
+    });
+  } catch (err) {
+    console.error("Error crítico ejecutando el hilo de consultas:", err);
+  }
+}
+
+// =========================================================================
+// 5. MÓDULO DE REIMPRESIÓN Y QR DE ALTA SEGURIDAD (ANTICLONACIÓN)
+// =========================================================================
 function prepararEImprimirHoja(datos) {
-  // Inyecciones seguras: Si el elemento no existe en la vista actual, se salta sin colapsar el hilo de ejecución
+  // Inyecciones protegidas con condicionales para evitar excepciones de tipo Null si los contenedores no están visibles
   const elemNumCert = document.getElementById("print-num-cert");
   if (elemNumCert) elemNumCert.textContent = datos.idCertificado || "---";
   
@@ -292,14 +300,14 @@ function prepararEImprimirHoja(datos) {
   if(document.getElementById("chk-cebo")) document.getElementById("chk-cebo").textContent = datos.metodoAplicacion === "Cebo Rodenticida" ? "(X) Cebo Rodenticida" : "( ) Cebo Rodenticida";
   if(document.getElementById("chk-termonebulizacion")) document.getElementById("chk-termonebulizacion").textContent = datos.metodoAplicacion === "Termonebulización" ? "(X) Termonebulización" : "( ) Termonebulización";
 
-  // --- GENERACIÓN DEL QR TEXTUAL ANTICLONACIÓN ---
+  // --- CONSTRUCCIÓN DEL QR ANTICLONACIÓN CON ATRIBUTOS TÉCNICOS ---
   try {
     const qrContainer = document.getElementById("qrcode");
     if (qrContainer) {
-      qrContainer.innerHTML = ""; // Limpieza estricta de códigos previos
+      qrContainer.innerHTML = ""; // Limpieza absoluta de instancias anteriores
 
-      // Cadena de datos de seguridad legible por cualquier celular al escanear
-      const textoSeguroQR = `TECNOPLAGAS C.R.C
+      // Texto plano cifrado visualmente para validación de aduanas, fronteras o inspectores en ruta
+      const textoValidacionSegura = `TECNOPLAGAS C.R.C
 ==========================
 CERTIFICADO DE FUMIGACIÓN VALIDO
 ==========================
@@ -315,20 +323,20 @@ Permiso Sanitario: ARSLU-3160-02-2025
 Verificación de Autenticidad Exitosa.`;
 
       new QRCode(qrContainer, {
-        text: textoSeguroQR,
-        width: 110,
-        height: 110,
+        text: textoValidacionSegura,
+        width: 115,
+        height: 115,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
+        correctLevel: QRCode.CorrectLevel.M // Nivel óptimo de redundancia contra arrugas o daños en el papel impreso
       });
     }
   } catch (qrError) {
-    console.error("Error al renderizar el QR:", qrError);
+    console.error("No se pudo plasmar el gráfico QR en la plantilla:", qrError);
   }
 
-  // Lanzar la impresión nativa
+  // Despliegue de la interfaz de impresión nativa del sistema
   setTimeout(() => {
     window.print();
-  }, 400);
+  }, 450);
 }
