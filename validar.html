@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificación de Certificado - Tecnoplagas</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 100%;
+            border-top: 8px solid #10b981;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h2 {
+            margin: 5px 0;
+            color: #1f2937;
+        }
+        .badge {
+            background-color: #d1fae5;
+            color: #065f46;
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 14px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        .info-group {
+            border-bottom: 1px solid #f3f4f6;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        .info-group:last-child {
+            border: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #6b7280;
+        }
+        .value {
+            color: #111827;
+            font-weight: bold;
+            text-align: right;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div class="badge">✓ SISTEMA DE VERIFICACIÓN OFICIAL</div>
+        <h2>TECNOPLAGAS C.R.</h2>
+        <p style="color: #6b7280; margin: 0; font-size: 14px;">Control de Plagas y Fumigación Comercial</p>
+    </div>
+
+    <div class="info-group">
+        <span class="label">N° Certificado:</span>
+        <span class="value" id="val-cert">---</span>
+    </div>
+    <div class="info-group">
+        <span class="label">Cliente:</span>
+        <span class="value" id="val-cliente">---</span>
+    </div>
+    <div class="info-group">
+        <span class="label">Placa Cabezal:</span>
+        <span class="value" id="val-cabezal">---</span>
+    </div>
+    <div class="info-group">
+        <span class="label">Placa Remolque:</span>
+        <span class="value" id="val-remolque">---</span>
+    </div>
+    <div class="info-group">
+        <span class="label">Fecha Emisión:</span>
+        <span class="value" id="val-emision">---</span>
+    </div>
+    <div class="info-group">
+        <span class="label">Fecha Vencimiento:</span>
+        <span class="value" id="val-vence" style="color: #b91c1c;">---</span>
+    </div>
+
+    <div class="footer">
+        Permiso de Funcionamiento del Ministerio de Salud: ARSLU-3160-02-2025<br>
+        © 2026 Fumigadora Tecnoplagas S.A.
+    </div>
+</div>
+
+<script>
+    // Script inteligente que lee los parámetros seguros de la URL del QR
+    const params = new URLSearchParams(window.location.search);
+    
+    document.getElementById('val-cert').innerText = params.get('id') || '---';
+    document.getElementById('val-cliente').innerText = params.get('cli') || '---';
+    document.getElementById('val-cabezal').innerText = params.get('cab') || 'N/A';
+    document.getElementById('val-remolque').innerText = params.get('rem') || 'N/A';
+    document.getElementById('val-emision').innerText = params.get('emi') || '---';
+    document.getElementById('val-vence').innerText = params.get('ven') || '---';
+</script>
+
+</body>
+</html>
