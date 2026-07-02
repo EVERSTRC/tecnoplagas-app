@@ -4,9 +4,7 @@ import {
   collection, 
   addDoc, 
   getDocs, 
-  onSnapshot, 
-  query, 
-  orderBy 
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Diccionario Técnico de Agroquímicos (Auto-rellenado profesional)
@@ -45,30 +43,42 @@ let listaClientesLocal = [];
 let certificadosHistorial = [];
 
 // ==========================================
-// 1. INICIALIZACIÓN Y CARGA DE DATOS ORIGINAL
+// 1. INICIALIZACIÓN Y CARGA DE DATOS SEGURO
 // ==========================================
 document.addEventListener("DOMContentLoaded", async () => {
+  // Ejecutamos primero lo local para garantizar que SIEMPRE aparezca el consecutivo de inmediato
   generarConsecutivo();
+  
+  // Configuramos los eventos del formulario antes de llamar a Firebase
+  configurarEventosFormulario();
+
+  // Llamamos a las funciones de Firebase de forma aislada para que si una tarda o falla, no dañe a la otra
   await cargarClientesSelector();
   escucharHistorialCertificados();
-  configurarEventosFormulario();
 });
 
 function generarConsecutivo() {
-  const ahora = new Date();
-  const año = ahora.getFullYear().toString().slice(-2);
-  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-  const dia = String(ahora.getDate()).padStart(2, '0');
-  const random = Math.floor(1000 + Math.random() * 9000);
-  
-  const consecutivo = `CERT-${año}${mes}${dia}-${random}`;
-  const inputCert = document.getElementById("id-certificado");
-  if (inputCert) inputCert.value = consecutivo;
+  try {
+    const ahora = new Date();
+    const año = ahora.getFullYear().toString().slice(-2);
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+    const dia = String(ahora.getDate()).padStart(2, '0');
+    const random = Math.floor(1000 + Math.random() * 9000);
+    
+    const consecutivo = `CERT-${año}${mes}${dia}-${random}`;
+    const inputCert = document.getElementById("id-certificado");
+    if (inputCert) {
+      inputCert.value = consecutivo;
+    }
+  } catch (err) {
+    console.error("Error generando consecutivo:", err);
+  }
 }
 
 async function cargarClientesSelector() {
   const selectCliente = document.getElementById("select-cliente");
   if (!selectCliente) return;
+  
   try {
     const querySnapshot = await getDocs(collection(db, "clientes"));
     selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
@@ -85,14 +95,14 @@ async function cargarClientesSelector() {
       selectCliente.appendChild(option);
     });
   } catch (error) {
-    console.error("Error cargando clientes:", error);
+    console.error("Error cargando clientes en el selector:", error);
   }
 }
 
-// Carga el historial de certificados de forma estable sin bloquearse
+// Carga el historial de certificados y ordena localmente en la tablet para evitar errores de índice
 function escucharHistorialCertificados() {
   try {
-    const q = query(collection(db, "certificados"), orderBy("fechaCaptura", "desc"));
+    const q = collection(db, "certificados");
     
     onSnapshot(q, (snapshot) => {
       certificadosHistorial = [];
@@ -107,8 +117,20 @@ function escucharHistorialCertificados() {
 
       snapshot.forEach((doc) => {
         const cert = doc.data();
-        certificadosHistorial.push({ idFirestore: doc.id, ...cert });
+        if (cert) {
+          certificadosHistorial.push({ idFirestore: doc.id, ...cert });
+        }
+      });
 
+      // Ordenar localmente (El más nuevo primero en la lista)
+      certificadosHistorial.sort((a, b) => {
+        const fechaA = new Date(a.fechaCaptura || a.fechaServicio || 0);
+        const fechaB = new Date(b.fechaCaptura || b.fechaServicio || 0);
+        return fechaB - fechaA;
+      });
+
+      // Pintar las filas en la tabla de consultas
+      certificadosHistorial.forEach((cert) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || '---'}</td>
@@ -116,7 +138,7 @@ function escucharHistorialCertificados() {
           <td>${cert.fechaServicio || '---'}</td>
           <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || '---'}</span></td>
           <td>
-            <button class="btn-reimprimir" data-id="${doc.id}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+            <button class="btn-reimprimir" data-id="${cert.idFirestore}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
               🖨️ Re-Imprimir
             </button>
           </td>
@@ -124,7 +146,7 @@ function escucharHistorialCertificados() {
         tbody.appendChild(tr);
       });
 
-      // Vinculación segura de los botones verdes de re-impresión
+      // Vinculación segura de botones verdes de re-impresión
       document.querySelectorAll(".btn-reimprimir").forEach(btn => {
         btn.addEventListener("click", (e) => {
           const idBusqueda = e.target.getAttribute("data-id");
@@ -135,10 +157,10 @@ function escucharHistorialCertificados() {
         });
       });
     }, (error) => {
-      console.error("Error en Snapshot Firestore:", error);
+      console.error("Error en Snapshot certificados:", error);
     });
   } catch (err) {
-    console.error("Error crítico en la función del historial:", err);
+    console.error("Error crítico en historial:", err);
   }
 }
 
@@ -236,10 +258,10 @@ function configurarEventosFormulario() {
 }
 
 // ==========================================
-// 3. IMPRESIÓN Y CONSTRUCCIÓN DEL QR ANTICLONACIÓN
+// 3. IMPRESIÓN Y QR ANTICLONACIÓN SEGURO
 // ==========================================
 function prepararEImprimirHoja(datos) {
-  // Inyecciones blindadas: Si el elemento no existe en la vista actual, se ignora de forma segura sin romper el código
+  // Inyecciones seguras: Si el elemento no existe en la vista actual, se salta sin colapsar el hilo de ejecución
   const elemNumCert = document.getElementById("print-num-cert");
   if (elemNumCert) elemNumCert.textContent = datos.idCertificado || "---";
   
@@ -270,13 +292,13 @@ function prepararEImprimirHoja(datos) {
   if(document.getElementById("chk-cebo")) document.getElementById("chk-cebo").textContent = datos.metodoAplicacion === "Cebo Rodenticida" ? "(X) Cebo Rodenticida" : "( ) Cebo Rodenticida";
   if(document.getElementById("chk-termonebulizacion")) document.getElementById("chk-termonebulizacion").textContent = datos.metodoAplicacion === "Termonebulización" ? "(X) Termonebulización" : "( ) Termonebulización";
 
-  // --- GENERACIÓN DEL QR ANTICLONACIÓN SEGURO ---
+  // --- GENERACIÓN DEL QR TEXTUAL ANTICLONACIÓN ---
   try {
     const qrContainer = document.getElementById("qrcode");
     if (qrContainer) {
       qrContainer.innerHTML = ""; // Limpieza estricta de códigos previos
 
-      // Cadena de texto limpia y estructurada. Al escanearla, saltará de inmediato en el celular de forma oficial
+      // Cadena de datos de seguridad legible por cualquier celular al escanear
       const textoSeguroQR = `TECNOPLAGAS C.R.C
 ==========================
 CERTIFICADO DE FUMIGACIÓN VALIDO
@@ -298,14 +320,14 @@ Verificación de Autenticidad Exitosa.`;
         height: 110,
         colorDark: "#000000",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M // Nivel M para garantizar lectura óptima en impresiones y tiqueteras rápidas
+        correctLevel: QRCode.CorrectLevel.M
       });
     }
   } catch (qrError) {
     console.error("Error al renderizar el QR:", qrError);
   }
 
-  // Disparador de la cola de impresión nativa
+  // Lanzar la impresión nativa
   setTimeout(() => {
     window.print();
   }, 400);
