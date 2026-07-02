@@ -238,15 +238,16 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // === SOLUCIÓN DEFINITIVA DEL QR ANTICLONACIÓN (OPCIÓN 1: NOTA DE TEXTO COMPATIBLE) ===
+    // === SOLUCIÓN DEFINITIVA DEL QR: ENLACE COMPATIBLE CON EMISIÓN Y VALIDEZ ===
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
-      qrContainer.innerHTML = ""; 
+      qrContainer.innerHTML = ""; // Limpieza estricta de instancias anteriores
       
+      // Remover acentos para garantizar compatibilidad con el navegador de los celulares
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
       
-      // Formato técnico estructurado "MEBKM" para forzar a las cámaras a abrir la nota informativa al instante
-      const textoQrPublico = `MEBKM:TITLE:TECNOPLAGAS C.R.C;;NOTE:Certificado: ${cert.id}\nCliente: ${cliLimpio}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nFecha: ${cert.fecha}\nVence: ${cert.vence}\nPermiso: ARSLU-3160-02-2025;;`;
+      // Enlace de Google estructurado con los datos y fechas solicitadas
+      const textoQrPublico = `https://www.google.com/search?q=TECNOPLAGAS+CR+|+CERTIFICADO:+${cert.id}+|+CLIENTE:+${cliLimpio}+|+CABEZAL:+${cert.cabezal}+|+REMOLQUE:+${cert.remolque}+|+EMISION:+${cert.fecha}+|+VALIDEZ:+${cert.vence}`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
       if (typeof InstanciaQRCode !== 'undefined') {
