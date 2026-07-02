@@ -238,18 +238,18 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // === SOLUCIÓN DEFINITIVA DEL QR: ENLACE REDIRECCIONADO A TU VENTANA PROPIA DE VALIDACIÓN ===
+    // === SOLUCIÓN DEFINITIVA DEL QR: ENLACE APUNTANDO A TU GITHUB PAGES ===
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; // Limpieza estricta de instancias anteriores
       
-      // Remover acentos para garantizar compatibilidad estricta con el navegador de los celulares
+      // Remover acentos para asegurar compatibilidad total con navegadores móviles
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
       
-      // Dirección del dominio oficial en Firebase donde se encuentra alojada tu página 'validar.html'
-      const urlBaseValidador = "https://fumigadora-tecnoplagas.web.app/validar.html";
+      // Dirección base del validador alojado en tu cuenta de GitHub Pages
+      const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
       
-      // Construimos el enlace codificado pasando todas las variables solicitadas
+      // Construimos el enlace codificado pasando todas las variables
       const textoQrPublico = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
