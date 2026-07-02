@@ -32,7 +32,6 @@ const inProdLote = document.getElementById('form-prod-lote');
 const inProdDosis = document.getElementById('form-prod-dosis');
 const inProdVence = document.getElementById('form-prod-vence');
 
-let totalCertificados = 0;
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 
@@ -64,7 +63,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
     if (selectCliente) {
       const option = document.createElement('option');
       option.value = docSnap.id; 
-      option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre}`;
+      option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre || cliente.razonSocial || "Cliente"}`;
       selectCliente.appendChild(option);
     }
   });
@@ -74,20 +73,18 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Generador automático del número consecutivo para nuevos certificados
+// Sincronización e Historial de Certificados mapeado con tus campos exactos de base de datos
 onSnapshot(collection(db, "certificados"), (snapshot) => {
-  totalCertificados = snapshot.size;
+  listaCertificadosGlobal = [];
+  
+  // Calcular número siguiente de forma segura e independiente para evitar que falle el consecutivo
+  const totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
   const formatoNumero = String(numeroSiguiente).padStart(6, '0');
   if(formCert && !formCert.dataset.editMode && inputIdCertificado) {
     inputIdCertificado.value = `CERT-${formatoNumero}`;
   }
-});
 
-// ESCUCHADOR PROTEGIDO: Descarga historial de certificados evitando cuelgues si hay datos nulos
-onSnapshot(collection(db, "certificados"), (snapshot) => {
-  listaCertificadosGlobal = [];
-  
   if(snapshot.empty) {
     if (tablaHistorialBody) tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
     return;
@@ -98,6 +95,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       const cert = docSnap.data();
       if (!cert) return;
 
+      // Extracción del ID del cliente desde la referencia exacta "Nombre"
       let idClienteRelacionado = "";
       if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
         idClienteRelacionado = cert.Nombre.id;
@@ -106,13 +104,13 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       }
 
       listaCertificadosGlobal.push({
-        id: docSnap.id,
+        id: cert.IdCertificados || docSnap.id,
         clienteId: idClienteRelacionado,
         clienteNombre: "Cargando datos...", 
         direccion: cert.Direccion || "---", 
         fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
-        producto: cert["Nombre del producto"] || cert["Producto utilizado"] || '---',
+        producto: cert["Producto utilizado"] || cert["Nombre del producto"] || '---',
         cabezal: cert.Cabezal || 'N/A',
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
@@ -130,7 +128,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.warn("Fila omitida automáticamente por inconsistencias:", docSnap.id);
+      console.warn("Fila omitida por inconsistencia en los campos:", docSnap.id, e);
     }
   });
 
@@ -138,7 +136,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Pinta las filas de la tabla respetando el formato visual exacto de tus capturas
+// Pinta las filas de la tabla de consultas
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -152,26 +150,16 @@ function renderTablaHistorial(lista) {
     if (cert.clienteId) {
       const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
       if (match) {
-        cert.clienteNombre = match.nombre || "Sin nombre asignado";
+        cert.clienteNombre = match.nombre || match.razonSocial || "Sin nombre";
         cert.direccion = match.direccion || "---";
       } else {
-        cert.clienteNombre = "Cliente ID: " + cert.clienteId;
+        cert.clienteNombre = "Cliente: " + cert.clienteId;
       }
     } else {
       cert.clienteNombre = "No especificado";
     }
 
-    // Configuración dinámica de estilos para las insignias de productos según tu captura
     let badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-    if (cert.pNombre.includes("Finigen")) {
-      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-    } else if (cert.pNombre.includes("Cynoff")) {
-      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-    } else if (cert.pNombre.includes("EKOSET")) {
-      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-    } else if (cert.pNombre.includes("Cybor")) {
-      badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-    }
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -219,7 +207,7 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Envía la información a los elementos contenedores de la impresión
+// Envía la información a los elementos contenedores de la impresión y genera el QR
 function prepararYDispararImpresion(cert) {
   try {
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -250,15 +238,14 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // === CORRECCIÓN DEL QR ANTICLONACIÓN ===
+    // === SOLUCIÓN DEFINITIVA DEL QR ANTICLONACIÓN ===
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
-      qrContainer.innerHTML = ""; // Limpieza estricta de instancias anteriores
+      qrContainer.innerHTML = ""; 
       
-      // Remover acentos para garantizar compatibilidad con cualquier lector QR estándar
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
       
-      // Texto con etiquetas técnicas formales y claras anticlonación para policías o aduanas
+      // Estructura limpia y compatible para el escaneo de celulares
       const textoQrPublico = `TECNOPLAGAS C.R.C\n====================\nCERTIFICADO VALIDO\n====================\nNum: ${cert.id}\nCli: ${cliLimpio}\nCabezal: ${cert.cabezal}\nRemolque: ${cert.remolque}\nFecha: ${cert.fecha}\nVence: ${cert.vence}\n====================\nPermiso: ARSLU-3160-02-2025`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
@@ -269,7 +256,7 @@ function prepararYDispararImpresion(cert) {
           height: 115,
           colorDark: "#000000",
           colorLight: "#ffffff",
-          correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1 // Uso seguro de nivel M para lecturas en papel arrugado o tiqueteras rápidas
+          correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
         });
       }
     }
@@ -285,7 +272,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario
+// Guardado del formulario usando tus campos exactos
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -293,6 +280,11 @@ if (formCert) {
     const idCertificadoValue = inputIdCertificado.value;
     const clienteSeleccionadoId = selectCliente.value;
     const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
+
+    if(!clienteSeleccionadoId) {
+      alert("Por favor seleccione un cliente válido antes de guardar.");
+      return;
+    }
 
     const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
     const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
@@ -302,6 +294,7 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
+    // Payload exacto estructurado según la captura que enviaste de tu base de datos
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
       Cabezal: document.getElementById('cabezal').value.trim(),
@@ -316,7 +309,7 @@ if (formCert) {
       "Servicio valido": Timestamp.fromDate(fValido),
       "Hora de Inicio": Timestamp.fromDate(hInicio),
       "Hora Finalizacion": Timestamp.fromDate(hFin),
-      Nombre: doc(db, "clientes", clienteSeleccionadoId),
+      Nombre: doc(db, "clientes", clienteSeleccionadoId), // Guarda como Reference nativo de Firestore
       
       "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
       "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
@@ -332,7 +325,7 @@ if (formCert) {
       
       const certMock = {
         id: idCertificadoValue,
-        clienteNombre: clienteEncontrado ? clienteEncontrado.nombre : 'N/A',
+        clienteNombre: clienteEncontrado ? (clienteEncontrado.nombre || clienteEncontrado.razonSocial) : 'N/A',
         direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
         fecha: fServicio.toLocaleDateString('es-CR'),
         vence: fValido.toLocaleDateString('es-CR'),
@@ -357,6 +350,7 @@ if (formCert) {
       prepararYDispararImpresion(certMock);
       formCert.reset();
     } catch (error) {
+      console.error("Error al guardar:", error);
       alert("Error al guardar el certificado en la base de datos.");
     }
   });
