@@ -4,9 +4,7 @@ import {
   collection, 
   addDoc, 
   getDocs, 
-  onSnapshot, 
-  query, 
-  orderBy 
+  onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Diccionario Técnico de Agroquímicos (Auto-rellenado profesional)
@@ -41,7 +39,7 @@ const infoProductos = {
   }
 };
 
-// Almacén local de clientes en memoria para jalar datos de dirección al imprimir
+// Almacén local de clientes y certificados en memoria para operaciones rápidas
 let listaClientesLocal = [];
 let certificadosHistorial = [];
 
@@ -90,9 +88,10 @@ async function cargarClientesSelector() {
   }
 }
 
-// Listener en tiempo real para la tabla de consultas e historial
+// Listener en tiempo real optimizado sin necesidad de índices en Firebase
 function escucharHistorialCertificados() {
-  const q = query(collection(db, "certificados"), orderBy("fechaCaptura", "desc"));
+  // Traemos la colección directamente para saltarnos la restricción de índices de ordenamiento
+  const q = collection(db, "certificados");
   
   onSnapshot(q, (snapshot) => {
     certificadosHistorial = [];
@@ -104,18 +103,29 @@ function escucharHistorialCertificados() {
       return;
     }
 
+    // Almacenamos los elementos en bruto de Firestore
     snapshot.forEach((doc) => {
       const cert = doc.data();
       certificadosHistorial.push({ idFirestore: doc.id, ...cert });
+    });
 
+    // Ordenamos en local (el dispositivo cliente): El más reciente primero
+    certificadosHistorial.sort((a, b) => {
+      const fechaA = a.fechaCaptura ? new Date(a.fechaCaptura) : new Date(0);
+      const fechaB = b.fechaCaptura ? new Date(b.fechaCaptura) : new Date(0);
+      return fechaB - fechaA;
+    });
+
+    // Construimos la tabla dinámicamente con los datos seguros
+    certificadosHistorial.forEach((cert) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado}</td>
-        <td>${cert.clienteNombre}</td>
-        <td>${cert.fechaServicio}</td>
-        <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre}</span></td>
+        <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || 'N/A'}</td>
+        <td>${cert.clienteNombre || 'Sin nombre'}</td>
+        <td>${cert.fechaServicio || 'N/A'}</td>
+        <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || 'N/A'}</span></td>
         <td>
-          <button class="btn-reimprimir" data-id="${doc.id}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+          <button class="btn-reimprimir" data-id="${cert.idFirestore}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
             🖨️ Re-Imprimir
           </button>
         </td>
@@ -133,11 +143,15 @@ function escucharHistorialCertificados() {
         }
       });
     });
+  }, (error) => {
+    console.error("Error en el listener en tiempo real de certificados:", error);
+    document.getElementById("tabla-historial-body").innerHTML = 
+      `<tr><td colspan="5" style="text-align: center; color: red; padding: 20px;">Error de red o permisos: ${error.message}</td></tr>`;
   });
 }
 
 // ==========================================
-// 2. LOGICA INTERACTIVA DEL FORMULARIO
+// 2. LÓGICA INTERACTIVA DEL FORMULARIO
 // ==========================================
 function configurarEventosFormulario() {
   // Relleno automático de la Ficha Química al cambiar el selector
@@ -213,7 +227,7 @@ function configurarEventosFormulario() {
     };
 
     try {
-      // 1. Subida a Firestore
+      // 1. Subida segura a Firestore
       await addDoc(collection(db, "certificados"), nuevoCertificado);
       alert("¡Certificado guardado con éxito en la base de datos!");
 
@@ -226,7 +240,7 @@ function configurarEventosFormulario() {
 
     } catch (error) {
       console.error("Error al salvar el certificado:", error);
-      alert("Hubo un percance al guardar. Verifique la conexión.");
+      alert("Hubo un percance al guardar. Verifique la conexión a internet.");
     }
   });
 }
@@ -235,26 +249,31 @@ function configurarEventosFormulario() {
 // 3. GENERACIÓN DE QR E IMPRESIÓN PROFESIONAL
 // ==========================================
 function prepararEImprimirHoja(datos) {
-  // Inyección de variables en las etiquetas de la tabla oculta @print
-  document.getElementById("print-num-cert").textContent = datos.idCertificado;
-  document.getElementById("print-cliente").textContent = datos.clienteNombre;
-  document.getElementById("print-fantasia").textContent = datos.nombreFantasia;
-  document.getElementById("print-direccion").textContent = datos.clienteDireccion;
-  document.getElementById("print-fecha").textContent = datos.fechaServicio;
-  document.getElementById("print-vence").textContent = datos.servicioValido;
-  document.getElementById("print-inicio").textContent = datos.horaInicio;
-  document.getElementById("print-fin").textContent = datos.horaFinalizacion;
-  document.getElementById("print-tipo").textContent = datos.tipoServicio;
-  document.getElementById("print-cabezal").textContent = datos.cabezal;
-  document.getElementById("print-remolque").textContent = datos.remolque;
-  document.getElementById("print-plagas").textContent = datos.plagasControla;
+  // Inyección segura de variables en las etiquetas del documento impreso
+  // Si el elemento 'print-num-cert' existe en el encabezado, le inyectamos el ID
+  const elemNumCert = document.getElementById("print-num-cert");
+  if (elemNumCert) {
+    elemNumCert.textContent = datos.idCertificado;
+  }
+  
+  document.getElementById("print-cliente").textContent = datos.clienteNombre || "---";
+  document.getElementById("print-fantasia").textContent = datos.nombreFantasia || "---";
+  document.getElementById("print-direccion").textContent = datos.clienteDireccion || "---";
+  document.getElementById("print-fecha").textContent = datos.fechaServicio || "---";
+  document.getElementById("print-vence").textContent = datos.servicioValido || "---";
+  document.getElementById("print-inicio").textContent = datos.horaInicio || "00:00";
+  document.getElementById("print-fin").textContent = datos.horaFinalizacion || "00:00";
+  document.getElementById("print-tipo").textContent = datos.tipoServicio || "---";
+  document.getElementById("print-cabezal").textContent = datos.cabezal || "N/A";
+  document.getElementById("print-remolque").textContent = datos.remolque || "N/A";
+  document.getElementById("print-plagas").textContent = datos.plagasControla || "---";
 
-  document.getElementById("td-prod-nombre").textContent = datos.quimicoNombre;
-  document.getElementById("td-prod-activo").textContent = datos.quimicoActivo;
-  document.getElementById("td-prod-ms").textContent = datos.quimicoMs;
-  document.getElementById("td-prod-lote").textContent = datos.quimicoLote;
-  document.getElementById("td-prod-dosis").textContent = datos.quimicoDosis;
-  document.getElementById("td-prod-vence").textContent = datos.quimicoVence;
+  document.getElementById("td-prod-nombre").textContent = datos.quimicoNombre || "---";
+  document.getElementById("td-prod-activo").textContent = datos.quimicoActivo || "---";
+  document.getElementById("td-prod-ms").textContent = datos.quimicoMs || "---";
+  document.getElementById("td-prod-lote").textContent = datos.quimicoLote || "N/A";
+  document.getElementById("td-prod-dosis").textContent = datos.quimicoDosis || "---";
+  document.getElementById("td-prod-vence").textContent = datos.quimicoVence || "---";
 
   // Lógica de casillas de verificación simuladas (X) para Objetivos de Control
   document.getElementById("chk-desinsectacion").textContent = datos.objetivoControl === "Desinsectación" ? "(X) Desinsectación" : "( ) Desinsectación";
@@ -268,7 +287,7 @@ function prepararEImprimirHoja(datos) {
 
   // --- CONSTRUCCIÓN DEL QR CON TEXTO EXTRACTO COMPLETO AL ESCANEAR ---
   const qrContainer = document.getElementById("qrcode");
-  qrContainer.innerHTML = ""; // Limpieza estricta de códigos previos
+  qrContainer.innerHTML = ""; // Limpieza estricta de códigos de barras/QR previos
 
   const stringContenidoQR = `TECNOPLAGAS C.R.C
 ==========================
@@ -287,14 +306,14 @@ Verificado en Sistema Local.`;
   // Renderizado nativo del QR
   new QRCode(qrContainer, {
     text: stringContenidoQR,
-    width: 100, // Ancho ideal para el pie de página horizontal
+    width: 100, // Dimensión perfecta para el pie de página horizontal
     height: 100,
     colorDark: "#000000",
     colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H // Nivel H (Alto) permite lectura impecable con cámaras de tablets y celulares
+    correctLevel: QRCode.CorrectLevel.H // Nivel H (Alto) previene fallos de lectura en cámaras de tablets
   });
 
-  // Delay controlado de milisegundos para permitir al QR pintarse en los hilos del navegador antes de disparar la cola de impresión
+  // Delay controlado de milisegundos para permitir al QR pintarse antes de abrir la interfaz de impresión
   setTimeout(() => {
     window.print();
   }, 350);
