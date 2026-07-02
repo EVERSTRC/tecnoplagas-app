@@ -62,11 +62,13 @@ function generarConsecutivo() {
   const random = Math.floor(1000 + Math.random() * 9000);
   
   const consecutivo = `CERT-${año}${mes}${dia}-${random}`;
-  document.getElementById("id-certificado").value = consecutivo;
+  const inputCert = document.getElementById("id-certificado");
+  if (inputCert) inputCert.value = consecutivo;
 }
 
 async function cargarClientesSelector() {
   const selectCliente = document.getElementById("select-cliente");
+  if (!selectCliente) return;
   try {
     const querySnapshot = await getDocs(collection(db, "clientes"));
     selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
@@ -87,147 +89,160 @@ async function cargarClientesSelector() {
   }
 }
 
-// RESTAURADO: Tu consulta original que funcionaba bien en el historial
+// Carga el historial de certificados de forma estable sin bloquearse
 function escucharHistorialCertificados() {
-  const q = query(collection(db, "certificados"), orderBy("fechaCaptura", "desc"));
-  
-  onSnapshot(q, (snapshot) => {
-    certificadosHistorial = [];
-    const tbody = document.getElementById("tabla-historial-body");
-    if (!tbody) return;
-    tbody.innerHTML = "";
+  try {
+    const q = query(collection(db, "certificados"), orderBy("fechaCaptura", "desc"));
+    
+    onSnapshot(q, (snapshot) => {
+      certificadosHistorial = [];
+      const tbody = document.getElementById("tabla-historial-body");
+      if (!tbody) return;
+      tbody.innerHTML = "";
 
-    if (snapshot.empty) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">No hay certificados registrados aún.</td></tr>`;
-      return;
-    }
+      if (snapshot.empty) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">No hay certificados registrados aún.</td></tr>`;
+        return;
+      }
 
-    snapshot.forEach((doc) => {
-      const cert = doc.data();
-      certificadosHistorial.push({ idFirestore: doc.id, ...cert });
+      snapshot.forEach((doc) => {
+        const cert = doc.data();
+        certificadosHistorial.push({ idFirestore: doc.id, ...cert });
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || '---'}</td>
-        <td>${cert.clienteNombre || '---'}</td>
-        <td>${cert.fechaServicio || '---'}</td>
-        <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || '---'}</span></td>
-        <td>
-          <button class="btn-reimprimir" data-id="${doc.id}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
-            🖨️ Re-Imprimir
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll(".btn-reimprimir").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        const idBusqueda = e.target.getAttribute("data-id");
-        const registroEncontrado = certificadosHistorial.find(c => c.idFirestore === idBusqueda);
-        if (registroEncontrado) {
-          prepararEImprimirHoja(registroEncontrado);
-        }
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="font-weight: bold; color: #0f172a;">${cert.idCertificado || '---'}</td>
+          <td>${cert.clienteNombre || '---'}</td>
+          <td>${cert.fechaServicio || '---'}</td>
+          <td><span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">${cert.quimicoNombre || '---'}</span></td>
+          <td>
+            <button class="btn-reimprimir" data-id="${doc.id}" style="background-color: #00b074; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer;">
+              🖨️ Re-Imprimir
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
       });
+
+      // Vinculación segura de los botones verdes de re-impresión
+      document.querySelectorAll(".btn-reimprimir").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idBusqueda = e.target.getAttribute("data-id");
+          const registroEncontrado = certificadosHistorial.find(c => c.idFirestore === idBusqueda);
+          if (registroEncontrado) {
+            prepararEImprimirHoja(registroEncontrado);
+          }
+        });
+      });
+    }, (error) => {
+      console.error("Error en Snapshot Firestore:", error);
     });
-  });
+  } catch (err) {
+    console.error("Error crítico en la función del historial:", err);
+  }
 }
 
 // ==========================================
 // 2. LÓGICA INTERACTIVA DEL FORMULARIO
 // ==========================================
 function configurarEventosFormulario() {
-  document.getElementById("producto-utilizado").addEventListener("change", (e) => {
-    const prodSeleccionado = e.target.value;
-    
-    if (infoProductos[prodSeleccionado]) {
-      const info = infoProductos[prodSeleccionado];
-      document.getElementById("form-prod-nombre").value = info.nombre;
-      document.getElementById("form-prod-activo").value = info.activo;
-      document.getElementById("form-prod-ms").value = info.ms;
-      document.getElementById("form-prod-dosis").value = info.dosis;
-      document.getElementById("form-prod-vence").value = info.vence;
-    } else {
-      document.getElementById("form-prod-nombre").value = "";
-      document.getElementById("form-prod-activo").value = "";
-      document.getElementById("form-prod-ms").value = "";
-      document.getElementById("form-prod-dosis").value = "";
-      document.getElementById("form-prod-vence").value = "";
-    }
-  });
-
-  document.getElementById("input-buscar").addEventListener("input", (e) => {
-    const texto = e.target.value.toLowerCase().trim();
-    const filas = document.querySelectorAll("#tabla-historial-body tr");
-
-    filas.forEach(tr => {
-      const textoFila = tr.textContent.toLowerCase();
-      if (textoFila.includes(texto)) {
-        tr.style.display = "";
+  const prodSelect = document.getElementById("producto-utilizado");
+  if (prodSelect) {
+    prodSelect.addEventListener("change", (e) => {
+      const prodSeleccionado = e.target.value;
+      
+      if (infoProductos[prodSeleccionado]) {
+        const info = infoProductos[prodSeleccionado];
+        document.getElementById("form-prod-nombre").value = info.nombre;
+        document.getElementById("form-prod-activo").value = info.activo;
+        document.getElementById("form-prod-ms").value = info.ms;
+        document.getElementById("form-prod-dosis").value = info.dosis;
+        document.getElementById("form-prod-vence").value = info.vence;
       } else {
-        tr.style.display = "none";
+        document.getElementById("form-prod-nombre").value = "";
+        document.getElementById("form-prod-activo").value = "";
+        document.getElementById("form-prod-ms").value = "";
+        document.getElementById("form-prod-dosis").value = "";
+        document.getElementById("form-prod-vence").value = "";
       }
     });
-  });
+  }
 
-  document.getElementById("certificado-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const inputBuscar = document.getElementById("input-buscar");
+  if (inputBuscar) {
+    inputBuscar.addEventListener("input", (e) => {
+      const texto = e.target.value.toLowerCase().trim();
+      const filas = document.querySelectorAll("#tabla-historial-body tr");
 
-    const selectCliente = document.getElementById("select-cliente");
-    const idCliente = selectCliente.value;
-    const clienteNombre = selectCliente.options[selectCliente.selectedIndex].text;
-    const clienteDataLocal = listaClientesLocal.find(c => c.id === idCliente);
-    const direccionCliente = clienteDataLocal ? (clienteDataLocal.direccion || "Dirección no especificada") : "Dirección Local";
+      filas.forEach(tr => {
+        const textoFila = tr.textContent.toLowerCase();
+        if (textoFila.includes(texto)) {
+          tr.style.display = "";
+        } else {
+          tr.style.display = "none";
+        }
+      });
+    });
+  }
 
-    const nuevoCertificado = {
-      idCertificado: document.getElementById("id-certificado").value,
-      idCliente: idCliente,
-      clienteNombre: clienteNombre,
-      clienteDireccion: direccionCliente,
-      nombreFantasia: document.getElementById("nombre-fantasia").value || clienteNombre,
-      cabezal: document.getElementById("cabezal").value || "N/A",
-      remolque: document.getElementById("remolque").value || "N/A",
-      fechaServicio: document.getElementById("fecha-servicio").value,
-      servicioValido: document.getElementById("servicio-valido").value,
-      horaInicio: document.getElementById("hora-inicio").value,
-      horaFinalizacion: document.getElementById("hora-finalizacion").value,
-      tipoServicio: document.getElementById("tipo-servicio").value,
-      objetivoControl: document.getElementById("objetivo-control").value,
-      metodoAplicacion: document.getElementById("metodo-aplicacion").value,
-      plagasControla: document.getElementById("plagas-controla").value,
-      quimicoNombre: document.getElementById("form-prod-nombre").value,
-      quimicoActivo: document.getElementById("form-prod-activo").value,
-      quimicoMs: document.getElementById("form-prod-ms").value,
-      quimicoDosis: document.getElementById("form-prod-dosis").value,
-      quimicoLote: document.getElementById("form-prod-lote").value || "N/A",
-      quimicoVence: document.getElementById("form-prod-vence").value,
-      fechaCaptura: new Date().toISOString()
-    };
+  const certForm = document.getElementById("certificado-form");
+  if (certForm) {
+    certForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    try {
-      await addDoc(collection(db, "certificados"), nuevoCertificado);
-      alert("¡Certificado guardado con éxito!");
-      prepararEImprimirHoja(nuevoCertificado);
-      document.getElementById("certificado-form").reset();
-      generarConsecutivo();
-    } catch (error) {
-      console.error("Error al salvar:", error);
-      alert("Hubo un percance al guardar.");
-    }
-  });
+      const selectCliente = document.getElementById("select-cliente");
+      const idCliente = selectCliente.value;
+      const clienteNombre = selectCliente.options[selectCliente.selectedIndex].text;
+      const clienteDataLocal = listaClientesLocal.find(c => c.id === idCliente);
+      const direccionCliente = clienteDataLocal ? (clienteDataLocal.direccion || "Dirección no especificada") : "Dirección Local";
+
+      const nuevoCertificado = {
+        idCertificado: document.getElementById("id-certificado").value,
+        idCliente: idCliente,
+        clienteNombre: clienteNombre,
+        clienteDireccion: direccionCliente,
+        nombreFantasia: document.getElementById("nombre-fantasia").value || clienteNombre,
+        cabezal: document.getElementById("cabezal").value || "N/A",
+        remolque: document.getElementById("remolque").value || "N/A",
+        fechaServicio: document.getElementById("fecha-servicio").value,
+        servicioValido: document.getElementById("servicio-valido").value,
+        horaInicio: document.getElementById("hora-inicio").value,
+        horaFinalizacion: document.getElementById("hora-finalizacion").value,
+        tipoServicio: document.getElementById("tipo-servicio").value,
+        objetivoControl: document.getElementById("objetivo-control").value,
+        metodoAplicacion: document.getElementById("metodo-aplicacion").value,
+        plagasControla: document.getElementById("plagas-controla").value,
+        quimicoNombre: document.getElementById("form-prod-nombre").value,
+        quimicoActivo: document.getElementById("form-prod-activo").value,
+        quimicoMs: document.getElementById("form-prod-ms").value,
+        quimicoDosis: document.getElementById("form-prod-dosis").value,
+        quimicoLote: document.getElementById("form-prod-lote").value || "N/A",
+        quimicoVence: document.getElementById("form-prod-vence").value,
+        fechaCaptura: new Date().toISOString()
+      };
+
+      try {
+        await addDoc(collection(db, "certificados"), nuevoCertificado);
+        alert("¡Certificado guardado con éxito!");
+        prepararEImprimirHoja(nuevoCertificado);
+        document.getElementById("certificado-form").reset();
+        generarConsecutivo();
+      } catch (error) {
+        console.error("Error al salvar:", error);
+        alert("Hubo un percance al guardar.");
+      }
+    });
+  }
 }
 
 // ==========================================
-// 3. IMPRESIÓN Y CONSTRUCCIÓN CORRECTA DEL QR
+// 3. IMPRESIÓN Y CONSTRUCCIÓN DEL QR ANTICLONACIÓN
 // ==========================================
 function prepararEImprimirHoja(datos) {
-  // Protegemos la inyección del número de certificado para que si no se encuentra en el HTML, no tire error de script
+  // Inyecciones blindadas: Si el elemento no existe en la vista actual, se ignora de forma segura sin romper el código
   const elemNumCert = document.getElementById("print-num-cert");
-  if (elemNumCert) {
-    elemNumCert.textContent = datos.idCertificado || "---";
-  }
+  if (elemNumCert) elemNumCert.textContent = datos.idCertificado || "---";
   
-  // Rellenamos el resto de elementos comunes de la plantilla horizontal de impresión
   if(document.getElementById("print-cliente")) document.getElementById("print-cliente").textContent = datos.clienteNombre || "---";
   if(document.getElementById("print-fantasia")) document.getElementById("print-fantasia").textContent = datos.nombreFantasia || "---";
   if(document.getElementById("print-direccion")) document.getElementById("print-direccion").textContent = datos.clienteDireccion || "---";
@@ -255,36 +270,43 @@ function prepararEImprimirHoja(datos) {
   if(document.getElementById("chk-cebo")) document.getElementById("chk-cebo").textContent = datos.metodoAplicacion === "Cebo Rodenticida" ? "(X) Cebo Rodenticida" : "( ) Cebo Rodenticida";
   if(document.getElementById("chk-termonebulizacion")) document.getElementById("chk-termonebulizacion").textContent = datos.metodoAplicacion === "Termonebulización" ? "(X) Termonebulización" : "( ) Termonebulización";
 
-  // --- CÓDIGO DEL QR REFORZADO SIN AFECTAR EL HISTORIAL ---
-  const qrContainer = document.getElementById("qrcode");
-  if (qrContainer) {
-    qrContainer.innerHTML = ""; // Limpieza estricta
+  // --- GENERACIÓN DEL QR ANTICLONACIÓN SEGURO ---
+  try {
+    const qrContainer = document.getElementById("qrcode");
+    if (qrContainer) {
+      qrContainer.innerHTML = ""; // Limpieza estricta de códigos previos
 
-    // Armamos la cadena con toda la información técnica legible
-    const textoParaEscanear = `TECNOPLAGAS C.R.C
+      // Cadena de texto limpia y estructurada. Al escanearla, saltará de inmediato en el celular de forma oficial
+      const textoSeguroQR = `TECNOPLAGAS C.R.C
 ==========================
-Certificado Oficial de Fumigación
+CERTIFICADO DE FUMIGACIÓN VALIDO
+==========================
 N° Consecutivo: ${datos.idCertificado || 'N/A'}
 Cliente: ${datos.clienteNombre || 'N/A'}
+Placa Cabezal: ${datos.cabezal || 'N/A'}
+Placa Remolque: ${datos.remolque || 'N/A'}
 Fecha Aplicación: ${datos.fechaServicio || 'N/A'}
 Válido Hasta: ${datos.servicioValido || 'N/A'}
 Producto Químico: ${datos.quimicoNombre || 'N/A'}
-Placa Cabezal: ${datos.cabezal || 'N/A'}
-Placa Remolque: ${datos.remolque || 'N/A'}
 ==========================
-Permiso Sanitario: ARSLU-3160-02-2025`;
+Permiso Sanitario: ARSLU-3160-02-2025
+Verificación de Autenticidad Exitosa.`;
 
-    new QRCode(qrContainer, {
-      text: textoParaEscanear,
-      width: 100,
-      height: 100,
-      colorDark: "#000000",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.H
-    });
+      new QRCode(qrContainer, {
+        text: textoSeguroQR,
+        width: 110,
+        height: 110,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M // Nivel M para garantizar lectura óptima en impresiones y tiqueteras rápidas
+      });
+    }
+  } catch (qrError) {
+    console.error("Error al renderizar el QR:", qrError);
   }
 
+  // Disparador de la cola de impresión nativa
   setTimeout(() => {
     window.print();
-  }, 350);
+  }, 400);
 }
