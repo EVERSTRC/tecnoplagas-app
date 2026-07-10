@@ -1,8 +1,11 @@
-
 const CACHE_NAME = 'tecnoplagas-v1';
 const ASSETS = [
   './',
   './index.html',
+  './productos.html',
+  './clientes.html',
+  './certificados.html',
+  './app.js',
   './manifest.json',
   './icon.png'
 ];
