@@ -234,8 +234,8 @@
       .only-print { display: block !important; }
       
       @page {
-        size: A4 landscape; /* Fuerza al navegador/tablet a ponerse en horizontal */
-        margin: 6mm 8mm 6mm 8mm; /* Ajustes marginales para máximo aprovechamiento */
+        size: A4 landscape;
+        margin: 6mm 8mm 6mm 8mm;
       }
       
       body {
@@ -262,14 +262,13 @@
         background-repeat: no-repeat;
         background-position: center;
         background-size: contain;
-        opacity: 0.07; /* Tono atenuado ideal para que el texto sea legible */
+        opacity: 0.07;
         z-index: -1000;
         pointer-events: none;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
-      /* Marco elegante exterior que envuelve el certificado horizontal */
       .certificate-border {
         border: 3px double #475569;
         padding: 12px;
@@ -634,6 +633,7 @@
   </div>
 
   <script>
+    // Lógica básica para alternar entre vistas
     function cambiarVista(vista) {
       const btnEmitir = document.getElementById('tab-emitir');
       const btnConsultar = document.getElementById('tab-consultar');
@@ -652,6 +652,79 @@
         vistaConsulta.classList.add('active');
       }
     }
+
+    // =========================================================================
+    // SCRIPT DE AUTO-LLENADO DE FICHA TÉCNICA DE PRODUCTOS QUÍMICOS
+    // =========================================================================
+    const baseProductos = {
+      "Finigen": {
+        nombre: "Finigen SB",
+        activo: "Fendona / Alfacipermetrina",
+        ms: "RG-0123-2026",
+        dosis: "5 ml por Litro de agua",
+        lote: "F-260101",
+        vence: "Diciembre 2028"
+      },
+      "Ekoset": {
+        nombre: "Ekoset 25 EC",
+        activo: "Permetrina",
+        ms: "RG-4567-2025",
+        dosis: "10 ml por Litro de agua",
+        lote: "E-251102",
+        vence: "Octubre 2027"
+      },
+      "Cybor": {
+        nombre: "Cybor 10 EA",
+        activo: "Cipermetrina",
+        ms: "RG-8910-2026",
+        dosis: "8 ml por Litro de agua",
+        lote: "C-260215",
+        vence: "Febrero 2029"
+      },
+      "Cynoff": {
+        nombre: "Cynoff 40 WP",
+        activo: "Cipermetrina Zeta",
+        ms: "RG-1112-2024",
+        dosis: "20 gr por 4 Litros de agua",
+        lote: "CY-240809",
+        vence: "Agosto 2027"
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const selectProducto = document.getElementById('producto-utilizado');
+      
+      if (selectProducto) {
+        selectProducto.addEventListener('change', function() {
+          const valorSeleccionado = this.value;
+          
+          const inputNombre = document.getElementById('form-prod-nombre');
+          const inputActivo = document.getElementById('form-prod-activo');
+          const inputMs = document.getElementById('form-prod-ms');
+          const inputDosis = document.getElementById('form-prod-dosis');
+          const inputLote = document.getElementById('form-prod-lote');
+          const inputVence = document.getElementById('form-prod-vence');
+
+          if (baseProductos[valorSeleccionado]) {
+            const prod = baseProductos[valorSeleccionado];
+            inputNombre.value = prod.nombre;
+            inputActivo.value = prod.activo;
+            inputMs.value = prod.ms;
+            inputDosis.value = prod.dosis;
+            inputLote.value = prod.lote;
+            inputVence.value = prod.vence;
+          } else {
+            // Vacío si es 'Otro' o 'Seleccione...' para escritura libre
+            inputNombre.value = "";
+            inputActivo.value = "";
+            inputMs.value = "";
+            inputDosis.value = "";
+            inputLote.value = "";
+            inputVence.value = "";
+          }
+        });
+      }
+    });
   </script>
 
   <script type="module" src="certificados.js"></script>
