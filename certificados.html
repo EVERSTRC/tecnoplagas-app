@@ -122,7 +122,6 @@
         console.log("Persistencia offline activa en certificados: ", err.code);
     });
 
-    // Elementos del DOM
     const form = document.getElementById('certificado-form');
     const selectProducto = document.getElementById('selectProducto');
     const inputIngrediente = document.getElementById('ingredienteActivo');
@@ -132,7 +131,6 @@
 
     let listaProductosGlobal = [];
 
-    // Colocar fecha de hoy por defecto
     document.getElementById('fechaEmision').valueAsDate = new Date();
 
     // 1. Escuchar la colección de "Productos" para rellenar el SELECT dinámicamente
@@ -158,11 +156,10 @@
 
       if (productoEncontrado) {
         inputIngrediente.value = productoEncontrado["Ingrediente Activo"] || '';
-        inputLote.value = productoEncontrado["Lote"] || '';
+        inputLote.value = productoEncontrado["Lote"] || ''; // Corregido con "L" Mayúscula
         inputRegistro.value = productoEncontrado["Registro M.S."] || '';
         inputDosis.value = productoEncontrado["Dosis Recomendada"] || '';
       } else {
-        // Limpiar si selecciona la opción vacía
         inputIngrediente.value = '';
         inputLote.value = '';
         inputRegistro.value = '';
@@ -179,7 +176,6 @@
       const cabezal = document.getElementById('placaCabezal').value.trim() || 'N/A';
       const remolque = document.getElementById('placaRemolque').value.trim() || 'N/A';
       
-      // Formatear fechas de YYYY-MM-DD a DD/MM/YYYY para emparejar con validar.html
       const emiRaw = document.getElementById('fechaEmision').value.split('-');
       const venRaw = document.getElementById('fechaVencimiento').value.split('-');
       
@@ -190,7 +186,6 @@
       const productoSeleccionado = listaProductosGlobal.find(p => p.id === productoId);
       const nombreComercial = productoSeleccionado ? productoSeleccionado["Nombre Comercial"] : 'No especificado';
 
-      // Estructurar la URL del QR exacta para tu validador público
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
       const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(cliente)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
 
@@ -207,7 +202,7 @@
         registroMS: inputRegistro.value,
         dosisAplicada: inputDosis.value,
         observaciones: document.getElementById('observaciones').value,
-        urlValidacionQR: urlQR, // Link listo para convertir a código de barras o QR
+        urlValidacionQR: urlQR, 
         fechaRegistroSistema: new Date().toISOString()
       };
 
