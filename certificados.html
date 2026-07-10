@@ -227,63 +227,108 @@
     }
 
     /* =========================================================================
-       NUEVA CONFIGURACIÓN DE IMPRESIÓN ADAPTADA FIELMENTE AL MACHOTE VERTICAL
+       NUEVA CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE)
        ========================================================================= */
     @media print {
       .no-print { display: none !important; }
       .only-print { display: block !important; }
       
       @page {
-        size: portrait; /* Cambiado a vertical para coincidir con tu machote */
-        margin: 10mm;
+        size: A4 landscape; /* Fuerza al navegador/tablet a ponerse en horizontal */
+        margin: 6mm 8mm 6mm 8mm; /* Ajustes marginales para máximo aprovechamiento */
       }
       
       body {
         background: #fff;
         color: #000;
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        line-height: 1.3;
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-size: 11px;
+        line-height: 1.25;
         padding: 0;
         margin: 0;
+        position: relative;
       }
 
-      .pdf-tabla {
+      /* Sello de agua sutil en el fondo usando el enlace raw absoluto de GitHub */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 65%;
+        height: 65%;
+        background-image: url('https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/677ca6b312a9bb696385ebe2612087a36249f256/TecnoPlagas%20Logo.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        opacity: 0.07; /* Tono atenuado ideal para que el texto sea legible */
+        z-index: -1000;
+        pointer-events: none;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      /* Marco elegante exterior que envuelve el certificado horizontal */
+      .certificate-border {
+        border: 3px double #475569;
+        padding: 12px;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      table.print-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 5px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
       }
 
-      .pdf-tabla td, .pdf-tabla th {
-        border: 1px solid #000;
-        padding: 6px;
-        vertical-align: top;
+      table.print-table th, table.print-table td {
+        border: 1px solid #94a3b8;
+        padding: 5px 8px;
+        vertical-align: middle;
       }
 
-      .pdf-header-title {
-        background: #f2f2f2 !important;
+      table.print-table th {
+        background-color: #f1f5f9 !important;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
         font-weight: bold;
+        text-align: left;
+        color: #1e293b;
+      }
+
+      .print-header-title {
         text-align: center;
-        font-size: 14px;
-        padding: 8px !important;
-        letter-spacing: 1px;
-      }
-
-      .pdf-subseccion {
-        background: #f9f9f9 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
         font-weight: bold;
+        font-size: 18px;
+        letter-spacing: 2px;
+        color: #0f172a;
+        margin: 0 0 10px 0;
+        padding-bottom: 3px;
+        border-bottom: 2px dashed #475569;
       }
-
+      
       .legal-text {
-        font-size: 9px;
+        font-size: 8.5px;
+        color: #334155;
         text-align: center;
-        margin-top: 15px;
-        line-height: 1.3;
+        line-height: 1.2;
+        margin-top: 8px;
+        border-top: 1px solid #cbd5e1;
+        padding-top: 4px;
+      }
+
+      .flex-row-print {
+        display: table;
+        width: 100%;
+        margin-bottom: 8px;
+      }
+
+      .flex-col-print {
+        display: table-cell;
+        width: 50%;
+        vertical-align: top;
       }
     }
     
@@ -470,117 +515,121 @@
   </div>
 
 
-  <!-- =========================================================================
-       NUEVA ESTRUCTURA DE IMPRESIÓN COMPATIBLE 100% CON CERTIFICADOS.JS Y TU MACHOTE
-       ========================================================================= -->
   <div id="vista-impresion" class="only-print">
-    <table class="pdf-tabla">
-      <tr>
-        <th colspan="2" class="pdf-header-title">CERTIFICADO MANEJO INTEGRADO DE PLAGAS</th>
-      </tr>
-      <tr class="pdf-subseccion">
-        <td style="width: 50%;">Datos del Cliente:</td>
-        <td style="width: 50%;">Datos de la Empresa de Servicio:</td>
-      </tr>
-      <tr>
-        <td>
-          <strong>Nombre Comercial:</strong><br>
-          <span id="print-cliente">---</span><br><br>
-          <strong>Nombre de Fantasía:</strong><br>
-          <span id="print-fantasia">---</span><br><br>
-          <strong>Dirección:</strong><br>
-          <span id="print-direccion">---</span>
-        </td>
-        <td>
-          <strong>Nombre:</strong> Fumigadora TecnoPlagas C.R.C<br><br>
-          <strong>Dirección:</strong> Tres Ríos, La Unión, Cartago<br><br>
-          <strong>Permiso Sanitario:</strong> ARSLU-3160-02-2025<br><br>
-          <strong>Código SIIU:</strong> 8129.0 &nbsp;&nbsp; <strong>Grupo de Riesgo:</strong> B
-        </td>
-      </tr>
-      <tr class="pdf-subseccion">
-        <td>Prestación del Servicio:</td>
-        <td>Detalles y Métodos de Aplicación:</td>
-      </tr>
-      <tr>
-        <td>
-          <strong>Fecha Servicio:</strong> <span id="print-fecha">---</span><br><br>
-          <strong>Válido hasta el:</strong> <span id="print-vence">---</span><br><br>
-          <strong>Hora de Inicio:</strong> <span id="print-inicio">00:00</span> Hrs<br><br>
-          <strong>Hora de Finalización:</strong> <span id="print-fin">00:00</span> Hrs
-        </td>
-        <td>
-          <strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span><br><br>
-          <strong>Servicios Aplicados:</strong>
-          <div style="margin-top: 3px; font-weight: bold;">
-            <span id="chk-desinsectacion">( ) Desinsectación</span> &nbsp;&nbsp; 
-            <span id="chk-desratizacion">( ) Desratización</span> &nbsp;&nbsp; 
-            <span id="chk-sanitizacion">( ) Sanitización</span>
-          </div>
-          <br>
-          <strong>Plagas que Controla:</strong><br>
-          <span id="print-plagas" style="font-style: italic;">control de insectos rastreros, arácnidos, insectos voladores y termitas</span>
-          <br><br>
-          <strong>Método Aplicación:</strong>
-          <div style="margin-top: 3px; font-weight: bold;">
-            <span id="chk-aspersion">( ) Aspersión</span> &nbsp;&nbsp; 
-            <span id="chk-cebo">( ) Cebo Rodenticida</span> &nbsp;&nbsp; 
-            <span id="chk-termonebulizacion">( ) Termonebulización</span>
-          </div>
-        </td>
-      </tr>
+    <div class="certificate-border">
       
-      <!-- Fila dinámica agregada para no perder el control de las placas de transporte -->
-      <tr class="pdf-subseccion">
-        <th colspan="2">Identificación de Unidad / Transporte (Si aplica)</th>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <strong>Placa Cabezal:</strong> <span id="print-cabezal">N/A</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-          <strong>Placa Remolque / Contenedor:</strong> <span id="print-remolque">N/A</span>
-        </td>
-      </tr>
+      <div class="flex-row-print">
+        <div class="flex-col-print">
+          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; width: 90%;">Datos del Cliente</h3>
+          <table style="width: 95%; border-collapse: collapse; font-size: 11px;">
+            <tr><td style="padding: 3px 0; font-weight: bold; width: 35%;">Razón Social:</td><td style="padding: 3px 0;" id="print-cliente">---</td></tr>
+            <tr><td style="padding: 3px 0; font-weight: bold;">Nombre Fantasía:</td><td style="padding: 3px 0;" id="print-fantasia">---</td></tr>
+            <tr><td style="padding: 3px 0; font-weight: bold;">Dirección Física:</td><td style="padding: 3px 0;" id="print-direccion">---</td></tr>
+          </table>
+        </div>
+        
+        <div class="flex-col-print">
+          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">Datos de la Empresa de Servicio</h3>
+          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.3;">
+            <tr><td style="padding: 2px 0; font-weight: bold; width: 30%;">Razón Social:</td><td style="padding: 2px 0;">Fumigadora TecnoPlagas C.R.C</td></tr>
+            <tr><td style="padding: 2px 0; font-weight: bold;">Sede Central:</td><td style="padding: 2px 0;">Tres Ríos, La Unión, Cartago</td></tr>
+            <tr><td style="padding: 2px 0; font-weight: bold;">Permiso Sanitario:</td><td style="padding: 2px 0; font-weight: bold; color: #0f172a;">ARSLU-3160-02-2025</td></tr>
+            <tr><td style="padding: 2px 0; font-weight: bold;">Código CIIU:</td><td style="padding: 2px 0;">8129.0 Grupo de Riesgo: B</td></tr>
+          </table>
+        </div>
+      </div>
 
-      <tr class="pdf-subseccion">
-        <th colspan="2">Productos Utilizados</th>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <strong>Plaguicida / Nombre Comercial:</strong> <span id="td-prod-nombre" style="font-weight: bold;">---</span><br>
-          <strong>Ingrediente Activo:</strong> <span id="td-prod-activo">---</span><br>
-          <strong>Lote:</strong> <span id="td-prod-lote">---</span><br>
-          <strong>Número de registro MS:</strong> <span id="td-prod-ms">---</span><br>
-          <strong>Dosis / Concentración Aplicada:</strong> <span id="td-prod-dosis">---</span><br>
-          <strong>Fecha de vencimiento del producto:</strong> <span id="td-prod-vence">---</span>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2" style="text-align: center; vertical-align: middle; padding: 15px 10px;">
-          <div class="legal-text">
-            De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud)
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align: center; padding-top: 40px; height: 75px;">
-          <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; font-size: 11px;">
-            <strong>Everst Rojas Camacho</strong><br>Técnico Responsable
-          </div>
-        </td>
-        <td style="text-align: center; padding-top: 40px; height: 75px; position: relative;">
-          <div style="border-top: 1px solid #000; width: 80%; margin: 0 auto; font-size: 11px;">
-            <strong>Recibido por:</strong><br>Firma / Sello del Cliente
-          </div>
-          <!-- El QR se posiciona de forma limpia y compacta al lado de la firma -->
-          <div style="position: absolute; right: 8px; bottom: 8px; border: 1px solid #cbd5e1; padding: 3px; background: #fff; border-radius: 4px;">
-            <div id="qrcode" style="width:60px; height:60px;"></div>
-          </div>
-        </td>
-      </tr>
-    </table>
+      <div class="print-header-title">CERTIFICADO DE MANEJO INTEGRADO DE PLAGAS</div>
 
-    <div style="text-align: center; font-size: 10px; font-weight: bold; margin-top: 5px;">
-      Teléfono Oficina: 7232-5001 / 8987-7776 &nbsp;&nbsp;|&nbsp;&nbsp; Email: Info@tecnoplagascrc.com &nbsp;&nbsp;|&nbsp;&nbsp; Url Web: http://tecnoplagascrc.com
+      <table class="print-table">
+        <tr>
+          <td><strong>Prestación del Servicio:</strong> <span id="print-fecha">---</span></td>
+          <td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
+          <td><strong>Horario Técnico:</strong> <span id="print-inicio">00:00</span> a <span id="print-fin">00:00</span></td>
+        </tr>
+        <tr>
+          <td><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
+          <td><strong>Placa Cabezal:</strong> <span id="print-cabezal">N/A</span></td>
+          <td><strong>Placa Remolque / Cont.:</strong> <span id="print-remolque">N/A</span></td>
+        </tr>
+      </table>
+
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">Objetivo de Control</th>
+            <th style="width: 30%;">Método de Aplicación</th>
+            <th style="width: 40%;">Plagas que Controla (Rastreros / Voladores / Arácnidos)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="line-height: 1.6; padding: 6px;">
+              <div id="chk-desinsectacion">( ) Desinsectación</div>
+              <div id="chk-desratizacion">( ) Desratización</div>
+              <div id="chk-sanitizacion">( ) Sanitización</div>
+            </td>
+            <td style="line-height: 1.6; padding: 6px;">
+              <div id="chk-aspersion">( ) Aspersión</div>
+              <div id="chk-cebo">( ) Cebo Rodenticida</div>
+              <div id="chk-termonebulizacion">( ) Termonebulización</div>
+            </td>
+            <td id="print-plagas" style="padding: 8px; font-style: italic; vertical-align: top; color: #334155;">
+              control de insectos rastreros, arácnidos, insectos voladores y termitas
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4 style="margin: 8px 0 4px 0; font-size: 11px; color: #1e293b; font-weight: bold;">Especificación de los Productos Químicos Utilizados:</h4>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Producto Utilizado</th>
+            <th>Ingrediente Activo</th>
+            <th>N° Registro M.S.</th>
+            <th>Lote Fabricación</th>
+            <th>Dosis Aplicada</th>
+            <th>Vencimiento Químico</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="td-prod-nombre" style="font-weight: bold; color: #0f172a;">---</td>
+            <td id="td-prod-activo">---</td>
+            <td id="td-prod-ms">---</td>
+            <td id="td-prod-lote">---</td>
+            <td id="td-prod-dosis">---</td>
+            <td id="td-prod-vence">---</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <tr>
+          <td style="width: 35%; text-align: center; border: none; padding: 0;">
+            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 80%; margin-left: auto; margin-right: auto;">
+              <strong>Everst Rojas Camacho</strong><br>Técnico Responsable Aplicador
+            </div>
+          </td>
+          <td style="width: 35%; text-align: center; border: none; padding: 0;">
+            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 80%; margin-left: auto; margin-right: auto;">
+              <br>Firma / Sello de Recibido Cliente
+            </div>
+          </td>
+          <td style="width: 30%; text-align: right; border: none; padding: 0; vertical-align: bottom;">
+            <div style="display: inline-block; padding: 5px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;">
+              <div id="qrcode"></div>
+            </div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="legal-text">
+        De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud). <br>
+        <strong>Contacto Corporativo:</strong> Teléfono Oficina: 7232-5001 o 8987-7776 | Email: Info@tecnoplagascrc.com | Web: http://tecnoplagascrc.com
+      </div>
+
     </div>
   </div>
 
