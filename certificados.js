@@ -2,10 +2,9 @@
 // IMPORTACIONES DE FIREBASE (Ajusta la inicialización si tu archivo de configuración es diferente)
 // =========================================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, getDocs, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// RECUERDA: Si ya exportas 'db' desde otro archivo (ej: firebase-config.js), puedes borrar este bloque de credenciales
-// e importar directamente 'db' desde tu ruta. Si no, pega aquí tus credenciales de Firebase:
+// Credenciales de Firebase (Mantén las tuyas o impórtalas desde tu config)
 const firebaseConfig = {
   apiKey: "TU_API_KEY",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -30,35 +29,33 @@ async function cargarProductosDesdeFirestore() {
   if (!selectProducto) return;
 
   try {
-    // Consulta a la colección 'Productos' vista en tu Firebase Console
     const querySnapshot = await getDocs(collection(db, "Productos"));
     
-    // Reseteamos el selector dejando solo la opción inicial por defecto
     selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
     productosFirestore = {}; 
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      const idDocumento = doc.id; // 'Cybor', 'Cynoff_EC', 'EKOSET_EC', 'Fingen', etc.
+      const idDocumento = doc.id; // 'Cybor', 'Cynoff_EC', 'EKOSET_EC', etc.
 
-      // Guardamos la información mapeada usando el ID del documento como llave
+      // Guardamos la información mapeada
       productosFirestore[idDocumento] = data;
 
       // Creamos la opción HTML dinámicamente
       const option = document.createElement('option');
       option.value = idDocumento;
-      // Muestra el campo 'nombre' interno, de lo contrario muestra el ID del documento
-      option.textContent = data.nombre || idDocumento; 
+      // Usamos el campo exacto "Nombre Comercial" de tu Firebase, si no viene, usa el ID
+      option.textContent = data["Nombre Comercial"] || idDocumento; 
       selectProducto.appendChild(option);
     });
 
-    // Agregamos al final la opción para flujos extraordinarios o manuales
+    // Opción manual por si acaso
     const optionOtro = document.createElement('option');
     optionOtro.value = "Otro";
     optionOtro.textContent = "Otro (Manual)";
     selectProducto.appendChild(optionOtro);
 
-    console.log("✅ Colección 'Productos' cargada de manera exitosa.");
+    console.log("✅ Colección 'Productos' cargada correctamente con los mapeos exactos.");
 
   } catch (error) {
     console.error("❌ Error al leer los productos de Firestore: ", error);
@@ -70,10 +67,10 @@ async function cargarProductosDesdeFirestore() {
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
   
-  // Ejecutamos la carga inicial de los productos químicos de la base de datos
+  // Ejecutamos la carga inicial de productos
   cargarProductosDesdeFirestore();
   
-  // Generamos un número consecutivo automático temporal si el campo está vacío
+  // Consecutivo automático temporal
   const inputIdCertificado = document.getElementById('id-certificado');
   if (inputIdCertificado && !inputIdCertificado.value) {
     inputIdCertificado.value = "CERT-" + Math.floor(100000 + Math.random() * 900000);
@@ -87,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     selectProducto.addEventListener('change', function() {
       const valorSeleccionado = this.value;
       
-      // Captura de Inputs del Formulario (Edición)
+      // Inputs del Formulario Visible
       const inputNombre = document.getElementById('form-prod-nombre');
       const inputActivo = document.getElementById('form-prod-activo');
       const inputMs = document.getElementById('form-prod-ms');
@@ -99,13 +96,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (productosFirestore[valorSeleccionado]) {
         const prod = productosFirestore[valorSeleccionado];
         
-        // Extraemos las variables validando posibles variaciones de nombres de campos
-        const nombreComercial = prod.nombre || valorSeleccionado;
-        const ingredienteActivo = prod.activo || "---";
-        const registroMs = prod.registro_ms || prod.ms || "---";
-        const dosisRecomendada = prod.dosis || "---";
-        const numeroLote = prod.lote || "---";
-        const fechaVencimiento = prod.vencimiento || prod.vence || "---";
+        // ¡LLAMADAS CORREGIDAS usando llaves exactas con espacios y puntos de tu Firestore!
+        const nombreComercial = prod["Nombre Comercial"] || valorSeleccionado;
+        const ingredienteActivo = prod["Ingrediente Activo"] || "---";
+        const registroMs = prod["Registro M.S."] || "---";
+        const dosisRecomendada = prod["Dosis Recomendada"] || "---";
+        const numeroLote = prod["Lote"] || "---";
+        const fechaVencimiento = prod["Vencimiento del Producto"] || "---";
 
         // Asignamos los valores a los cuadros de texto del formulario
         if(inputNombre) inputNombre.value = nombreComercial;
@@ -116,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(inputVence) inputVence.value = fechaVencimiento;
 
       } else {
-        // Si selecciona 'Otro' o 'Seleccione...', limpiamos los controles para escritura libre
+        // Si selecciona 'Otro' o 'Seleccione...', limpiamos para escritura manual
         const inputs = [inputNombre, inputActivo, inputMs, inputDosis, inputLote, inputVence];
         inputs.forEach(input => { if(input) input.value = ""; });
       }
@@ -126,9 +123,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- EVENTO: GUARDAR E IMPRIMIR CERTIFICADO ---
   if (formulario) {
     formulario.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Evitamos que la página se recargue
+      e.preventDefault();
 
-      // Recopilación completa de variables desde el formulario
       const idCertificado = document.getElementById('id-certificado').value;
       const selectCliente = document.getElementById('select-cliente');
       const clienteNombre = selectCliente ? selectCliente.options[selectCliente.selectedIndex].text : "---";
@@ -147,7 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const metodoAplicacion = document.getElementById('metodo-aplicacion').value;
       const plagasControla = document.getElementById('plagas-controla').value;
 
-      // Datos de la Ficha Técnica Química
+      // Valores finales que quedaron en los inputs
       const prodNombre = document.getElementById('form-prod-nombre').value;
       const prodActivo = document.getElementById('form-prod-activo').value;
       const prodMs = document.getElementById('form-prod-ms').value;
@@ -155,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const prodLote = document.getElementById('form-prod-lote').value;
       const prodVence = document.getElementById('form-prod-vence').value;
 
-      // 1. Objeto unificado listo para enviar a la colección 'Certificados'
       const nuevoCertificado = {
         idCertificado,
         clienteNombre,
@@ -182,11 +177,10 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       try {
-        // Guardamos de forma asíncrona en Cloud Firestore
         await addDoc(collection(db, "Certificados"), nuevoCertificado);
-        console.log("✅ Certificado guardado con éxito en Firebase Firestore.");
+        console.log("✅ Certificado guardado con éxito.");
 
-        // 2. TRANSFERENCIA ABSOLUTA DE DATOS HACIA EL BLOQUE DE IMPRESIÓN (PDF)
+        // Transferencia al PDF de impresión
         document.getElementById('print-cliente').textContent = clienteNombre;
         document.getElementById('print-fantasia').textContent = nombreFantasia;
         document.getElementById('print-cabezal').textContent = cabezal;
@@ -198,15 +192,15 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('print-tipo').textContent = tipoServicio;
         document.getElementById('print-plagas').textContent = plagasControla;
 
-        // Mapeo estricto de la tabla de especificación química en el PDF
+        // Forzar los datos del producto final en el PDF
         document.getElementById('td-prod-nombre').textContent = prodNombre || "---";
         document.getElementById('td-prod-activo').textContent = prodActivo || "---";
         document.getElementById('td-prod-ms').textContent = prodMs || "---";
         document.getElementById('td-prod-dosis').textContent = prodDosis || "---";
-        document.getElementById('td-prod-lote').textContent = prodLote || "---"; // Aquí forzamos la actualización del lote
+        document.getElementById('td-prod-lote').textContent = prodLote || "---";
         document.getElementById('td-prod-vence').textContent = prodVence || "---";
 
-        // Ajuste dinámico visual para los recuadros de verificación (Checkboxes simulados)
+        // Checkboxes del PDF
         document.getElementById('chk-desinsectacion').textContent = objetivoControl === "Desinsectación" ? "(X) Desinsectación" : "( ) Desinsectación";
         document.getElementById('chk-desratizacion').textContent = objetivoControl === "Desratización" ? "(X) Desratización" : "( ) Desratización";
         document.getElementById('chk-sanitizacion').textContent = objetivoControl === "Sanitización" ? "(X) Sanitización" : "( ) Sanitización";
@@ -215,11 +209,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('chk-cebo').textContent = metodoAplicacion === "Cebo Rodenticida" ? "(X) Cebo Rodenticida" : "( ) Cebo Rodenticida";
         document.getElementById('chk-termonebulizacion').textContent = metodoAplicacion === "Termonebulización" ? "(X) Termonebulización" : "( ) Termonebulización";
 
-        // 3. GENERACIÓN DEL CÓDIGO QR AUTOMÁTICO
+        // QR Dinámico
         const contenedorQR = document.getElementById("qrcode");
         if (contenedorQR) {
-          contenedorQR.innerHTML = ""; // Limpiamos QR previo
-          // El código QR apuntará a la validación de este ID de certificado único
+          contenedorQR.innerHTML = "";
           new QRCode(contenedorQR, {
             text: `https://everstrc.github.io/tecnoplagas-app/validar.html?id=${idCertificado}`,
             width: 80,
@@ -230,14 +223,13 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
 
-        // Pequeña pausa de milisegundos para garantizar la renderización estable del QR e iniciar impresión
         setTimeout(() => {
           window.print();
         }, 350);
 
       } catch (error) {
-        console.error("❌ Error crítico al intentar guardar en Firestore: ", error);
-        alert("Ocurrió un inconveniente al almacenar los datos. Por favor verifique la conexión.");
+        console.error("❌ Error en Firebase: ", error);
+        alert("Error al guardar el certificado.");
       }
     });
   }
