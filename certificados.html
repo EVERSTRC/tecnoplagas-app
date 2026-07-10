@@ -32,16 +32,20 @@
       <h2>📄 Emisión de Certificado de Fumigación</h2>
       <form id="certificado-form">
         
-        <div class="seccion-titulo">1. Información del Certificado</div>
+        <div class="seccion-titulo">1. Información del Certificado y Cliente</div>
         <div class="grid-form">
           <div class="form-group">
             <label for="numCertificado">N° Certificado:</label>
             <input type="text" id="numCertificado" required placeholder="Ej: CERT-0001">
           </div>
+          
           <div class="form-group">
-            <label for="cliente">Nombre del Cliente / Empresa:</label>
-            <input type="text" id="cliente" required placeholder="Ej: Transportes del Norte">
+            <label for="selectCliente">Seleccionar Cliente / Empresa:</label>
+            <select id="selectCliente" required>
+              <option value="">-- Seleccione un cliente del sistema --</option>
+            </select>
           </div>
+          
           <div class="form-group">
             <label for="fechaEmision">Fecha Emisión:</label>
             <input type="date" id="fechaEmision" required>
@@ -110,7 +114,6 @@
       getFirestore, collection, setDoc, doc, onSnapshot, enableIndexedDbPersistence 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Tu configuración exacta de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
       authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -128,18 +131,39 @@
     });
 
     const form = document.getElementById('certificado-form');
+    const selectCliente = document.getElementById('selectCliente');
     const selectProducto = document.getElementById('selectProducto');
     const inputIngrediente = document.getElementById('ingredienteActivo');
     const inputLote = document.getElementById('lote');
     const inputRegistro = document.getElementById('registroMS');
     const inputDosis = document.getElementById('dosisRecomendada');
 
+    let listaClientesGlobal = [];
     let listaProductosGlobal = [];
 
     // Cargar fecha actual por defecto en Emisión
     document.getElementById('fechaEmision').valueAsDate = new Date();
 
-    // 1. Escuchar la colección de "Productos" para rellenar el SELECT dinámicamente
+    // 1. Escuchar la colección "clientes" (para el select de clientes)
+    onSnapshot(collection(db, "clientes"), (snapshot) => {
+      listaClientesGlobal = [];
+      selectCliente.innerHTML = '<option value="">-- Seleccione un cliente del sistema --</option>';
+      
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        listaClientesGlobal.push({ id: docSnap.id, ...data });
+
+        // Se usa el campo "nombre" tal como se procesa en tu app.js
+        if(data.nombre) {
+          const option = document.createElement('option');
+          option.value = data.nombre; // Guardamos directamente el nombre como valor de envío
+          option.innerText = `[${data.consecutivo || 'S/C'}] ${data.nombre}`;
+          selectCliente.appendChild(option);
+        }
+      });
+    });
+
+    // 2. Escuchar la colección "Productos" (para el select de químicos)
     onSnapshot(collection(db, "Productos"), (snapshot) => {
       listaProductosGlobal = [];
       selectProducto.innerHTML = '<option value="">-- Seleccione un producto registrado --</option>';
@@ -155,14 +179,14 @@
       });
     });
 
-    // 2. Evento de actualización instantánea al cambiar el Producto seleccionado
+    // 3. Evento de actualización instantánea al cambiar el Producto seleccionado
     selectProducto.addEventListener('change', (e) => {
       const idSeleccionado = e.target.value;
       const productoEncontrado = listaProductosGlobal.find(p => p.id === idSeleccionado);
 
       if (productoEncontrado) {
         inputIngrediente.value = productoEncontrado["Ingrediente Activo"] || '';
-        inputLote.value = productoEncontrado["Lote"] || ''; // Corregido con "L" mayúscula
+        inputLote.value = productoEncontrado["Lote"] || ''; // Match exacto con "L" mayúscula
         inputRegistro.value = productoEncontrado["Registro M.S."] || '';
         inputDosis.value = productoEncontrado["Dosis Recomendada"] || '';
       } else {
@@ -173,12 +197,12 @@
       }
     });
 
-    // 3. Procesar el envío del Formulario hacia la colección "Certificados"
+    // 4. Procesar el envío del Formulario hacia la colección "Certificados"
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const numCertificado = document.getElementById('numCertificado').value.trim();
-      const cliente = document.getElementById('cliente').value.trim();
+      const clienteSeleccionado = selectCliente.value; // Toma el nombre del cliente elegido
       const cabezal = document.getElementById('placaCabezal').value.trim() || 'N/A';
       const remolque = document.getElementById('placaRemolque').value.trim() || 'N/A';
       
@@ -194,11 +218,11 @@
 
       // Estructurar la URL exacta para tu validador público (validar.html)
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
-      const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(cliente)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
+      const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(clienteSeleccionado)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
 
       const datosCertificado = {
         numCertificado,
-        cliente,
+        cliente: clienteSeleccionado,
         placaCabezal: cabezal,
         placaRemolque: remolque,
         fechaEmision: emisionFormateada,
