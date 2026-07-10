@@ -336,6 +336,8 @@
 
       const prodSeleccionado = listaProductosGlobal.find(p => p.id === selectProducto.value);
       const nombreComercial = prodSeleccionado ? prodSeleccionado["Nombre Comercial"] : 'N/A';
+      // SOLUCIÓN AL BUG: Extraer el lote directamente del objeto en memoria para ignorar el estado deshabilitado del input
+      const loteQuimico = prodSeleccionado ? (prodSeleccionado["Lote"] || 'N/A') : 'N/A';
 
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
       const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(clienteSeleccionado)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
@@ -349,7 +351,7 @@
         fechaVencimiento: vencimientoFormateada,
         productoUtilizado: nombreComercial,
         ingredienteActivo: inputIngrediente.value,
-        lote: inputLote.value,
+        lote: loteQuimico, // <-- Cambiado de inputLote.value a la variable directa en memoria
         registroMS: inputRegistro.value,
         dosisAplicada: inputDosis.value,
         observaciones: document.getElementById('observaciones').value,
@@ -359,7 +361,7 @@
 
       try {
         await setDoc(doc(db, "Certificados", numCertificado), datosCertificado);
-        alert(`¡Certificado ${numCertificado} guardado exitosamente!`);
+        alert(`¡Certificado ${numCertificado} guardamente exitosamente!`);
         form.reset();
         document.getElementById('fechaEmision').valueAsDate = new Date();
       } catch (error) {
