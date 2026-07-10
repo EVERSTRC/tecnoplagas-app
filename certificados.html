@@ -3,49 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fumigadora Tecnoplagas - Emitir Certificados</title>
+  <title>Fumigadora Tecnoplagas - Certificados</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; margin: 0; padding: 20px; color: #1e293b; }
-    .container { max-width: 900px; margin: 0 auto; }
-    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
-    h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-    .seccion-titulo { font-size: 16px; font-weight: bold; color: #2563eb; margin: 25px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-    .grid-form { display: grid; grid-template-columns: 1fr; gap: 15px; }
-    @media (min-width: 600px) { .grid-form { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
+    .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 850px) { .container { grid-template-columns: 420px 1fr; } }
+    
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: fit-content; }
+    h2, h3 { margin-top: 0; color: #1e293b; }
+    
+    .seccion-titulo { font-size: 13px; font-weight: bold; color: #2563eb; margin: 15px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .grid-form { display: grid; grid-template-columns: 1fr; gap: 10px; }
     .form-group { display: flex; flex-direction: column; }
-    label { font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #475569; }
-    input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box; }
+    label { font-weight: 600; margin-bottom: 4px; font-size: 13px; color: #475569; }
+    input, select, textarea { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; box-sizing: border-box; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
     input:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; font-weight: bold; }
-    .btn-submit { background: #2563eb; color: white; font-weight: bold; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.2s; margin-top: 25px; }
+    
+    .btn-submit { background: #2563eb; color: white; font-weight: bold; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; width: 100%; transition: background 0.2s; margin-top: 15px; }
     .btn-submit:hover { background: #1d4ed8; }
     .btn-back { background: #1e293b; color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; display: inline-block; margin-bottom: 20px; font-size: 14px; }
-    .producto-destacado { background: #eff6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; }
+    
+    .producto-destacado { background: #eff6ff; padding: 12px; border-radius: 8px; border-left: 4px solid #2563eb; margin-top: 5px; }
+    .search-box { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    
+    /* Estilos del Listado de Consultas (Derecha) */
+    .grid-certificados { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px; }
+    .certificado-card { background: white; padding: 15px; border-radius: 8px; border-left: 5px solid #2563eb; box-shadow: 0 2px 4px rgba(0,0,0,0.04); position: relative; }
+    .certificado-card h4 { margin: 0 0 8px 0; color: #1e293b; font-size: 16px; }
+    .certificado-card p { margin: 4px 0; font-size: 13px; color: #475569; border-bottom: 1px dashed #f1f5f9; padding-bottom: 2px; }
+    .certificado-card strong { color: #1e293b; }
+    
+    .acciones { margin-top: 12px; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; text-decoration: none; text-align: center; }
+    .btn-qr { background: #10b981; color: white; }
+    .btn-delete { background: #ef4444; color: white; }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <a href="index.html" class="btn-back">⬅ Volver al Menú</a>
+  <a href="index.html" class="btn-back">⬅ Volver al Menú</a>
 
+  <div class="container">
+    
     <div class="card">
-      <h2>📄 Emisión de Certificado de Fumigación</h2>
+      <h3>📄 Emitir Certificado</h3>
       <form id="certificado-form">
         
-        <div class="seccion-titulo">1. Información del Certificado y Cliente</div>
+        <div class="seccion-titulo">1. Datos Básicos</div>
         <div class="grid-form">
           <div class="form-group">
             <label for="numCertificado">N° Certificado:</label>
             <input type="text" id="numCertificado" required placeholder="Ej: CERT-0001">
           </div>
-          
           <div class="form-group">
-            <label for="selectCliente">Seleccionar Cliente / Empresa:</label>
+            <label for="selectCliente">Cliente / Empresa:</label>
             <select id="selectCliente" required>
-              <option value="">-- Seleccione un cliente del sistema --</option>
+              <option value="">-- Seleccione Cliente --</option>
             </select>
           </div>
-          
           <div class="form-group">
             <label for="fechaEmision">Fecha Emisión:</label>
             <input type="date" id="fechaEmision" required>
@@ -56,62 +72,68 @@
           </div>
         </div>
 
-        <div class="seccion-titulo">2. Detalles de Unidades (Transporte)</div>
+        <div class="seccion-titulo">2. Unidades</div>
         <div class="grid-form">
           <div class="form-group">
             <label for="placaCabezal">Placa Cabezal:</label>
-            <input type="text" id="placaCabezal" placeholder="Ej: C-123456 (Si aplica)">
+            <input type="text" id="placaCabezal" placeholder="N/A">
           </div>
           <div class="form-group">
-            <label for="placaRemolque">Placa Remolque / Contenedor:</label>
-            <input type="text" id="placaRemolque" placeholder="Ej: R-789012 (Si aplica)">
+            <label for="placaRemolque">Placa Remolque:</label>
+            <input type="text" id="placaRemolque" placeholder="N/A">
           </div>
         </div>
 
-        <div class="seccion-titulo">3. Químico Utilizado (Consulta Automatizada)</div>
+        <div class="seccion-titulo">3. Químico Aplicado</div>
         <div class="producto-destacado">
           <div class="grid-form">
-            <div class="form-group full-width">
-              <label for="selectProducto" style="color: #1e40af;">Seleccionar Producto desde el Inventario:</label>
+            <div class="form-group" style="grid-column: 1/-1;">
+              <label for="selectProducto">Producto del Inventario:</label>
               <select id="selectProducto" required>
-                <option value="">-- Seleccione un producto registrado --</option>
+                <option value="">-- Seleccione Producto --</option>
               </select>
             </div>
-            
             <div class="form-group">
               <label>Ingrediente Activo:</label>
-              <input type="text" id="ingredienteActivo" disabled placeholder="Autocompletado...">
+              <input type="text" id="ingredienteActivo" disabled placeholder="---">
             </div>
             <div class="form-group">
-              <label>Lote de Fabricación:</label>
-              <input type="text" id="lote" disabled placeholder="Autocompletado...">
+              <label>Lote:</label>
+              <input type="text" id="lote" disabled placeholder="---">
             </div>
             <div class="form-group">
               <label>Registro M.S.:</label>
-              <input type="text" id="registroMS" disabled placeholder="Autocompletado...">
+              <input type="text" id="registroMS" disabled placeholder="---">
             </div>
             <div class="form-group">
-              <label>Dosis Recomendada:</label>
-              <input type="text" id="dosisRecomendada" disabled placeholder="Autocompletado...">
+              <label>Dosis:</label>
+              <input type="text" id="dosisRecomendada" disabled placeholder="---">
             </div>
           </div>
         </div>
 
-        <div class="seccion-titulo">4. Observaciones y Áreas Tratadas</div>
-        <div class="form-group full-width">
-          <label for="observaciones">Notas Adicionales del Certificado:</label>
-          <textarea id="observaciones" rows="4" placeholder="Ej: Control preventivo de plagas en tarimas, cabina tratada, etc..."></textarea>
-        </div>
+        <div class="seccion-titulo">4. Observaciones</div>
+        <textarea id="observaciones" rows="2" placeholder="Detalles de la aplicación..." style="width: 100%;"></textarea>
 
-        <button type="submit" class="btn-submit">Emitir y Registrar Certificado</button>
+        <button type="submit" class="btn-submit">Emitir Certificado</button>
       </form>
     </div>
+
+    <div>
+      <div class="card" style="margin-bottom: 20px; padding: 15px;">
+        <input type="text" id="buscador-certificados" class="search-box" placeholder="🔍 Buscar certificado por N°, Cliente o Placa...">
+      </div>
+      
+      <div id="lista-certificados" class="grid-certificados">
+        </div>
+    </div>
+
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, collection, setDoc, doc, onSnapshot, enableIndexedDbPersistence 
+      getFirestore, collection, setDoc, doc, onSnapshot, deleteDoc, enableIndexedDbPersistence 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -137,41 +159,36 @@
     const inputLote = document.getElementById('lote');
     const inputRegistro = document.getElementById('registroMS');
     const inputDosis = document.getElementById('dosisRecomendada');
+    const listaCertificados = document.getElementById('lista-certificados');
+    const buscador = document.getElementById('buscador-certificados');
 
     let listaClientesGlobal = [];
     let listaProductosGlobal = [];
+    let certificadosArray = [];
 
-    // Cargar fecha actual por defecto en Emisión
     document.getElementById('fechaEmision').valueAsDate = new Date();
 
-    // 1. Escuchar la colección "clientes" (para el select de clientes)
+    // 1. Cargar Clientes al Select
     onSnapshot(collection(db, "clientes"), (snapshot) => {
-      listaClientesGlobal = [];
-      selectCliente.innerHTML = '<option value="">-- Seleccione un cliente del sistema --</option>';
-      
+      selectCliente.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        listaClientesGlobal.push({ id: docSnap.id, ...data });
-
-        // Se usa el campo "nombre" tal como se procesa en tu app.js
         if(data.nombre) {
           const option = document.createElement('option');
-          option.value = data.nombre; // Guardamos directamente el nombre como valor de envío
-          option.innerText = `[${data.consecutivo || 'S/C'}] ${data.nombre}`;
+          option.value = data.nombre;
+          option.innerText = data.nombre;
           selectCliente.appendChild(option);
         }
       });
     });
 
-    // 2. Escuchar la colección "Productos" (para el select de químicos)
+    // 2. Cargar Productos al Select y guardar datos en caché global
     onSnapshot(collection(db, "Productos"), (snapshot) => {
       listaProductosGlobal = [];
-      selectProducto.innerHTML = '<option value="">-- Seleccione un producto registrado --</option>';
-      
+      selectProducto.innerHTML = '<option value="">-- Seleccione Producto --</option>';
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         listaProductosGlobal.push({ id: docSnap.id, ...data });
-
         const option = document.createElement('option');
         option.value = docSnap.id;
         option.innerText = data["Nombre Comercial"] || docSnap.id;
@@ -179,44 +196,91 @@
       });
     });
 
-    // 3. Evento de actualización instantánea al cambiar el Producto seleccionado
+    // 3. Autocompletar Químicos instantáneamente (Con "Lote" corregido en Mayúscula)
     selectProducto.addEventListener('change', (e) => {
-      const idSeleccionado = e.target.value;
-      const productoEncontrado = listaProductosGlobal.find(p => p.id === idSeleccionado);
-
-      if (productoEncontrado) {
-        inputIngrediente.value = productoEncontrado["Ingrediente Activo"] || '';
-        inputLote.value = productoEncontrado["Lote"] || ''; // Match exacto con "L" mayúscula
-        inputRegistro.value = productoEncontrado["Registro M.S."] || '';
-        inputDosis.value = productoEncontrado["Dosis Recomendada"] || '';
+      const prod = listaProductosGlobal.find(p => p.id === e.target.value);
+      if (prod) {
+        inputIngrediente.value = prod["Ingrediente Activo"] || '';
+        inputLote.value = prod["Lote"] || ''; 
+        inputRegistro.value = prod["Registro M.S."] || '';
+        inputDosis.value = prod["Dosis Recomendada"] || '';
       } else {
-        inputIngrediente.value = '';
-        inputLote.value = '';
-        inputRegistro.value = '';
-        inputDosis.value = '';
+        inputIngrediente.value = ''; inputLote.value = ''; inputRegistro.value = ''; inputDosis.value = '';
       }
     });
 
-    // 4. Procesar el envío del Formulario hacia la colección "Certificados"
+    // 4. Renderizar Panel de Consulta (Derecha)
+    function renderizarCertificados(arreglo) {
+      listaCertificados.innerHTML = '';
+      if (arreglo.length === 0) {
+        listaCertificados.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94a3b8;">No hay certificados emitidos.</p>';
+        return;
+      }
+      arreglo.forEach((c) => {
+        const div = document.createElement('div');
+        div.className = 'certificado-card';
+        div.innerHTML = `
+          <h4>N° ${c.numCertificado || c.id}</h4>
+          <p><strong>Cliente:</strong> ${c.cliente}</p>
+          <p><strong>Vence:</strong> ${c.fechaVencimiento}</p>
+          <p><strong>Cabezal:</strong> ${c.placaCabezal} | <strong>Remolque:</strong> ${c.placaRemolque}</p>
+          <p><strong>Producto:</strong> ${c.productoUtilizado} (Lote: ${c.lote || 'N/A'})</p>
+          <div class="acciones">
+            <a href="${c.urlValidacionQR || '#'}" target="_blank" class="btn-action btn-qr">👁 Ver QR</a>
+            <button class="btn-action btn-delete" data-id="${c.id}">❌ Eliminar</button>
+          </div>
+        `;
+        listaCertificados.appendChild(div);
+      });
+
+      // Evento eliminar consulta
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (confirm(`¿Deseas eliminar el certificado ${id} del historial?`)) {
+            await deleteDoc(doc(db, "Certificados", id));
+          }
+        });
+      });
+    }
+
+    // 5. Escuchar cambios de la colección "Certificados" para la consulta en vivo
+    onSnapshot(collection(db, "Certificados"), (snapshot) => {
+      certificadosArray = [];
+      snapshot.forEach((docSnap) => {
+        certificadosArray.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderizarCertificados(certificadosArray);
+    });
+
+    // 6. Buscador de Consultas
+    buscador.addEventListener('input', (e) => {
+      const texto = e.target.value.toLowerCase().trim();
+      const filtrados = certificadosArray.filter(c => {
+        return (c.numCertificado || '').toLowerCase().includes(texto) || 
+               (c.cliente || '').toLowerCase().includes(texto) || 
+               (c.placaCabezal || '').toLowerCase().includes(texto) || 
+               (c.placaRemolque || '').toLowerCase().includes(texto);
+      });
+      renderizarCertificados(filtrados);
+    });
+
+    // 7. Guardar Formulario
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const numCertificado = document.getElementById('numCertificado').value.trim();
-      const clienteSeleccionado = selectCliente.value; // Toma el nombre del cliente elegido
+      const clienteSeleccionado = selectCliente.value;
       const cabezal = document.getElementById('placaCabezal').value.trim() || 'N/A';
       const remolque = document.getElementById('placaRemolque').value.trim() || 'N/A';
       
       const emiRaw = document.getElementById('fechaEmision').value.split('-');
       const venRaw = document.getElementById('fechaVencimiento').value.split('-');
-      
       const emisionFormateada = `${emiRaw[2]}/${emiRaw[1]}/${emiRaw[0]}`;
       const vencimientoFormateada = `${venRaw[2]}/${venRaw[1]}/${venRaw[0]}`;
 
-      const productoId = selectProducto.value;
-      const productoSeleccionado = listaProductosGlobal.find(p => p.id === productoId);
-      const nombreComercial = productoSeleccionado ? productoSeleccionado["Nombre Comercial"] : 'No especificado';
+      const prodSeleccionado = listaProductosGlobal.find(p => p.id === selectProducto.value);
+      const nombreComercial = prodSeleccionado ? prodSeleccionado["Nombre Comercial"] : 'N/A';
 
-      // Estructurar la URL exacta para tu validador público (validar.html)
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
       const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(clienteSeleccionado)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
 
@@ -239,12 +303,11 @@
 
       try {
         await setDoc(doc(db, "Certificados", numCertificado), datosCertificado);
-        alert(`¡Certificado ${numCertificado} emitido con éxito!\nEnlace QR listo para validación.`);
+        alert(`¡Certificado ${numCertificado} guardado y listado correctamente!`);
         form.reset();
         document.getElementById('fechaEmision').valueAsDate = new Date();
       } catch (error) {
-        console.error(error);
-        alert("Error al intentar almacenar el certificado en el sistema.");
+        alert("Error al intentar almacenar el certificado.");
       }
     });
   </script>
