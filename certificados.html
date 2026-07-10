@@ -6,18 +6,18 @@
   <title>Fumigadora Tecnoplagas - Emitir Certificados</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; margin: 0; padding: 20px; color: #1e293b; }
-    .container { max-width: 850px; margin: 0 auto; }
+    .container { max-width: 900px; margin: 0 auto; }
     .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
     h2 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-    .seccion-titulo { font-size: 16px; font-weight: bold; color: #2563eb; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .seccion-titulo { font-size: 16px; font-weight: bold; color: #2563eb; margin: 25px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
     .grid-form { display: grid; grid-template-columns: 1fr; gap: 15px; }
     @media (min-width: 600px) { .grid-form { grid-template-columns: 1fr 1fr; } .full-width { grid-column: span 2; } }
     .form-group { display: flex; flex-direction: column; }
     label { font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #475569; }
     input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; box-sizing: border-box; }
     input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; }
-    input:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
-    .btn-submit { background: #2563eb; color: white; font-weight: bold; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.2s; margin-top: 20px; }
+    input:disabled { background: #f1f5f9; color: #64748b; cursor: not-allowed; font-weight: bold; }
+    .btn-submit { background: #2563eb; color: white; font-weight: bold; padding: 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; width: 100%; transition: background 0.2s; margin-top: 25px; }
     .btn-submit:hover { background: #1d4ed8; }
     .btn-back { background: #1e293b; color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; display: inline-block; margin-bottom: 20px; font-size: 14px; }
     .producto-destacado { background: #eff6ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2563eb; }
@@ -32,7 +32,7 @@
       <h2>📄 Emisión de Certificado de Fumigación</h2>
       <form id="certificado-form">
         
-        <div class="seccion-titulo">1. Información del Certificado y Cliente</div>
+        <div class="seccion-titulo">1. Información del Certificado</div>
         <div class="grid-form">
           <div class="form-group">
             <label for="numCertificado">N° Certificado:</label>
@@ -41,14 +41,6 @@
           <div class="form-group">
             <label for="cliente">Nombre del Cliente / Empresa:</label>
             <input type="text" id="cliente" required placeholder="Ej: Transportes del Norte">
-          </div>
-          <div class="form-group">
-            <label for="placaCabezal">Placa Cabezal:</label>
-            <input type="text" id="placaCabezal" placeholder="Ej: C-123456 (Opcional)">
-          </div>
-          <div class="form-group">
-            <label for="placaRemolque">Placa Remolque:</label>
-            <input type="text" id="placaRemolque" placeholder="Ej: R-789012 (Opcional)">
           </div>
           <div class="form-group">
             <label for="fechaEmision">Fecha Emisión:</label>
@@ -60,11 +52,23 @@
           </div>
         </div>
 
-        <div class="seccion-titulo">2. Químico Utilizado (Consulta Automatizada)</div>
+        <div class="seccion-titulo">2. Detalles de Unidades (Transporte)</div>
+        <div class="grid-form">
+          <div class="form-group">
+            <label for="placaCabezal">Placa Cabezal:</label>
+            <input type="text" id="placaCabezal" placeholder="Ej: C-123456 (Si aplica)">
+          </div>
+          <div class="form-group">
+            <label for="placaRemolque">Placa Remolque / Contenedor:</label>
+            <input type="text" id="placaRemolque" placeholder="Ej: R-789012 (Si aplica)">
+          </div>
+        </div>
+
+        <div class="seccion-titulo">3. Químico Utilizado (Consulta Automatizada)</div>
         <div class="producto-destacado">
           <div class="grid-form">
             <div class="form-group full-width">
-              <label for="selectProducto" style="color: #1e40af;">Seleccionar Producto Comercial del Inventario:</label>
+              <label for="selectProducto" style="color: #1e40af;">Seleccionar Producto desde el Inventario:</label>
               <select id="selectProducto" required>
                 <option value="">-- Seleccione un producto registrado --</option>
               </select>
@@ -75,7 +79,7 @@
               <input type="text" id="ingredienteActivo" disabled placeholder="Autocompletado...">
             </div>
             <div class="form-group">
-              <label>Lote del Químico:</label>
+              <label>Lote de Fabricación:</label>
               <input type="text" id="lote" disabled placeholder="Autocompletado...">
             </div>
             <div class="form-group">
@@ -89,10 +93,10 @@
           </div>
         </div>
 
-        <div class="seccion-titulo">3. Observaciones de la Aplicación</div>
+        <div class="seccion-titulo">4. Observaciones y Áreas Tratadas</div>
         <div class="form-group full-width">
-          <label for="observaciones">Detalles Adicionales:</label>
-          <textarea id="observaciones" rows="3" placeholder="Ej: Áreas tratadas, plagas objetivo, condiciones de entrega..."></textarea>
+          <label for="observaciones">Notas Adicionales del Certificado:</label>
+          <textarea id="observaciones" rows="4" placeholder="Ej: Control preventivo de plagas en tarimas, cabina tratada, etc..."></textarea>
         </div>
 
         <button type="submit" class="btn-submit">Emitir y Registrar Certificado</button>
@@ -106,6 +110,7 @@
       getFirestore, collection, setDoc, doc, onSnapshot, enableIndexedDbPersistence 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // Tu configuración exacta de Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
       authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -131,6 +136,7 @@
 
     let listaProductosGlobal = [];
 
+    // Cargar fecha actual por defecto en Emisión
     document.getElementById('fechaEmision').valueAsDate = new Date();
 
     // 1. Escuchar la colección de "Productos" para rellenar el SELECT dinámicamente
@@ -149,14 +155,14 @@
       });
     });
 
-    // 2. Evento para detectar cambios en el select y ACTUALIZAR campos automáticamente
+    // 2. Evento de actualización instantánea al cambiar el Producto seleccionado
     selectProducto.addEventListener('change', (e) => {
       const idSeleccionado = e.target.value;
       const productoEncontrado = listaProductosGlobal.find(p => p.id === idSeleccionado);
 
       if (productoEncontrado) {
         inputIngrediente.value = productoEncontrado["Ingrediente Activo"] || '';
-        inputLote.value = productoEncontrado["Lote"] || ''; // Corregido con "L" Mayúscula
+        inputLote.value = productoEncontrado["Lote"] || ''; // Corregido con "L" mayúscula
         inputRegistro.value = productoEncontrado["Registro M.S."] || '';
         inputDosis.value = productoEncontrado["Dosis Recomendada"] || '';
       } else {
@@ -186,6 +192,7 @@
       const productoSeleccionado = listaProductosGlobal.find(p => p.id === productoId);
       const nombreComercial = productoSeleccionado ? productoSeleccionado["Nombre Comercial"] : 'No especificado';
 
+      // Estructurar la URL exacta para tu validador público (validar.html)
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
       const urlQR = `${urlBaseBase}?id=${encodeURIComponent(numCertificado)}&cli=${encodeURIComponent(cliente)}&cab=${encodeURIComponent(cabezal)}&rem=${encodeURIComponent(remolque)}&emi=${emisionFormateada}&ven=${vencimientoFormateada}`;
 
@@ -208,12 +215,12 @@
 
       try {
         await setDoc(doc(db, "Certificados", numCertificado), datosCertificado);
-        alert(`¡Certificado ${numCertificado} guardado con éxito!\nURL QR generada para validación.`);
+        alert(`¡Certificado ${numCertificado} emitido con éxito!\nEnlace QR listo para validación.`);
         form.reset();
         document.getElementById('fechaEmision').valueAsDate = new Date();
       } catch (error) {
         console.error(error);
-        alert("Error al intentar almacenar el certificado.");
+        alert("Error al intentar almacenar el certificado en el sistema.");
       }
     });
   </script>
