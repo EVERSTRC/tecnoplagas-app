@@ -5,143 +5,42 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificación de Certificado - Tecnoplagas</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f4f6;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 450px;
-            width: 100%;
-            border-top: 8px solid #cbd5e1; /* Color dinámico inicial */
-            transition: border-color 0.3s ease;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .header h2 {
-            margin: 5px 0;
-            color: #1f2937;
-        }
-        .badge {
-            background-color: #e5e7eb;
-            color: #374151;
-            padding: 6px 12px;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 13px;
-            display: inline-block;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-        }
-        /* Estilos para el estado del Certificado */
-        .status-box {
-            text-align: center;
-            padding: 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 20px;
-            letter-spacing: 0.5px;
-        }
-        .valido {
-            background-color: #d1fae5;
-            color: #065f46;
-            border: 1px solid #10b981;
-        }
-        .vencido {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #ef4444;
-        }
-        .info-group {
-            border-bottom: 1px solid #f3f4f6;
-            padding: 12px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .info-group:last-child {
-            border: none;
-        }
-        .label {
-            font-weight: 600;
-            color: #6b7280;
-            font-size: 14px;
-        }
-        .value {
-            color: #111827;
-            font-weight: bold;
-            text-align: right;
-            font-size: 15px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 25px;
-            font-size: 11px;
-            color: #9ca3af;
-            line-height: 1.4;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 450px; width: 100%; border-top: 8px solid #cbd5e1; transition: border-color 0.3s ease; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h2 { margin: 5px 0; color: #1f2937; }
+        .badge { background-color: #e5e7eb; color: #374151; padding: 6px 12px; border-radius: 50px; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 12px; text-transform: uppercase; }
+        .status-box { text-align: center; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin-bottom: 20px; letter-spacing: 0.5px; }
+        .valido { background-color: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+        .vencido { background-color: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+        .info-group { border-bottom: 1px solid #f3f4f6; padding: 12px 0; display: flex; justify-content: space-between; align-items: center; }
+        .info-group:last-child { border: none; }
+        .label { font-weight: 600; color: #6b7280; font-size: 14px; }
+        .value { color: #111827; font-weight: bold; text-align: right; font-size: 15px; }
+        .footer { text-align: center; margin-top: 25px; font-size: 11px; color: #9ca3af; line-height: 1.4; }
     </style>
 </head>
 <body>
-
 <div class="card" id="main-card">
     <div class="header">
         <div class="badge">✓ Consulta de Autenticidad QR</div>
         <h2>TECNOPLAGAS C.R.</h2>
         <p style="color: #6b7280; margin: 5px 0 0 0; font-size: 13px;">Control de Plagas y Fumigación Comercial</p>
     </div>
-
-    <div id="cert-status" class="status-box">
-        PROCESANDO VERIFICACIÓN...
-    </div>
-
-    <div class="info-group">
-        <span class="label">N° Certificado:</span>
-        <span class="value" id="val-cert">---</span>
-    </div>
-    <div class="info-group">
-        <span class="label">Cliente:</span>
-        <span class="value" id="val-cliente">---</span>
-    </div>
-    <div class="info-group">
-        <span class="label">Placa Cabezal:</span>
-        <span class="value" id="val-cabezal">---</span>
-    </div>
-    <div class="info-group">
-        <span class="label">Placa Remolque:</span>
-        <span class="value" id="val-remolque">---</span>
-    </div>
-    <div class="info-group">
-        <span class="label">Fecha Emisión:</span>
-        <span class="value" id="val-emision">---</span>
-    </div>
-    <div class="info-group">
-        <span class="label">Fecha Vencimiento:</span>
-        <span class="value" id="val-vence">---</span>
-    </div>
-
+    <div id="cert-status" class="status-box">PROCESANDO VERIFICACIÓN...</div>
+    <div class="info-group"><span class="label">N° Certificado:</span><span class="value" id="val-cert">---</span></div>
+    <div class="info-group"><span class="label">Cliente:</span><span class="value" id="val-cliente">---</span></div>
+    <div class="info-group"><span class="label">Placa Cabezal:</span><span class="value" id="val-cabezal">---</span></div>
+    <div class="info-group"><span class="label">Placa Remolque:</span><span class="value" id="val-remolque">---</span></div>
+    <div class="info-group"><span class="label">Fecha Emisión:</span><span class="value" id="val-emision">---</span></div>
+    <div class="info-group"><span class="label">Fecha Vencimiento:</span><span class="value" id="val-vence">---</span></div>
     <div class="footer">
         Permiso de Funcionamiento del Ministerio de Salud: ARSLU-3160-02-2025<br>
         © 2026 Fumigadora Tecnoplagas S.A.
     </div>
 </div>
-
 <script>
-    // 1. Extraer los parámetros de la URL del QR
     const params = new URLSearchParams(window.location.search);
-    
     const idCert = params.get('id') || '---';
     const cliente = params.get('cli') || '---';
     const cabezal = params.get('cab') || 'N/A';
@@ -149,7 +48,6 @@
     const emisionStr = params.get('emi') || '';
     const venceStr = params.get('ven') || '';
 
-    // 2. Pintar los datos en pantalla
     document.getElementById('val-cert').innerText = idCert;
     document.getElementById('val-cliente').innerText = cliente;
     document.getElementById('val-cabezal').innerText = cabezal;
@@ -157,39 +55,30 @@
     document.getElementById('val-emision').innerText = emisionStr || '---';
     document.getElementById('val-vence').innerText = venceStr || '---';
 
-    // 3. Lógica matemática de validación de fechas (Formato d/m/aaaa)
     if (venceStr) {
         try {
             const partes = venceStr.split('/');
-            // JavaScript cuenta los meses de 0 a 11, por eso restamos 1 al mes
             const fechaVencimiento = new Date(partes[2], partes[1] - 1, partes[0], 23, 59, 59);
-            
-            // Forzar fecha actual sin horas para una comparación exacta de días
             const fechaActual = new Date();
             fechaActual.setHours(0,0,0,0);
-
             const statusBox = document.getElementById('cert-status');
             const mainCard = document.getElementById('main-card');
 
             if (fechaVencimiento >= fechaActual) {
-                // Estado Válido
                 statusBox.innerText = "🟢 CERTIFICADO VÁLIDO";
                 statusBox.className = "status-box valido";
-                mainCard.style.borderColor = "#10b981"; // Borde verde
+                mainCard.style.borderColor = "#10b981";
             } else {
-                // Estado Vencido
                 statusBox.innerText = "🔴 CERTIFICADO VENCIDO";
                 statusBox.className = "status-box vencido";
-                mainCard.style.borderColor = "#ef4444"; // Borde rojo
+                mainCard.style.borderColor = "#ef4444";
             }
         } catch (error) {
-            console.error("Error al calcular la validez de la fecha:", error);
             document.getElementById('cert-status').innerText = "⚠️ ERROR AL VERIFICAR FECHA";
         }
     } else {
         document.getElementById('cert-status').innerText = "⚠️ SIN FECHA DE VALIDEZ";
     }
 </script>
-
 </body>
 </html>
