@@ -40,12 +40,16 @@
     .btn-print { background: #0284c7; color: white; }
     .btn-delete { background: #ef4444; color: white; }
 
-    /* ESTILOS DE IMPRESIÓN LIMPIA DE CERTIFICADOS */
+    /* ESTILOS DE IMPRESIÓN ADAPTADOS AL MACHOTE */
     @media print {
       body * { visibility: hidden; background: white !important; color: black !important; box-shadow: none !important; }
       #area-impresion, #area-impresion * { visibility: visible; }
-      #area-impresion { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: 'Courier New', Courier, monospace; }
+      #area-impresion { position: absolute; left: 0; top: 0; width: 100%; padding: 10px; font-family: Arial, sans-serif; font-size: 12px; }
       .no-print { display: none !important; }
+      .pdf-tabla { width: 100%; border-collapse: collapse; margin-top: 10px; }
+      .pdf-tabla td, .pdf-tabla th { border: 1px solid #000; padding: 6px; vertical-align: top; }
+      .pdf-header-title { background: #f2f2f2 !important; font-weight: bold; text-align: center; font-size: 14px; padding: 8px !important; }
+      .pdf-subseccion { background: #f9f9f9 !important; font-weight: bold; }
     }
   </style>
 </head>
@@ -83,7 +87,7 @@
           </div>
         </div>
 
-        <div class="seccion-titulo">2. Unidades</div>
+        <div class="seccion-titulo">2. Unidades (Si aplica)</div>
         <div class="grid-form">
           <div class="form-group">
             <label for="placaCabezal">Placa Cabezal:</label>
@@ -123,8 +127,22 @@
           </div>
         </div>
 
-        <div class="seccion-titulo">4. Observaciones</div>
-        <textarea id="observaciones" rows="2" placeholder="Detalles de la aplicación..." style="width: 100%;"></textarea>
+        <div class="seccion-titulo">4. Detalles Operativos y Observaciones</div>
+        <div class="grid-form" style="margin-bottom: 10px;">
+          <div class="form-group">
+            <label for="horaInicio">Hora Inicio:</label>
+            <input type="time" id="horaInicio" value="14:00">
+          </div>
+          <div class="form-group">
+            <label for="horaFin">Hora Fin:</label>
+            <input type="time" id="horaFin" value="15:30">
+          </div>
+          <div class="form-group" style="grid-column: 1/-1;">
+            <label for="tecnico">Técnico Responsable:</label>
+            <input type="text" id="tecnico" placeholder="Ej: Everst Rojas Camacho" value="Everst Rojas Camacho">
+          </div>
+        </div>
+        <textarea id="observaciones" rows="2" placeholder="Detalles adicionales de la aplicación..." style="width: 100%;"></textarea>
 
         <button type="submit" class="btn-submit">Emitir Certificado</button>
       </form>
@@ -210,7 +228,7 @@
       });
     });
 
-    // 3. Autocompletar Químicos instantáneamente
+    // 3. Autocompletar Químicos
     selectProducto.addEventListener('change', (e) => {
       const prod = listaProductosGlobal.find(p => p.id === e.target.value);
       if (prod) {
@@ -223,7 +241,7 @@
       }
     });
 
-    // 4. Renderizar Panel de Consulta e Inyectar Acción para Imprimir PDF
+    // 4. Renderizar Panel Derecho e Inyectar Impresión Fiel a tu Plantilla
     function renderizarCertificados(arreglo) {
       listaCertificados.innerHTML = '';
       if (arreglo.length === 0) {
@@ -248,39 +266,88 @@
         listaCertificados.appendChild(div);
       });
 
-      // Lógica nativa de disparar la impresión (TU MACHOTE ORIGINAL DE PDF)
+      // Lógica de impresión estructurada igual a tu plantilla física
       document.querySelectorAll('.btn-print').forEach(btn => {
         btn.addEventListener('click', (e) => {
           const id = e.target.getAttribute('data-id');
           const cert = certificadosArray.find(c => c.id === id);
           if (cert) {
             areaImpresion.innerHTML = `
-              <div style="text-align:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:20px;">
-                <h1 style="margin:0; font-size:24px;">FUMIGADORA TECNOPLAGAS C.R.</h1>
-                <p style="margin:5px 0 0 0; font-size:12px;">Control de Plagas y Sanidad Ambiental</p>
-                <p style="margin:2px 0 0 0; font-size:11px;">M.S. Permiso: ARSLU-3160-02-2025</p>
-              </div>
-              <h2 style="text-align:center; text-decoration:underline; font-size:18px;">CERTIFICADO DE FUMIGACIÓN</h2>
-              <table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:20px;">
-                <tr><td style="padding:5px; width:40%;"><strong>N° CERTIFICADO:</strong></td><td style="padding:5px;">${cert.numCertificado}</td></tr>
-                <tr><td style="padding:5px;"><strong>CLIENTE / EMPRESA:</strong></td><td style="padding:5px;">${cert.cliente}</td></tr>
-                <tr><td style="padding:5px;"><strong>FECHA EMISIÓN:</strong></td><td style="padding:5px;">${cert.fechaEmision}</td></tr>
-                <tr><td style="padding:5px;"><strong>FECHA VENCIMIENTO:</strong></td><td style="padding:5px;">${cert.fechaVencimiento}</td></tr>
-                <tr><td style="padding:5px;"><strong>PLACA CABEZAL:</strong></td><td style="padding:5px;">${cert.placaCabezal || 'N/A'}</td></tr>
-                <tr><td style="padding:5px;"><strong>PLACA REMOLQUE:</strong></td><td style="padding:5px;">${cert.placaRemolque || 'N/A'}</td></tr>
-                <tr><td colspan="2" style="border-bottom:1px solid #000; padding:10px 0;"></td></tr>
-                <tr><td style="padding:5px; pt:10px;"><strong>PRODUCTO UTILIZADO:</strong></td><td style="padding:5px;">${cert.productoUtilizado}</td></tr>
-                <tr><td style="padding:5px;"><strong>INGREDIENTE ACTIVO:</strong></td><td style="padding:5px;">${cert.ingredienteActivo || 'N/A'}</td></tr>
-                <tr><td style="padding:5px;"><strong>LOTE QUÍMICO:</strong></td><td style="padding:5px;">${cert.lote || 'N/A'}</td></tr>
-                <tr><td style="padding:5px;"><strong>REGISTRO M.S.:</strong></td><td style="padding:5px;">${cert.registroMS || 'N/A'}</td></tr>
-                <tr><td style="padding:5px;"><strong>DOSIS APLICADA:</strong></td><td style="padding:5px;">${cert.dosisAplicada || 'N/A'}</td></tr>
-                <tr><td colspan="2" style="border-bottom:1px solid #000; padding:10px 0;"></td></tr>
-                <tr><td style="padding:5px; valign:top;"><strong>OBSERVACIONES:</strong></td><td style="padding:5px;">${cert.observaciones || 'Sin observaciones.'}</td></tr>
+              <table class="pdf-tabla">
+                <tr>
+                  <th colspan="2" class="pdf-header-title">CERTIFICADO MANEJO INTEGRADO DE PLAGAS (N° ${cert.numCertificado})</th>
+                </tr>
+                <tr class="pdf-subseccion">
+                  <td style="width: 50%;"><strong>Datos del Cliente:</strong></td>
+                  <td style="width: 50%;"><strong>Datos de la Empresa de Servicio:</strong></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Nombre Comercial:</strong><br>${cert.cliente}<br><br>
+                    <strong>Nombre de Fantasía:</strong><br>${cert.cliente}<br><br>
+                    <strong>Placas Unidad:</strong><br>Cabezal: ${cert.placaCabezal || 'N/A'} | Remolque: ${cert.placaRemolque || 'N/A'}
+                  </td>
+                  <td>
+                    <strong>Nombre:</strong> Fumigadora TecnoPlagas C.R.C<br><br>
+                    <strong>Dirección:</strong> Tres Ríos, La Unión, Cartago<br><br>
+                    <strong>Permiso Sanitario:</strong> ARSLU-3160-02-2025<br><br>
+                    <strong>Código SIIU:</strong> 8129.0 | <strong>Grupo de Riesgo:</strong> B
+                  </td>
+                </tr>
+                <tr class="pdf-subseccion">
+                  <td><strong>Prestación del Servicio:</strong></td>
+                  <td><strong>Detalles del Control:</strong></td>
+                </tr>
+                <tr>
+                  <td>
+                    <strong>Fecha Servicio:</strong> ${cert.fechaEmision}<br>
+                    <strong>Válido hasta el:</strong> ${cert.fechaVencimiento}<br><br>
+                    <strong>Hora de Inicio:</strong> ${cert.horaInicio || '14:00 Hrs'}<br>
+                    <strong>Hora de Finalización:</strong> ${cert.horaFin || '15:30 Hrs'}
+                  </td>
+                  <td>
+                    <strong>Tipo de Servicio:</strong> Control de Plagas<br>
+                    <strong>Servicios Aplicados:</strong> (x) Desinsectación  (x) Desratización  (x) Sanitización<br><br>
+                    <strong>Plagas que Controla:</strong><br>
+                    Insectos Rastreros, arácnidos, insectos voladores y termitas.<br><br>
+                    <strong>Método Aplicación:</strong> (x) Aspersión  (x) Cebo Rodenticida
+                  </td>
+                </tr>
+                <tr class="pdf-subseccion">
+                  <th colspan="2">Productos Utilizados</th>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <strong>Plaguicida / Nombre Comercial:</strong> ${cert.productoUtilizado}<br>
+                    <strong>Ingrediente Activo:</strong> ${cert.ingredienteActivo || 'N/A'}<br>
+                    <strong>Lote:</strong> ${cert.lote || 'N/A'}<br>
+                    <strong>Número de registro MS:</strong> ${cert.registroMS || 'N/A'}<br>
+                    <strong>Dosis Recomendada:</strong> ${cert.dosisAplicada || 'N/A'}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2">
+                    <strong>Observaciones del Servicio:</strong><br>
+                    ${cert.observaciones || 'De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N 37308 del 30 de agosto de 2012 (Según la Ley General de Salud).'}
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <br><br><br>
+                    <div style="text-align:center; border-top: 1px solid #000; width: 80%; margin: 0 auto;">
+                      <strong>Técnico Responsable:</strong><br>${cert.tecnico || 'Everst Rojas Camacho'}
+                    </div>
+                  </td>
+                  <td>
+                    <br><br><br>
+                    <div style="text-align:center; border-top: 1px solid #000; width: 80%; margin: 0 auto;">
+                      <strong>Recibido por (Firma Cliente):</strong><br>Constyrs C
+                    </div>
+                  </td>
+                </tr>
               </table>
-              <div style="margin-top:60px; text-align:center;">
-                <p style="margin-bottom:40px;">________________________________________</p>
-                <p style="font-size:12px; margin:0;"><strong>Firma Autorizada</strong></p>
-                <p style="font-size:10px; color:#555;">Tecnoplagas Aplicador Técnico</p>
+              <div style="text-align:center; margin-top:15px; font-size:10px; color:#555;">
+                <strong>Teléfono Oficina:</strong> 7232-5001 / 8987-7776 | <strong>Email:</strong> Info@tecnoplagascrc.com | <strong>Url Web:</strong> http://tecnoplagascrc.com
               </div>
             `;
             window.print();
@@ -299,7 +366,7 @@
       });
     }
 
-    // 5. Escuchar cambios de la colección "Certificados"
+    // 5. Cambios en Tiempo Real
     onSnapshot(collection(db, "Certificados"), (snapshot) => {
       certificadosArray = [];
       snapshot.forEach((docSnap) => {
@@ -320,7 +387,7 @@
       renderizarCertificados(filtrados);
     });
 
-    // 7. Guardar Formulario
+    // 7. Guardar Formulario sin bugs de Lote
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const numCertificado = document.getElementById('numCertificado').value.trim();
@@ -336,7 +403,7 @@
       const prodSeleccionado = listaProductosGlobal.find(p => p.id === selectProducto.value);
       const nombreComercial = prodSeleccionado ? prodSeleccionado["Nombre Comercial"] : 'N/A';
       
-      // SOLUCIÓN AL BUG: Extraer el lote directamente de Firestore en memoria
+      // EXTRACCIÓN GARANTIZADA DE LOTE DESDE FIRESTORE
       const loteQuimico = prodSeleccionado ? (prodSeleccionado["Lote"] || 'N/A') : 'N/A';
 
       const urlBaseBase = window.location.origin + window.location.pathname.replace('certificados.html', 'validar.html');
@@ -354,6 +421,9 @@
         lote: loteQuimico, 
         registroMS: inputRegistro.value,
         dosisAplicada: inputDosis.value,
+        horaInicio: document.getElementById('horaInicio').value + ' Hrs',
+        horaFin: document.getElementById('horaFin').value + ' Hrs',
+        tecnico: document.getElementById('tecnico').value,
         observaciones: document.getElementById('observaciones').value,
         urlValidacionQR: urlQR, 
         fechaRegistroSistema: new Date().toISOString()
