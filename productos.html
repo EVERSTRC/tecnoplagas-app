@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fumigadora Tecnoplagas - Productos</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; margin: 0; padding: 20px; color: #1e293b; }
+    .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; }
+    @media (min-width: 768px) { .container { grid-template-columns: 350px 1fr; } }
+    
+    .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); height: fit-content; }
+    h3 { margin-top: 0; color: #1e293b; }
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #475569; }
+    input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    input:focus { outline: none; border-color: #10b981; }
+    
+    .btn { width: 100%; padding: 12px; color: white; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin-bottom: 10px; transition: background 0.2s; }
+    .btn-submit { background: #10b981; }
+    .btn-submit:hover { background: #059669; }
+    .btn-cancel { background: #64748b; display: none; }
+    
+    .search-box { margin-bottom: 15px; width: 100%; }
+    
+    .grid-productos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .producto-card { background: white; padding: 15px; border-radius: 8px; border-left: 5px solid #f59e0b; box-shadow: 0 2px 4px rgba(0,0,0,0.04); position: relative; }
+    .producto-card h4 { margin: 0 0 10px 0; color: #1e293b; font-size: 18px; }
+    .producto-card p { margin: 4px 0; font-size: 13px; color: #475569; }
+    .producto-card strong { color: #1e293b; }
+    
+    .acciones { margin-top: 12px; display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-edit { background: #f59e0b; color: white; }
+    .btn-delete { background: #ef4444; color: white; }
+    
+    .btn-back { background: #1e293b; color: white; text-decoration: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; display: inline-block; margin-bottom: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <a href="index.html" class="btn-back">⬅ Volver al Menú</a>
+
+  <div class="container">
+    <div class="card">
+      <h3 id="form-titulo">Nuevo Producto</h3>
+      <form id="producto-form">
+        <input type="hidden" id="modo-edicion" value="">
+        
+        <div class="form-group">
+          <label for="nombreComercial">Nombre Comercial:</label>
+          <input type="text" id="nombreComercial" required placeholder="Ej: K-Othrina">
+        </div>
+        <div class="form-group">
+          <label for="ingredienteActivo">Ingrediente Activo:</label>
+          <input type="text" id="ingredienteActivo" required placeholder="Ej: Deltametrina">
+        </div>
+        <div class="form-group">
+          <label for="registroMS">Registro M.S.:</label>
+          <input type="text" id="registroMS" required placeholder="Ej: RG-12345">
+        </div>
+        <div class="form-group">
+          <label for="lote">Lote:</label>
+          <input type="text" id="lote" required placeholder="Ej: LT-9988">
+        </div>
+        <div class="form-group">
+          <label for="dosisRecomendada">Dosis Recomendada:</label>
+          <input type="text" id="dosisRecomendada" required placeholder="Ej: 10ml / Litro">
+        </div>
+        <div class="form-group">
+          <label for="vencimientoProducto">Vencimiento del Producto:</label>
+          <input type="text" id="vencimientoProducto" required placeholder="Ej: 12/2027">
+        </div>
+        
+        <button type="submit" id="btn-guardar" class="btn btn-submit">Guardar Producto</button>
+        <button type="button" id="btn-cancelar" class="btn btn-cancel">Cancelar Edición</button>
+      </form>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom: 20px; padding: 15px;">
+        <input type="text" id="buscador-productos" class="search-box" style="margin:0;" placeholder="🔍 Buscar producto por nombre, ingrediente o lote...">
+      </div>
+      
+      <div id="lista-productos" class="grid-productos">
+        </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, collection, setDoc, doc, onSnapshot, deleteDoc, enableIndexedDbPersistence 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
+      authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+      projectId: "fumigadora-tecnoplagas",
+      storageBucket: "fumigadora-tecnoplagas.firebasestorage.app",
+      messagingSenderId: "510795344519",
+      appId: "1:510795344519:web:9991541f95af051f12a622"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    enableIndexedDbPersistence(db).catch((err) => {
+        console.log("Persistencia offline activa en productos: ", err.code);
+    });
+
+    const form = document.getElementById('producto-form');
+    const listaProductos = document.getElementById('lista-productos');
+    const buscador = document.getElementById('buscador-productos');
+    const modoEdicionHidden = document.getElementById('modo-edicion');
+    const tituloFormulario = document.getElementById('form-titulo');
+    const btnGuardar = document.getElementById('btn-guardar');
+    const btnCancelar = document.getElementById('btn-cancelar');
+
+    let productosArray = [];
+
+    function resetearFormulario() {
+      form.reset();
+      modoEdicionHidden.value = "";
+      tituloFormulario.innerText = "Nuevo Producto";
+      btnGuardar.innerText = "Guardar Producto";
+      btnGuardar.style.background = "#10b981";
+      btnCancelar.style.display = "none";
+    }
+
+    btnCancelar.addEventListener('click', resetearFormulario);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const nombreComercial = document.getElementById('nombreComercial').value.trim();
+      const ingredienteActivo = document.getElementById('ingredienteActivo').value.trim();
+      const registroMS = document.getElementById('registroMS').value.trim();
+      const lote = document.getElementById('lote').value.trim();
+      const dosisRecomendada = document.getElementById('dosisRecomendada').value.trim();
+      const vencimientoProducto = document.getElementById('vencimientoProducto').value.trim();
+      
+      const esEdicion = modoEdicionHidden.value !== "";
+      const idDocumento = esEdicion ? modoEdicionHidden.value : nombreComercial.replace(/[^a-zA-Z0-9]/g, "_");
+
+      try {
+        const datosProducto = {
+          "Dosis Recomendada": dosisRecomendada,
+          "Ingrediente Activo": ingredienteActivo,
+          "Lote": lote,
+          "Nombre Comercial": nombreComercial,
+          "Registro M.S.": registroMS,
+          "Vencimiento del Producto": vencimientoProducto
+        };
+        await setDoc(doc(db, "Productos", idDocumento), datosProducto);
+        alert(esEdicion ? "¡Producto modificado con éxito!" : "¡Producto registrado exitosamente!");
+        resetearFormulario();
+      } catch (error) {
+        alert("Error al guardar en la base de datos.");
+      }
+    });
+
+    function renderizarProductos(arreglo) {
+      listaProductos.innerHTML = '';
+      if (arreglo.length === 0) {
+        listaProductos.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#94a3b8;">No se encontraron productos.</p>';
+        return;
+      }
+      arreglo.forEach((p) => {
+        const div = document.createElement('div');
+        div.className = 'producto-card';
+        div.innerHTML = `
+          <h4>${p["Nombre Comercial"]}</h4>
+          <p><strong>Ingrediente Activo:</strong> ${p["Ingrediente Activo"]}</p>
+          <p><strong>Registro M.S.:</strong> ${p["Registro M.S."]}</p>
+          <p><strong>Lote:</strong> ${p["Lote"]}</p>
+          <p><strong>Dosis Recomendada:</strong> ${p["Dosis Recomendada"]}</p>
+          <p><strong>Vencimiento:</strong> ${p["Vencimiento del Producto"]}</p>
+          <div class="acciones">
+            <button class="btn-action btn-edit" data-id="${p.id}">✏️ Editar</button>
+            <button class="btn-action btn-delete" data-id="${p.id}">❌ Eliminar</button>
+          </div>
+        `;
+        listaProductos.appendChild(div);
+      });
+
+      document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const prod = productosArray.find(p => p.id === id);
+          if (prod) {
+            document.getElementById('nombreComercial').value = prod["Nombre Comercial"];
+            document.getElementById('ingredienteActivo').value = prod["Ingrediente Activo"];
+            document.getElementById('registroMS').value = prod["Registro M.S."];
+            document.getElementById('lote').value = prod["Lote"];
+            document.getElementById('dosisRecomendada').value = prod["Dosis Recomendada"];
+            document.getElementById('vencimientoProducto').value = prod["Vencimiento del Producto"];
+            modoEdicionHidden.value = id;
+            tituloFormulario.innerText = `✏️ Editando: ${prod["Nombre Comercial"]}`;
+            btnGuardar.innerText = "Actualizar Producto";
+            btnGuardar.style.background = "#f59e0b";
+            btnCancelar.style.display = "block";
+          }
+        });
+      });
+
+      document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const id = e.target.getAttribute('data-id');
+          if (confirm(`¿Deseas eliminar este producto de la base de datos?`)) {
+            await deleteDoc(doc(db, "Productos", id));
+          }
+        });
+      });
+    }
+
+    onSnapshot(collection(db, "Productos"), (snapshot) => {
+      productosArray = [];
+      snapshot.forEach((docSnap) => {
+        productosArray.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      renderizarProductos(productosArray);
+    });
+
+    buscador.addEventListener('input', (e) => {
+      const texto = e.target.value.toLowerCase().trim();
+      const filtrados = productosArray.filter(p => {
+        return (p["Nombre Comercial"] || '').toLowerCase().includes(texto) || 
+               (p["Ingrediente Activo"] || '').toLowerCase().includes(texto) || 
+               (p["Lote"] || '').toLowerCase().includes(texto);
+      });
+      renderizarProductos(filtrados);
+    });
+  </script>
+</body>
+</html>
