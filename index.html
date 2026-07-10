@@ -13,6 +13,8 @@
     .btn-nav:active { transform: scale(0.98); }
     .btn-clientes { background: #10b981; }
     .btn-clientes:hover { background: #059669; }
+    .btn-productos { background: #f59e0b; }
+    .btn-productos:hover { background: #d97706; }
     .btn-certificados { background: #2563eb; }
     .btn-certificados:hover { background: #1d4ed8; }
     .pwa-tag { margin-top: 25px; font-size: 12px; color: #94a3b8; }
@@ -24,9 +26,21 @@
     <p style="color: #64748b; margin-bottom: 25px;">Seleccione el módulo del sistema al que desea ingresar:</p>
     <div class="btn-container">
       <a href="clientes.html" class="btn-nav btn-clientes">👥 Control de Clientes</a>
+      <a href="productos.html" class="btn-nav btn-productos">📦 Control de Productos</a>
       <a href="certificados.html" class="btn-nav btn-certificados">📄 Emitir Certificados</a>
     </div>
     <div class="pwa-tag">Sistema optimizado para Tablets y Soporte Offline</div>
   </div>
+
+  <script>
+    // Registro automático del Service Worker para soporte Offline
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado con éxito', reg.scope))
+          .catch(err => console.error('Error al registrar el Service Worker', err));
+      });
+    }
+  </script>
 </body>
 </html>
