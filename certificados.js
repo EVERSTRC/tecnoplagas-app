@@ -34,53 +34,21 @@ const inProdVence = document.getElementById('form-prod-vence');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
-let listaProductosGlobal = []; // Colección en memoria de productos de Firestore
 
-// Sincronización de Productos desde la base de datos en tiempo real[span_0](start_span)[span_0](end_span)
-onSnapshot(collection(db, "productos"), (snapshot) => {
-  if (selectProducto) {
-    selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
-  }
-  listaProductosGlobal = [];
-  
-  snapshot.forEach((docSnap) => {
-    const prod = docSnap.data();
-    // Guardamos la información limpia de cada producto
-    listaProductosGlobal.push({ id: docSnap.id, ...prod });
-    
-    if (selectProducto && prod["Nombre Comercial"]) {[span_1](start_span)[span_1](end_span)
-      const option = document.createElement('option');
-      // Usamos el Nombre Comercial directo como value para asegurar emparejamiento inmediato
-      option.value = prod["Nombre Comercial"];[span_2](start_span)[span_2](end_span)
-      option.textContent = prod["Nombre Comercial"];[span_3](start_span)[span_3](end_span)
-      selectProducto.appendChild(option);
-    }
-  });
-});
-
-// Autocompletado reactivo al seleccionar un Producto de la lista[span_4](start_span)[span_4](end_span)
+// Autocompletado de la ficha técnica al elegir el producto comercial
 if (selectProducto) {
   selectProducto.addEventListener('change', () => {
-    const valorSeleccionado = selectProducto.value;
-    // Buscamos directamente por correspondencia de Nombre Comercial
-    const productoEncontrado = listaProductosGlobal.find(p => p["Nombre Comercial"] === valorSeleccionado);[span_5](start_span)[span_5](end_span)
-
-    if (productoEncontrado) {
-      // Mapeo preciso a los elementos correspondientes de la vista[span_6](start_span)[span_6](end_span)
-      if(inProdNombre) inProdNombre.value = productoEncontrado["Nombre Comercial"] || "";[span_7](start_span)[span_7](end_span)
-      if(inProdActivo) inProdActivo.value = productoEncontrado["Ingrediente Activo"] || "";[span_8](start_span)[span_8](end_span)
-      if(inProdMs)     inProdMs.value     = productoEncontrado["Registro M.S."] || "";[span_9](start_span)[span_9](end_span)
-      if(inProdDosis)  inProdDosis.value  = productoEncontrado["Dosis Recomendada"] || "";[span_10](start_span)[span_10](end_span)
-      if(inProdLote)   inProdLote.value   = productoEncontrado["Lote"] || "";[span_11](start_span)[span_11](end_span)
-      if(inProdVence)  inProdVence.value  = productoEncontrado["Vencimiento del Producto"] || "";[span_12](start_span)[span_12](end_span)
+    const valor = selectProducto.value;
+    if (valor === "Finigen") {
+      if(inProdNombre) inProdNombre.value = "Finigen"; if(inProdActivo) inProdActivo.value = "Cipermetrina + Acetamiprid"; if(inProdMs) inProdMs.value = "4113-P-902"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "25/02/28";
+    } else if (valor === "Ekoset" || valor === "EKOSET EC") {
+      if(inProdNombre) inProdNombre.value = "EKOSET EC"; if(inProdActivo) inProdActivo.value = "Permetrina + Tetrametrina"; if(inProdMs) inProdMs.value = "4122-P-698"; if(inProdDosis) inProdDosis.value = "10 a 20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "01/28";
+    } else if (valor === "Cybor") {
+      if(inProdNombre) inProdNombre.value = "Cybor"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "1007-P-335"; if(inProdDosis) inProdDosis.value = "10-20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
+    } else if (valor === "Cynoff" || valor === "Cynoff CE") {
+      if(inProdNombre) inProdNombre.value = "Cynoff CE"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "MV-3382"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
     } else {
-      // Limpieza segura en caso de deselección o vacíos
-      if(inProdNombre) inProdNombre.value = "";
-      if(inProdActivo) inProdActivo.value = "";
-      if(inProdMs)     inProdMs.value     = "";
-      if(inProdDosis)  inProdDosis.value  = "";
-      if(inProdLote)   inProdLote.value   = "";
-      if(inProdVence)  inProdVence.value  = "";
+      if(inProdNombre) inProdNombre.value = ""; if(inProdActivo) inProdActivo.value = ""; if(inProdMs) inProdMs.value = ""; if(inProdDosis) inProdDosis.value = ""; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "";
     }
   });
 }
@@ -330,8 +298,6 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-    const nombreProductoGuardar = selectProducto.value;
-
     // Payload exacto estructurado según tus campos de Firestore
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
@@ -342,7 +308,7 @@ if (formCert) {
       "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
       "Objetivo de Control": document.getElementById('objetivo-control').value,
       "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-      "Producto utilizado": nombreProductoGuardar,
+      "Producto utilizado": selectProducto.value,
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
       "Hora de Inicio": Timestamp.fromDate(hInicio),
@@ -367,7 +333,7 @@ if (formCert) {
         direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
         fecha: fServicio.toLocaleDateString('es-CR'),
         vence: fValido.toLocaleDateString('es-CR'),
-        producto: nombreProductoGuardar,
+        producto: selectProducto.value,
         cabezal: payloadCertificado.Cabezal,
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
