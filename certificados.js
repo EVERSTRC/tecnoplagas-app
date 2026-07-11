@@ -36,19 +36,23 @@ let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 let listaProductosGlobal = []; // Colección en memoria de productos de Firestore
 
-// Sincronización de Productos desde la base de datos en tiempo real[span_2](start_span)[span_2](end_span)
+// Sincronización de Productos desde la base de datos en tiempo real[span_0](start_span)[span_0](end_span)
 onSnapshot(collection(db, "productos"), (snapshot) => {
-  if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  if (selectProducto) {
+    selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  }
   listaProductosGlobal = [];
   
   snapshot.forEach((docSnap) => {
     const prod = docSnap.data();
+    // Guardamos la información limpia de cada producto
     listaProductosGlobal.push({ id: docSnap.id, ...prod });
     
-    if (selectProducto) {
+    if (selectProducto && prod["Nombre Comercial"]) {[span_1](start_span)[span_1](end_span)
       const option = document.createElement('option');
-      option.value = docSnap.id; 
-      option.textContent = prod["Nombre Comercial"] || docSnap.id;[span_3](start_span)[span_3](end_span)
+      // Usamos el Nombre Comercial directo como value para asegurar emparejamiento inmediato
+      option.value = prod["Nombre Comercial"];[span_2](start_span)[span_2](end_span)
+      option.textContent = prod["Nombre Comercial"];[span_3](start_span)[span_3](end_span)
       selectProducto.appendChild(option);
     }
   });
@@ -57,19 +61,20 @@ onSnapshot(collection(db, "productos"), (snapshot) => {
 // Autocompletado reactivo al seleccionar un Producto de la lista[span_4](start_span)[span_4](end_span)
 if (selectProducto) {
   selectProducto.addEventListener('change', () => {
-    const idProductoSeleccionado = selectProducto.value;
-    const productoEncontrado = listaProductosGlobal.find(p => p.id === idProductoSeleccionado);
+    const valorSeleccionado = selectProducto.value;
+    // Buscamos directamente por correspondencia de Nombre Comercial
+    const productoEncontrado = listaProductosGlobal.find(p => p["Nombre Comercial"] === valorSeleccionado);[span_5](start_span)[span_5](end_span)
 
     if (productoEncontrado) {
-      // Mapeo preciso a los elementos correspondientes de la vista[span_5](start_span)[span_5](end_span)
-      if(inProdNombre) inProdNombre.value = productoEncontrado["Nombre Comercial"] || "";[span_6](start_span)[span_6](end_span)
-      if(inProdActivo) inProdActivo.value = productoEncontrado["Ingrediente Activo"] || "";[span_7](start_span)[span_7](end_span)
-      if(inProdMs)     inProdMs.value     = productoEncontrado["Registro M.S."] || "";[span_8](start_span)[span_8](end_span)
-      if(inProdDosis)  inProdDosis.value  = productoEncontrado["Dosis Recomendada"] || "";[span_9](start_span)[span_9](end_span)
-      if(inProdLote)   inProdLote.value   = productoEncontrado["Lote"] || "";[span_10](start_span)[span_10](end_span)
-      if(inProdVence)  inProdVence.value  = productoEncontrado["Vencimiento del Producto"] || "";[span_11](start_span)[span_11](end_span)
+      // Mapeo preciso a los elementos correspondientes de la vista[span_6](start_span)[span_6](end_span)
+      if(inProdNombre) inProdNombre.value = productoEncontrado["Nombre Comercial"] || "";[span_7](start_span)[span_7](end_span)
+      if(inProdActivo) inProdActivo.value = productoEncontrado["Ingrediente Activo"] || "";[span_8](start_span)[span_8](end_span)
+      if(inProdMs)     inProdMs.value     = productoEncontrado["Registro M.S."] || "";[span_9](start_span)[span_9](end_span)
+      if(inProdDosis)  inProdDosis.value  = productoEncontrado["Dosis Recomendada"] || "";[span_10](start_span)[span_10](end_span)
+      if(inProdLote)   inProdLote.value   = productoEncontrado["Lote"] || "";[span_11](start_span)[span_11](end_span)
+      if(inProdVence)  inProdVence.value  = productoEncontrado["Vencimiento del Producto"] || "";[span_12](start_span)[span_12](end_span)
     } else {
-      // Limpieza segura en caso de deselección
+      // Limpieza segura en caso de deselección o vacíos
       if(inProdNombre) inProdNombre.value = "";
       if(inProdActivo) inProdActivo.value = "";
       if(inProdMs)     inProdMs.value     = "";
@@ -325,10 +330,7 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-    // Buscamos el objeto producto completo para guardar su Nombre Comercial de manera consistente
-    const productoId = selectProducto.value;
-    const prodSeleccionado = listaProductosGlobal.find(p => p.id === productoId);
-    const nombreProductoGuardar = prodSeleccionado ? (prodSeleccionado["Nombre Comercial"] || productoId) : productoId;[span_12](start_span)[span_12](end_span)
+    const nombreProductoGuardar = selectProducto.value;
 
     // Payload exacto estructurado según tus campos de Firestore
     const payloadCertificado = {
