@@ -74,7 +74,7 @@
       background-color: #64748b;
       color: white;
       text-decoration: none;
-      padding: 10px 16px;
+      padding: 10px 166px;
       border-radius: 6px;
       font-size: 14px;
       font-weight: bold;
@@ -226,16 +226,13 @@
       display: block;
     }
 
-    /* =========================================================================
-       NUEVA CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE)
-       ========================================================================= */
     @media print {
       .no-print { display: none !important; }
       .only-print { display: block !important; }
       
       @page {
-        size: A4 landscape; /* Fuerza al navegador/tablet a ponerse en horizontal */
-        margin: 6mm 8mm 6mm 8mm; /* Ajustes marginales para máximo aprovechamiento */
+        size: A4 landscape; 
+        margin: 6mm 8mm 6mm 8mm; 
       }
       
       body {
@@ -249,7 +246,6 @@
         position: relative;
       }
 
-      /* Sello de agua sutil en el fondo usando el enlace raw absoluto de GitHub */
       body::before {
         content: "";
         position: fixed;
@@ -262,14 +258,13 @@
         background-repeat: no-repeat;
         background-position: center;
         background-size: contain;
-        opacity: 0.07; /* Tono atenuado ideal para que el texto sea legible */
+        opacity: 0.07; 
         z-index: -1000;
         pointer-events: none;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
 
-      /* Marco elegante exterior que envuelve el certificado horizontal */
       .certificate-border {
         border: 3px double #475569;
         padding: 12px;
