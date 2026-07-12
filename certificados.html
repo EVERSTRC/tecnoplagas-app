@@ -134,6 +134,30 @@
       font-weight: bold;
     }
 
+    /* Estilos para los grupos de Checkboxes restaurados */
+    .checkbox-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 5px;
+      background: #ffffff;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .checkbox-item input {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+
     fieldset {
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -367,7 +391,7 @@
         <div class="form-row">
           <div class="form-group">
             <label for="nombre-fantasia">Nombre de Fantasía</label>
-            <input type="text" id="nombre-fantasia" placeholder="Nombre comercial / Opcional">
+            <input type="text" id="nombre-fantasia" placeholder="Opcional">
           </div>
           <div class="form-group">
             <label for="cabezal">Placa Cabezal</label>
@@ -398,47 +422,45 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="tipo-servicio">Tipo de Servicio</label>
-            <select id="tipo-servicio" required>
-              <option value="">Seleccione tipo...</option>
-              <option value="Comercial">Comercial</option>
-              <option value="Residencial">Residencial</option>
-              <option value="Vehicular / Transporte">Vehicular / Transporte</option>
-              <option value="Industrial">Industrial</option>
-            </select>
+        <!-- SECCIÓN DE SELECCIÓN MÚLTIPLE ADAPTADA -->
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Tipo de Servicio:</label>
+          <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Comercial"> Comercial</label>
+              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Residencial"> Residencial</label>
+              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Vehicular / Transporte"> Vehicular / Transporte</label>
+              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Industrial"> Industrial</label>
           </div>
-          <div class="form-group">
-            <label for="objetivo-control">Objetivo de Control principal</label>
-            <select id="objetivo-control" required>
-              <option value="">Seleccione un objetivo...</option>
-              <option value="Desinsectación">Desinsectación</option>
-              <option value="Desratización">Desratización</option>
-              <option value="Sanitización">Sanitización</option>
-            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Objetivo de Control:</label>
+          <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desinsectación"> Desinsectación</label>
+              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desratización"> Desratización</label>
+              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Sanitización"> Sanitización</label>
           </div>
-          <div class="form-group">
-            <label for="metodo-aplicacion">Método de Aplicación</label>
-            <select id="metodo-aplicacion" required>
-              <option value="">Seleccione un método...</option>
-              <option value="Aspersión">Aspersión</option>
-              <option value="Termonebulización">Termonebulización</option>
-              <option value="Nebulización en frío">Nebulización en frío</option>
-              <option value="Lami gomosa">Lami gomosa</option>
-              <option value="Prod granulado">Prod granulado</option>
-              <option value="Cebo para roedores">Cebo para roedores</option>
-              <option value="Trampa mecánica">Trampa mecánica</option>
-              <option value="Aplic de prod en gel">Aplic de prod en gel</option>
-              <option value="Aplic de Gas Fumígeno">Aplic de Gas Fumígeno</option>
-              <option value="Aplic de prod en Polvo">Aplic de prod en Polvo</option>
-            </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label>Método de Aplicación:</label>
+          <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aspersión"> Aspersión</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Termonebulización"> Termonebulización</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Nebulización en frío"> Nebulización en frío</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Lami gomosa"> Lami gomosa</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Prod granulado"> Prod granulado</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Cebo para roedores"> Cebo para roedores</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Trampa mecánica"> Trampa mecánica</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en gel"> Aplic de prod en gel</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de Gas Fumígeno"> Aplic de Gas Fumígeno</label>
+              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en Polvo"> Aplic de prod en Polvo</label>
           </div>
         </div>
 
         <div class="form-group full-width" style="margin-bottom: 20px;">
           <label for="plagas-controla">Plagas que Controla</label>
-          <input type="text" id="plagas-controla" required placeholder="Cargado automáticamente o personalizado...">
+          <input type="text" id="plagas-controla" required placeholder="control de insectos rastreros, arácnidos, insectos voladores y termitas">
         </div>
 
         <fieldset>
@@ -568,13 +590,21 @@
         <tbody>
           <tr>
             <td style="line-height: 1.6; padding: 6px;">
-              <div id="chk-desinsectacion">( ) Desinsectación</div>
-              <div id="chk-desratizacion">( ) Desratización</div>
-              <div id="chk-sanitizacion">( ) Sanitización</div>
+              <div id="chk-desinsectacion">[ ] Desinsectación</div>
+              <div id="chk-desratizacion">[ ] Desratización</div>
+              <div id="chk-sanitizacion">[ ] Sanitización</div>
             </td>
-            <td style="line-height: 1.6; padding: 6px;" id="print-metodo-seleccionado">
-              <!-- La lógica JS inyectará el método seleccionado dinámicamente aquí -->
-              ---
+            <td style="line-height: 1.4; padding: 6px; font-size: 10px;">
+              <div id="m-aspersion">[ ] Aspersión</div>
+              <div id="m-termonebulizacion">[ ] Termonebulización</div>
+              <div id="m-nebulizacion-frio">[ ] Nebulización en frío</div>
+              <div id="m-lami-gomosa">[ ] Lami gomosa</div>
+              <div id="m-prod-granulado">[ ] Prod granulado</div>
+              <div id="m-cebo-roedores">[ ] Cebo para roedores</div>
+              <div id="m-trampa-mecanica">[ ] Trampa mecánica</div>
+              <div id="m-prod-gel">[ ] Aplic de prod en gel</div>
+              <div id="m-gas-fumigeno">[ ] Aplic de Gas Fumígeno</div>
+              <div id="m-prod-polvo">[ ] Aplic de prod en Polvo</div>
             </td>
             <td id="print-plagas" style="padding: 8px; font-style: italic; vertical-align: top; color: #334155;">
               ---
