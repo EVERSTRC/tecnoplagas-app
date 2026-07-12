@@ -57,6 +57,10 @@
           <input type="text" id="ingredienteActivo" required placeholder="Ej: Deltametrina">
         </div>
         <div class="form-group">
+          <label for="plagasControla">Plagas que Controla:</label>
+          <input type="text" id="plagasControla" required placeholder="Ej: Cucarachas, Hormigas, Moscas">
+        </div>
+        <div class="form-group">
           <label for="registroMS">Registro M.S.:</label>
           <input type="text" id="registroMS" required placeholder="Ej: RG-12345">
         </div>
@@ -135,6 +139,7 @@
       e.preventDefault();
       const nombreComercial = document.getElementById('nombreComercial').value.trim();
       const ingredienteActivo = document.getElementById('ingredienteActivo').value.trim();
+      const plagasControla = document.getElementById('plagasControla').value.trim();
       const registroMS = document.getElementById('registroMS').value.trim();
       const lote = document.getElementById('lote').value.trim();
       const dosisRecomendada = document.getElementById('dosisRecomendada').value.trim();
@@ -145,9 +150,10 @@
 
       try {
         const datosProducto = {
-          "IdProductos": idDocumento, // Mapeo del nuevo campo String solicitado
+          "IdProductos": idDocumento,
           "Dosis Recomendada": dosisRecomendada,
           "Ingrediente Activo": ingredienteActivo,
+          "Plagas que Controla": plagasControla,
           "Lote": lote,
           "Nombre Comercial": nombreComercial,
           "Registro M.S.": registroMS,
@@ -174,6 +180,7 @@
           <h4>${p["Nombre Comercial"]}</h4>
           <p><strong>ID Producto:</strong> ${p["IdProductos"] || p.id}</p>
           <p><strong>Ingrediente Activo:</strong> ${p["Ingrediente Activo"]}</p>
+          <p><strong>Plagas que Controla:</strong> ${p["Plagas que Controla"] || 'No especificado'}</p>
           <p><strong>Registro M.S.:</strong> ${p["Registro M.S."]}</p>
           <p><strong>Lote:</strong> ${p["Lote"]}</p>
           <p><strong>Dosis Recomendada:</strong> ${p["Dosis Recomendada"]}</p>
@@ -193,6 +200,7 @@
           if (prod) {
             document.getElementById('nombreComercial').value = prod["Nombre Comercial"];
             document.getElementById('ingredienteActivo').value = prod["Ingrediente Activo"];
+            document.getElementById('plagasControla').value = prod["Plagas que Controla"] || '';
             document.getElementById('registroMS').value = prod["Registro M.S."];
             document.getElementById('lote').value = prod["Lote"];
             document.getElementById('dosisRecomendada').value = prod["Dosis Recomendada"];
@@ -230,7 +238,8 @@
         return (p["Nombre Comercial"] || '').toLowerCase().includes(texto) || 
                (p["Ingrediente Activo"] || '').toLowerCase().includes(texto) || 
                (p["Lote"] || '').toLowerCase().includes(texto) ||
-               (p["IdProductos"] || '').toLowerCase().includes(texto); // Filtro por el nuevo ID también
+               (p["Plagas que Controla"] || '').toLowerCase().includes(texto) ||
+               (p["IdProductos"] || '').toLowerCase().includes(texto);
       });
       renderizarProductos(filtrados);
     });
