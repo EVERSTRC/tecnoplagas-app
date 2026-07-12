@@ -307,7 +307,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario mapeado según tus especificaciones originales exactas
+// Guardado del formulario mapeado según tus especificaciones de colecciones
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -337,7 +337,7 @@ if (formCert) {
       "Tipo de servicio": document.getElementById('tipo-servicio').value,
       "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
       "Objetivo de Control": document.getElementById('objetivo-control').value,
-      "Plagas que controla": document.getElementById('plagas-controla').value,
+      "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
       "Producto utilizado": selectProducto.value, 
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
