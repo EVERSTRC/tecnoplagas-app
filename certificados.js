@@ -48,7 +48,6 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
     if (selectProducto) {
       const option = document.createElement('option');
       option.value = docSnap.id; 
-      // Muestra el "Nombre Comercial" exacto de tu Firestore o el ID del documento como respaldo
       option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
       selectProducto.appendChild(option);
     }
@@ -75,7 +74,6 @@ if (selectProducto) {
     const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
 
     if (prodEncontrado) {
-      // Mapeo uno a uno según la estructura exacta de tu base de datos
       if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
       if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
       if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
@@ -157,8 +155,8 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
         tipo: cert["Tipo de servicio"] || '---',
-        metodo: cert["Metodo de aplicacion"] || '---',
-        objetivo: cert["Objetivo de Control"] || '---',
+        metodo: cert["Metodo de aplicacion"] || '---', 
+        objetivo: cert["Objetivo de Control"] || '---', 
         plagas: cert["Plagas que controla"] || '---',
         horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
         horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
@@ -261,13 +259,29 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
-    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
-    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+    // LÓGICA MÚLTIPLE OBJETIVOS: Evalúa las palabras incluidas para marcar de forma independiente la hoja impresa
+    const stringObjetivos = cert.objetivo || "";
+    if(document.getElementById('chk-desinsectacion')) {
+      document.getElementById('chk-desinsectacion').innerText = stringObjetivos.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
+    }
+    if(document.getElementById('chk-desratizacion')) {
+      document.getElementById('chk-desratizacion').innerText = stringObjetivos.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
+    }
+    if(document.getElementById('chk-sanitizacion')) {
+      document.getElementById('chk-sanitizacion').innerText = stringObjetivos.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+    }
 
-    if(document.getElementById('chk-aspersion')) document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    if(document.getElementById('chk-cebo')) document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
-    if(document.getElementById('chk-termonebulizacion')) document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    // LÓGICA MÚLTIPLE MÉTODOS: Evalúa los términos e imprime la marca [X] de forma independiente
+    const stringMetodos = cert.metodo || "";
+    if(document.getElementById('chk-aspersion')) {
+      document.getElementById('chk-aspersion').innerText = stringMetodos.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
+    }
+    if(document.getElementById('chk-cebo')) {
+      document.getElementById('chk-cebo').innerText = stringMetodos.includes("Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
+    }
+    if(document.getElementById('chk-termonebulizacion')) {
+      document.getElementById('chk-termonebulizacion').innerText = stringMetodos.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    }
 
     if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
     if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
@@ -321,6 +335,37 @@ if (formCert) {
       return;
     }
 
+    // PROCESAMIENTO MÚLTIPLE: Extraer Objetivos de Control marcados
+    const checkboxesObjetivos = document.querySelectorAll('input[name="obj-control"]:checked');
+    const arrayObjetivos = [];
+    checkboxesObjetivos.forEach(cb => arrayObjetivos.push(cb.value));
+    const objetivosSeleccionadosString = arrayObjetivos.join(", "); 
+
+    if (arrayObjetivos.length === 0) {
+      alert("Por favor seleccione al menos un Objetivo de Control.");
+      return;
+    }
+
+    // PROCESAMIENTO MÚLTIPLE: Extraer Métodos de Aplicación marcados
+    const checkboxesMetodos = document.querySelectorAll('input[name="metodo-aplic"]:checked');
+    const arrayMetodos = [];
+    checkboxesMetodos.forEach(cb => arrayMetodos.push(cb.value));
+    const metodosSeleccionadosString = arrayMetodos.join(", ");
+
+    if (arrayMetodos.length === 0) {
+      alert("Por favor seleccione al menos un Método de Aplicación.");
+      return;
+    }
+
+    // LEER EL TEXTO DEL NUEVO DESPLEGABLE DE PLAGAS QUE CONTROLA
+    const selectPlagasElement = document.getElementById('plagas-controla');
+    const plagasSeleccionadasString = selectPlagasElement ? selectPlagasElement.value : "";
+
+    if (!plagasSeleccionadasString) {
+      alert("Por favor seleccione una opción en Plagas que Controla.");
+      return;
+    }
+
     const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
     const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
     
@@ -335,9 +380,9 @@ if (formCert) {
       Remolque: document.getElementById('remolque').value.trim(),
       "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
       "Tipo de servicio": document.getElementById('tipo-servicio').value,
-      "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
-      "Objetivo de Control": document.getElementById('objetivo-control').value,
-      "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
+      "Metodo de aplicacion": metodosSeleccionadosString, 
+      "Objetivo de Control": objetivosSeleccionadosString, 
+      "Plagas que controla": plagasSeleccionadasString, 
       "Producto utilizado": selectProducto.value, 
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
@@ -383,6 +428,11 @@ if (formCert) {
 
       prepararYDispararImpresion(certMock);
       formCert.reset();
+      
+      // Limpiar todos los grupos de checkboxes tras el guardado
+      checkboxesObjetivos.forEach(cb => cb.checked = false);
+      checkboxesMetodos.forEach(cb => cb.checked = false);
+
     } catch (error) {
       console.error("Error al guardar:", error);
       alert("Error al guardar el certificado en la base de datos.");
