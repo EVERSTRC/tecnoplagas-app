@@ -24,7 +24,7 @@ const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
 const selectProducto = document.getElementById('producto-utilizado');
 
-// Referencias de los campos de detalles químicos
+// Referencias de los campos de detalles químicos (Inputs del Formulario)
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
@@ -34,23 +34,67 @@ const inProdVence = document.getElementById('form-prod-vence');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
+let listaProductosGlobal = []; 
 
-// Autocompletado de la ficha técnica al elegir el producto comercial
-if (selectProducto) {
-  selectProducto.addEventListener('change', () => {
-    const valor = selectProducto.value;
-    if (valor === "Finigen") {
-      if(inProdNombre) inProdNombre.value = "Finigen"; if(inProdActivo) inProdActivo.value = "Cipermetrina + Acetamiprid"; if(inProdMs) inProdMs.value = "4113-P-902"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "25/02/28";
-    } else if (valor === "Ekoset" || valor === "EKOSET EC") {
-      if(inProdNombre) inProdNombre.value = "EKOSET EC"; if(inProdActivo) inProdActivo.value = "Permetrina + Tetrametrina"; if(inProdMs) inProdMs.value = "4122-P-698"; if(inProdDosis) inProdDosis.value = "10 a 20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "01/28";
-    } else if (valor === "Cybor") {
-      if(inProdNombre) inProdNombre.value = "Cybor"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "1007-P-335"; if(inProdDosis) inProdDosis.value = "10-20 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
-    } else if (valor === "Cynoff" || valor === "Cynoff CE") {
-      if(inProdNombre) inProdNombre.value = "Cynoff CE"; if(inProdActivo) inProdActivo.value = "Cipermetrina"; if(inProdMs) inProdMs.value = "MV-3382"; if(inProdDosis) inProdDosis.value = "5-10 ml/L"; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "02/28";
-    } else {
-      if(inProdNombre) inProdNombre.value = ""; if(inProdActivo) inProdActivo.value = ""; if(inProdMs) inProdMs.value = ""; if(inProdDosis) inProdDosis.value = ""; if(inProdLote) inProdLote.value = ""; if(inProdVence) inProdVence.value = "";
+// Sincronización de Productos en tiempo real desde Firebase (Colección: "Productos")
+onSnapshot(collection(db, "Productos"), (snapshot) => {
+  if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  listaProductosGlobal = [];
+  
+  snapshot.forEach((docSnap) => {
+    const producto = docSnap.data();
+    listaProductosGlobal.push({ id: docSnap.id, ...producto });
+    
+    if (selectProducto) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      // Muestra el "Nombre Comercial" exacto de tu Firestore o el ID del documento como respaldo
+      option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
+      selectProducto.appendChild(option);
     }
   });
+
+  if (selectProducto) {
+    const optionOtro = document.createElement('option');
+    optionOtro.value = "Otro";
+    optionOtro.textContent = "Otro (Manual)";
+    selectProducto.appendChild(optionOtro);
+  }
+});
+
+// Autocompletado dinámico mapeado con los nombres exactos de tus campos en Firestore
+if (selectProducto) {
+  selectProducto.addEventListener('change', () => {
+    const valorSeleccionado = selectProducto.value;
+
+    if (!valorSeleccionado || valorSeleccionado === "Otro") {
+      limpiarCamposProducto();
+      return;
+    }
+
+    const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
+
+    if (prodEncontrado) {
+      // Mapeo uno a uno según la estructura exacta de tu base de datos
+      if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
+      if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
+      if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
+      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || "";
+      if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
+      if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
+    } else {
+      limpiarCamposProducto();
+    }
+  });
+}
+
+function limpiarCamposProducto() {
+  if (inProdNombre) inProdNombre.value = "";
+  if (inProdActivo) inProdActivo.value = "";
+  if (inProdMs) inProdMs.value = "";
+  if (inProdDosis) inProdDosis.value = "";
+  if (inProdLote) inProdLote.value = "";
+  if (inProdVence) inProdVence.value = "";
 }
 
 // Sincronización de Clientes en tiempo real
@@ -77,7 +121,6 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
-  // Calcular número siguiente de forma segura e independiente para evitar que falle el consecutivo
   const totalCertificados = snapshot.size;
   const numeroSiguiente = totalCertificados + 1;
   const formatoNumero = String(numeroSiguiente).padStart(6, '0');
@@ -95,7 +138,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
       const cert = docSnap.data();
       if (!cert) return;
 
-      // Extracción del ID del cliente desde la referencia exacta "Nombre"
       let idClienteRelacionado = "";
       if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
         idClienteRelacionado = cert.Nombre.id;
@@ -136,7 +178,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Pinta las filas de la tabla de consultas
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -173,7 +214,6 @@ function renderTablaHistorial(lista) {
   });
 }
 
-// Filtro de búsqueda en tiempo real
 if (inputBuscar) {
   inputBuscar.addEventListener('input', (e) => {
     const termino = e.target.value.toLowerCase().trim();
@@ -185,7 +225,6 @@ if (inputBuscar) {
   });
 }
 
-// Acción de re-impresión directa
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
@@ -207,7 +246,6 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Envía la información a los elementos contenedores de la impresión y genera el QR
 function prepararYDispararImpresion(cert) {
   try {
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -238,18 +276,11 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // === SOLUCIÓN DEFINITIVA DEL QR: ENLACE APUNTANDO A TU GITHUB PAGES ===
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
-      qrContainer.innerHTML = ""; // Limpieza estricta de instancias anteriores
-      
-      // Remover acentos para asegurar compatibilidad total con navegadores móviles
+      qrContainer.innerHTML = ""; 
       const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
-      
-      // Dirección base del validador alojado en tu cuenta de GitHub Pages
       const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
-      
-      // Construimos el enlace codificado pasando todas las variables
       const textoQrPublico = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
 
       const InstanciaQRCode = window.QRCode || QRCode;
@@ -276,7 +307,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario usando tus campos exactos
+// Guardado del formulario mapeado según tus especificaciones de colecciones
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -298,7 +329,6 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-    // Payload exacto estructurado según tus campos de Firestore
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
       Cabezal: document.getElementById('cabezal').value.trim(),
@@ -308,12 +338,12 @@ if (formCert) {
       "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
       "Objetivo de Control": document.getElementById('objetivo-control').value,
       "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
-      "Producto utilizado": selectProducto.value,
+      "Producto utilizado": selectProducto.value, 
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
       "Hora de Inicio": Timestamp.fromDate(hInicio),
       "Hora Finalizacion": Timestamp.fromDate(hFin),
-      Nombre: doc(db, "clientes", clienteSeleccionadoId), // Guarda como Reference nativo
+      Nombre: doc(db, "clientes", clienteSeleccionadoId), 
       
       "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
       "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
