@@ -75,11 +75,11 @@ if (selectProducto) {
     const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
 
     if (prodEncontrado) {
-      // Mapeo uno a uno según la estructura exacta de tu base de datos
+      // Mapeo uno a uno según la estructura exacta de tu base de datos proporcionada
       if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
       if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
       if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
-      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || "";
+      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; // Sincronizado dinámicamente con Firestore
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
     } else {
