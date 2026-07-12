@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Referencias de los elementos del formulario en HTML
+// Referencias de los elementos del formulario (Respetando tus IDs originales)
 const formCert = document.getElementById('certificado-form');
 const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
@@ -24,26 +24,20 @@ const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
 const selectProducto = document.getElementById('producto-utilizado');
 
-// Referencias de los campos de detalles químicos (Inputs del Formulario)
+// Campos de detalles químicos (Inputs de tu formulario)
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
 const inProdLote = document.getElementById('form-prod-lote');
 const inProdDosis = document.getElementById('form-prod-dosis');
 const inProdVence = document.getElementById('form-prod-vence');
-
-// FUNCIÓN DE BÚSQUEDA TRIPLE MULTI-ID (Evita el problema de que devuelva NULL)
-const obtenerInputPlagas = () => {
-  return document.getElementById('plagas-controla') || 
-         document.getElementById('form-plagas-controla') || 
-         document.querySelector('input[placeholder*="Cargado automáticamente"]');
-};
+const inPlagasControla = document.getElementById('plagas-controla');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 let listaProductosGlobal = []; 
 
-// Sincronización de Productos en tiempo real desde Firebase (Colección: "Productos")
+// Sincronización de Productos (Sin alterar el diseño del select)
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
@@ -68,7 +62,7 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
   }
 });
 
-// Autocompletado dinámico mapeado con los nombres exactos de tus campos en Firestore
+// Autocompletado de los campos del formulario al cambiar producto
 if (selectProducto) {
   selectProducto.addEventListener('change', () => {
     const valorSeleccionado = selectProducto.value;
@@ -87,11 +81,7 @@ if (selectProducto) {
       if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; 
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
-      
-      const inputPlagasDinamico = obtenerInputPlagas();
-      if (inputPlagasDinamico) {
-        inputPlagasDinamico.value = prodEncontrado["Plagas que Controla"] || "";
-      }
+      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
     } else {
       limpiarCamposProducto();
     }
@@ -105,14 +95,10 @@ function limpiarCamposProducto() {
   if (inProdDosis) inProdDosis.value = "";
   if (inProdLote) inProdLote.value = "";
   if (inProdVence) inProdVence.value = "";
-  
-  const inputPlagasDinamico = obtenerInputPlagas();
-  if (inputPlagasDinamico) {
-    inputPlagasDinamico.value = "";
-  }
+  if (inPlagasControla) inPlagasControla.value = "";
 }
 
-// Sincronización de Clientes en tiempo real
+// Sincronización de Clientes
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   if (selectCliente) selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -132,7 +118,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización e Historial de Certificados
+// Sincronización del Historial e ID Autoincrementable
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -185,7 +171,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.warn("Fila omitida por inconsistencia en los campos:", docSnap.id, e);
+      console.warn("Inconsistencia en documento omitida:", docSnap.id);
     }
   });
 
@@ -193,12 +179,13 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
+// Rellena tu tabla inferior usando tus estilos nativos
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
   
   if(lista.length === 0) {
-    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros coincidentes.</td></tr>`;
+    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>`;
     return;
   }
 
@@ -215,14 +202,12 @@ function renderTablaHistorial(lista) {
       cert.clienteNombre = "No especificado";
     }
 
-    let badgeStyle = "background:#e0f2fe; color:#0369a1; padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;";
-
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${cert.id}</strong></td>
       <td>${cert.clienteNombre}</td>
       <td>${cert.fecha}</td>
-      <td><span style="${badgeStyle}">${cert.pNombre}</span></td>
+      <td>${cert.pNombre}</td>
       <td><button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Re-Imprimir</button></td>
     `;
     tablaHistorialBody.appendChild(tr);
@@ -246,46 +231,49 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
     alert("Certificado no localizado.");
     return;
   }
-
   if (cert.direccion === "---" && cert.clienteId) {
     try {
       const snap = await getDoc(doc(db, "clientes", cert.clienteId));
-      if(snap.exists()) {
-        cert.direccion = snap.data().direccion || "---";
-      }
+      if(snap.exists()) cert.direccion = snap.data().direccion || "---";
     } catch(err) {
       console.error(err);
     }
   }
-
   prepararYDispararImpresion(cert);
 };
 
+// Vinculación estricta con el área de impresión original de tu HTML
 function prepararYDispararImpresion(cert) {
   try {
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
-    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || cert.clienteNombre || '---';
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || '---';
     if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
     if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
     if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
-    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = (cert.horaInicio || '00:00');
-    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = (cert.horaFin || '00:00');
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '00:00';
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '00:00';
     if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
     if(document.getElementById('print-cabezal')) document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    // Mapeo dinámico para tus checkboxes en la boleta impresa original
     const objTexto = cert.objetivo || "";
     if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = objTexto.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
     if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = objTexto.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
     if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = objTexto.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
     const metTexto = cert.metodo || "";
-    if(document.getElementById('chk-aspersion')) document.getElementById('chk-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    if(document.getElementById('chk-cebo')) document.getElementById('chk-cebo').innerText = metTexto.includes("Cebo") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
-    if(document.getElementById('chk-termonebulizacion')) document.getElementById('chk-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    if(document.getElementById('m-aspersion')) document.getElementById('m-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
+    if(document.getElementById('m-termonebulizacion')) document.getElementById('m-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    if(document.getElementById('m-nebulizacion-frio')) document.getElementById('m-nebulizacion-frio').innerText = metTexto.includes("Nebulización en frío") ? "[X] Nebulización en frío" : "[ ] Nebulización en frío";
+    if(document.getElementById('m-lami-gomosa')) document.getElementById('m-lami-gomosa').innerText = metTexto.includes("Lami gomosa") ? "[X] Lami gomosa" : "[ ] Lami gomosa";
+    if(document.getElementById('m-prod-granulado')) document.getElementById('m-prod-granulado').innerText = metTexto.includes("Prod granulado") ? "[X] Prod granulado" : "[ ] Prod granulado";
+    if(document.getElementById('m-cebo-roedores')) document.getElementById('m-cebo-roedores').innerText = metTexto.includes("Cebo para roedores") ? "[X] Cebo para roedores" : "[ ] Cebo para roedores";
+    if(document.getElementById('m-trampa-mecanica')) document.getElementById('m-trampa-mecanica').innerText = metTexto.includes("Trampa mecánica") ? "[X] Trampa mecánica" : "[ ] Trampa mecánica";
+    if(document.getElementById('m-prod-gel')) document.getElementById('m-prod-gel').innerText = metTexto.includes("Aplic de prod en gel") ? "[X] Aplic de prod en gel" : "[ ] Aplic de prod en gel";
+    if(document.getElementById('m-gas-fumigeno')) document.getElementById('m-gas-fumigeno').innerText = metTexto.includes("Aplic de Gas Fumígeno") ? "[X] Aplic de Gas Fumígeno" : "[ ] Aplic de Gas Fumígeno";
+    if(document.getElementById('m-prod-polvo')) document.getElementById('m-prod-polvo').innerText = metTexto.includes("Aplic de prod en Polvo") ? "[X] Aplic de prod en Polvo" : "[ ] Aplic de prod en Polvo";
 
     if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
     if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
@@ -322,7 +310,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario - CORREGIDO EXCLUSIVAMENTE PARA MANEJAR CHECKBOXES DINÁMICOS
+// Captura y almacenamiento lógico del formulario (Sin tocar elementos visuales)
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -333,40 +321,44 @@ if (formCert) {
       const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
 
       if(!clienteSeleccionadoId) {
-        alert("Por favor seleccione un cliente válido antes de guardar.");
+        alert("⚠️ Por favor seleccione un cliente de la lista.");
         return;
       }
 
-      // CAPTURA INTELIGENTE DE CHECKBOXES (Busca por 'name' o clases sin importar el HTML visual)
-      const tiposSeleccionados = Array.from(document.querySelectorAll('input[name*="tipo"]:checked, input[class*="tipo"]:checked')).map(cb => cb.value);
-      const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name*="objetivo"]:checked, input[class*="objetivo"]:checked')).map(cb => cb.value);
-      const metodosSeleccionados = Array.from(document.querySelectorAll('input[name*="metodo"]:checked, input[class*="metodo"]:checked')).map(cb => cb.value);
+      // Procesa los checkboxes utilizando exactamente el atributo 'name' de tu HTML
+      const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="tipo-servicio"]:checked')).map(cb => cb.value);
+      const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
+      const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
 
-      // Convertir arreglos seleccionados a cadenas de texto separadas por comas
-      const tipoServicioString = tiposSeleccionados.length > 0 ? tiposSeleccionados.join(', ') : "No especificado";
-      const objetivoControlString = objetivosSeleccionados.length > 0 ? objetivosSeleccionados.join(', ') : "No especificado";
-      const metodoAplicacionString = metodosSeleccionados.length > 0 ? metodosSeleccionados.join(', ') : "No especificado";
+      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
+      const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
+      const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
 
-      const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
-      const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
+      const fechaServicioRaw = document.getElementById('fecha-servicio').value;
+      const servicioValidoRaw = document.getElementById('servicio-valido').value;
+      if (!fechaServicioRaw || !servicioValidoRaw) {
+        alert("⚠️ Por favor asigne la Fecha del Servicio y su vencimiento.");
+        return;
+      }
+
+      const fServicio = new Date(fechaServicioRaw + "T00:00:00");
+      const fValido = new Date(servicioValidoRaw + "T00:00:00");
       
-      const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
-      const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
-      const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
-      const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
-
-      const inputPlagasDinamico = obtenerInputPlagas();
+      const hInicioStr = document.getElementById('hora-inicio').value || "08:00";
+      const hFinStr = document.getElementById('hora-finalizacion').value || "09:00";
+      const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
+      const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
 
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
-        Cabezal: document.getElementById('cabezal').value.trim(),
-        Remolque: document.getElementById('remolque').value.trim(),
-        "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
+        Cabezal: (document.getElementById('cabezal').value || "N/A").trim(),
+        Remolque: (document.getElementById('remolque').value || "N/A").trim(),
+        "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
         "Tipo de servicio": tipoServicioString,
         "Metodo de aplicacion": metodoAplicacionString,
         "Objetivo de Control": objetivoControlString,
-        "Plagas que controla": inputPlagasDinamico ? inputPlagasDinamico.value.trim() : "",
-        "Producto utilizado": selectProducto.value, 
+        "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
+        "Producto utilizado": selectProducto.value || "Otro", 
         "Fecha del Servicio": Timestamp.fromDate(fServicio),
         "Servicio valido": Timestamp.fromDate(fValido),
         "Hora de Inicio": Timestamp.fromDate(hInicio),
@@ -410,13 +402,11 @@ if (formCert) {
 
       prepararYDispararImpresion(certMock);
       formCert.reset();
-      
-      // Limpiar los checkboxes manualmente después de guardar
       document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
     } catch (error) {
-      console.error("Error al guardar:", error);
-      alert("Error al guardar en Firebase: " + error.message);
+      console.error(error);
+      alert("❌ Ocurrió un error al guardar: " + error.message);
     }
   });
 }
