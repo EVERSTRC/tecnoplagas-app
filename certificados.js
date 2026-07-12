@@ -32,6 +32,13 @@ const inProdLote = document.getElementById('form-prod-lote');
 const inProdDosis = document.getElementById('form-prod-dosis');
 const inProdVence = document.getElementById('form-prod-vence');
 
+// FUNCIÓN DE BÚSQUEDA TRIPLE MULTI-ID (Evita el problema de que devuelva NULL)
+const obtenerInputPlagas = () => {
+  return document.getElementById('plagas-controla') || 
+         document.getElementById('form-plagas-controla') || 
+         document.querySelector('input[placeholder*="Cargado automáticamente"]');
+};
+
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 let listaProductosGlobal = []; 
@@ -82,8 +89,8 @@ if (selectProducto) {
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
       
-      // SOLUCIÓN: Buscar el input directamente al cambiar el valor para evitar que sea null
-      const inputPlagasDinamico = document.getElementById('plagas-controla');
+      // AUTOLLENADO INMEDIATO PARA PLAGAS QUE CONTROLA
+      const inputPlagasDinamico = obtenerInputPlagas();
       if (inputPlagasDinamico) {
         inputPlagasDinamico.value = prodEncontrado["Plagas que Controla"] || "";
       }
@@ -101,8 +108,8 @@ function limpiarCamposProducto() {
   if (inProdLote) inProdLote.value = "";
   if (inProdVence) inProdVence.value = "";
   
-  // SOLUCIÓN: Limpiar el input buscándolo en tiempo real
-  const inputPlagasDinamico = document.getElementById('plagas-controla');
+  // Limpieza del campo plagas
+  const inputPlagasDinamico = obtenerInputPlagas();
   if (inputPlagasDinamico) {
     inputPlagasDinamico.value = "";
   }
@@ -340,7 +347,7 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
-    const inputPlagasDinamico = document.getElementById('plagas-controla');
+    const inputPlagasDinamico = obtenerInputPlagas();
 
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
