@@ -81,7 +81,6 @@ if (selectProducto) {
     const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
 
     if (prodEncontrado) {
-      // Mapeo uno a uno según la estructura exacta de tu base de datos proporcionada
       if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
       if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
       if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
@@ -89,7 +88,6 @@ if (selectProducto) {
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
       
-      // AUTOLLENADO INMEDIATO PARA PLAGAS QUE CONTROLA
       const inputPlagasDinamico = obtenerInputPlagas();
       if (inputPlagasDinamico) {
         inputPlagasDinamico.value = prodEncontrado["Plagas que Controla"] || "";
@@ -108,7 +106,6 @@ function limpiarCamposProducto() {
   if (inProdLote) inProdLote.value = "";
   if (inProdVence) inProdVence.value = "";
   
-  // Limpieza del campo plagas
   const inputPlagasDinamico = obtenerInputPlagas();
   if (inputPlagasDinamico) {
     inputPlagasDinamico.value = "";
@@ -279,13 +276,11 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    // ASIGNACIÓN MÚLTIPLE DE OBJETIVOS EN IMPRESIÓN
     const objTexto = cert.objetivo || "";
     if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = objTexto.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
     if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = objTexto.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
     if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = objTexto.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
-    // ASIGNACIÓN MÚLTIPLE DE LOS 10 MÉTODOS DE APLICACIÓN EN IMPRESIÓN
     const metTexto = cert.metodo || "";
     if(document.getElementById('m-aspersion')) document.getElementById('m-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
     if(document.getElementById('m-termonebulizacion')) document.getElementById('m-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
@@ -325,10 +320,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    setTimeout(() => {
-      window.print();
-    }, 400);
-
+    setTimeout(() => { window.print(); }, 400);
   } catch (error) {
     console.error("Error al preparar la impresión:", error);
   }
@@ -336,7 +328,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario - CORREGIDO PARA CHECKBOXES Y PROTEGIDO CONTRA ERRORES
+// Guardado del formulario - TOTALMENTE BLINDADO CONTRA ERRORES
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -347,7 +339,7 @@ if (formCert) {
       const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
 
       if(!clienteSeleccionadoId) {
-        alert("⚠️ Por favor seleccione un cliente válido antes de guardar.");
+        alert("⚠️ Por favor seleccione un cliente válido de la lista.");
         return;
       }
 
@@ -378,7 +370,7 @@ if (formCert) {
       }
       const metodoAplicacionString = metodosSeleccionados.join(', ');
 
-      // Validar que las fechas no vengan vacías
+      // Validar Fechas
       const fechaServicioRaw = document.getElementById('fecha-servicio').value;
       const servicioValidoRaw = document.getElementById('servicio-valido').value;
       if (!fechaServicioRaw || !servicioValidoRaw) {
