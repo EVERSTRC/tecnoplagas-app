@@ -84,7 +84,7 @@
       </div>
       
       <div id="lista-productos" class="grid-productos">
-        </div>
+      </div>
     </div>
   </div>
 
@@ -145,6 +145,7 @@
 
       try {
         const datosProducto = {
+          "IdProductos": idDocumento, // Mapeo del nuevo campo String solicitado
           "Dosis Recomendada": dosisRecomendada,
           "Ingrediente Activo": ingredienteActivo,
           "Lote": lote,
@@ -171,6 +172,7 @@
         div.className = 'producto-card';
         div.innerHTML = `
           <h4>${p["Nombre Comercial"]}</h4>
+          <p><strong>ID Producto:</strong> ${p["IdProductos"] || p.id}</p>
           <p><strong>Ingrediente Activo:</strong> ${p["Ingrediente Activo"]}</p>
           <p><strong>Registro M.S.:</strong> ${p["Registro M.S."]}</p>
           <p><strong>Lote:</strong> ${p["Lote"]}</p>
@@ -227,7 +229,8 @@
       const filtrados = productosArray.filter(p => {
         return (p["Nombre Comercial"] || '').toLowerCase().includes(texto) || 
                (p["Ingrediente Activo"] || '').toLowerCase().includes(texto) || 
-               (p["Lote"] || '').toLowerCase().includes(texto);
+               (p["Lote"] || '').toLowerCase().includes(texto) ||
+               (p["IdProductos"] || '').toLowerCase().includes(texto); // Filtro por el nuevo ID también
       });
       renderizarProductos(filtrados);
     });
