@@ -130,7 +130,6 @@
       font-weight: bold;
     }
 
-    /* ESTILOS PARA LOS CHECKBOXES EN LÍNEA */
     .checkbox-group {
       display: flex;
       flex-direction: row;
@@ -418,13 +417,18 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="tipo-servicio">Tipo de Servicio</label>
-            <select id="tipo-servicio" required>
-              <option value="">Seleccione tipo...</option>
-              <option value="Control de Plagas">Control de Plagas</option>
-              <option value="Fumigación de Vehículo de Carga">Fumigación de Vehículo de Carga</option>
-              <option value="Control de Plagas Comercial">Control de Plagas Comercial</option>
-            </select>
+            <label style="margin-bottom: 2px;">Tipo de Servicio (Selección Múltiple)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="tipo-servicio" value="Control de Plagas"> Control de Plagas
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="tipo-servicio" value="Fumigación de Vehículo de Carga"> Fumigación de Vehículo de Carga
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="tipo-servicio" value="Control de Plagas Comercial"> Control de Plagas Comercial
+              </label>
+            </div>
           </div>
           
           <div class="form-group">
