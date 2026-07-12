@@ -279,13 +279,24 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = (cert.objetivo === "Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
-    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = (cert.objetivo === "Desratización") ? "[X] Desratización" : "[ ] Desratización";
-    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = (cert.objetivo === "Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+    // ASIGNACIÓN MÚLTIPLE DE OBJETIVOS EN IMPRESIÓN
+    const objTexto = cert.objetivo || "";
+    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = objTexto.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
+    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = objTexto.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
+    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = objTexto.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
 
-    if(document.getElementById('chk-aspersion')) document.getElementById('chk-aspersion').innerText = (cert.metodo === "Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    if(document.getElementById('chk-cebo')) document.getElementById('chk-cebo').innerText = (cert.metodo === "Cebo Rodenticida") ? "[X] Cebo Rodenticida" : "[ ] Cebo Rodenticida";
-    if(document.getElementById('chk-termonebulizacion')) document.getElementById('chk-termonebulizacion').innerText = (cert.metodo === "Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    // ASIGNACIÓN MÚLTIPLE DE LOS 10 MÉTODOS DE APLICACIÓN EN IMPRESIÓN
+    const metTexto = cert.metodo || "";
+    if(document.getElementById('m-aspersion')) document.getElementById('m-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
+    if(document.getElementById('m-termonebulizacion')) document.getElementById('m-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    if(document.getElementById('m-nebulizacion-frio')) document.getElementById('m-nebulizacion-frio').innerText = metTexto.includes("Nebulización en frío") ? "[X] Nebulización en frío" : "[ ] Nebulización en frío";
+    if(document.getElementById('m-lami-gomosa')) document.getElementById('m-lami-gomosa').innerText = metTexto.includes("Lami gomosa") ? "[X] Lami gomosa" : "[ ] Lami gomosa";
+    if(document.getElementById('m-prod-granulado')) document.getElementById('m-prod-granulado').innerText = metTexto.includes("Prod granulado") ? "[X] Prod granulado" : "[ ] Prod granulado";
+    if(document.getElementById('m-cebo-roedores')) document.getElementById('m-cebo-roedores').innerText = metTexto.includes("Cebo para roedores") ? "[X] Cebo para roedores" : "[ ] Cebo para roedores";
+    if(document.getElementById('m-trampa-mecanica')) document.getElementById('m-trampa-mecanica').innerText = metTexto.includes("Trampa mecánica") ? "[X] Trampa mecánica" : "[ ] Trampa mecánica";
+    if(document.getElementById('m-prod-gel')) document.getElementById('m-prod-gel').innerText = metTexto.includes("Aplic de prod en gel") ? "[X] Aplic de prod en gel" : "[ ] Aplic de prod en gel";
+    if(document.getElementById('m-gas-fumigeno')) document.getElementById('m-gas-fumigeno').innerText = metTexto.includes("Aplic de Gas Fumígeno") ? "[X] Aplic de Gas Fumígeno" : "[ ] Aplic de Gas Fumígeno";
+    if(document.getElementById('m-prod-polvo')) document.getElementById('m-prod-polvo').innerText = metTexto.includes("Aplic de prod en Polvo") ? "[X] Aplic de prod en Polvo" : "[ ] Aplic de prod en Polvo";
 
     if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
     if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
@@ -325,56 +336,91 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario
+// Guardado del formulario - CORREGIDO PARA CHECKBOXES Y PROTEGIDO CONTRA ERRORES
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const idCertificadoValue = inputIdCertificado.value;
-    const clienteSeleccionadoId = selectCliente.value;
-    const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
-
-    if(!clienteSeleccionadoId) {
-      alert("Por favor seleccione un cliente válido antes de guardar.");
-      return;
-    }
-
-    const fServicio = new Date(document.getElementById('fecha-servicio').value + "T00:00:00");
-    const fValido = new Date(document.getElementById('servicio-valido').value + "T00:00:00");
-    
-    const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
-    const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
-    const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
-    const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
-
-    const inputPlagasDinamico = obtenerInputPlagas();
-
-    const payloadCertificado = {
-      IdCertificados: idCertificadoValue,
-      Cabezal: document.getElementById('cabezal').value.trim(),
-      Remolque: document.getElementById('remolque').value.trim(),
-      "Nombre de fantasia": document.getElementById('nombre-fantasia').value.trim(),
-      "Tipo de servicio": document.getElementById('tipo-servicio').value,
-      "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
-      "Objetivo de Control": document.getElementById('objetivo-control').value,
-      "Plagas que controla": inputPlagasDinamico ? inputPlagasDinamico.value.trim() : "",
-      "Producto utilizado": selectProducto.value, 
-      "Fecha del Servicio": Timestamp.fromDate(fServicio),
-      "Servicio valido": Timestamp.fromDate(fValido),
-      "Hora de Inicio": Timestamp.fromDate(hInicio),
-      "Hora Finalizacion": Timestamp.fromDate(hFin),
-      Nombre: doc(db, "clientes", clienteSeleccionadoId), 
-      
-      "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
-      "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
-      "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
-      "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
-      "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
-      "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
-      "Codigo de barras": idCertificadoValue
-    };
-
     try {
+      const idCertificadoValue = inputIdCertificado.value;
+      const clienteSeleccionadoId = selectCliente.value;
+      const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
+
+      if(!clienteSeleccionadoId) {
+        alert("⚠️ Por favor seleccione un cliente válido antes de guardar.");
+        return;
+      }
+
+      // CAPTURA MÚLTIPLE: TIPO DE SERVICIO
+      const checkboxesTipo = document.querySelectorAll('input[name="tipo-servicio"]:checked');
+      const tiposSeleccionados = Array.from(checkboxesTipo).map(cb => cb.value);
+      if(tiposSeleccionados.length === 0) {
+        alert("⚠️ Por favor seleccione al menos un Tipo de Servicio.");
+        return;
+      }
+      const tipoServicioString = tiposSeleccionados.join(', ');
+
+      // CAPTURA MÚLTIPLE: OBJETIVOS DE CONTROL
+      const checkboxesObjetivo = document.querySelectorAll('input[name="objetivo-control"]:checked');
+      const objetivosSeleccionados = Array.from(checkboxesObjetivo).map(cb => cb.value);
+      if(objetivosSeleccionados.length === 0) {
+        alert("⚠️ Por favor seleccione al menos un Objetivo de Control.");
+        return;
+      }
+      const objetivoControlString = objetivosSeleccionados.join(', ');
+
+      // CAPTURA MÚLTIPLE: MÉTODOS DE APLICACIÓN
+      const checkboxesMetodo = document.querySelectorAll('input[name="metodo-aplicacion"]:checked');
+      const metodosSeleccionados = Array.from(checkboxesMetodo).map(cb => cb.value);
+      if(metodosSeleccionados.length === 0) {
+        alert("⚠️ Por favor seleccione al menos un Método de Aplicación.");
+        return;
+      }
+      const metodoAplicacionString = metodosSeleccionados.join(', ');
+
+      // Validar que las fechas no vengan vacías
+      const fechaServicioRaw = document.getElementById('fecha-servicio').value;
+      const servicioValidoRaw = document.getElementById('servicio-valido').value;
+      if (!fechaServicioRaw || !servicioValidoRaw) {
+        alert("⚠️ Por favor especifique la Fecha de Aplicación y Vencimiento.");
+        return;
+      }
+
+      const fServicio = new Date(fechaServicioRaw + "T00:00:00");
+      const fValido = new Date(servicioValidoRaw + "T00:00:00");
+      
+      const hInicioStr = document.getElementById('hora-inicio').value || "00:00";
+      const hFinStr = document.getElementById('hora-finalizacion').value || "00:00";
+      const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
+      const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
+
+      const inputPlagasDinamico = obtenerInputPlagas();
+
+      const payloadCertificado = {
+        IdCertificados: idCertificadoValue,
+        Cabezal: (document.getElementById('cabezal').value || "N/A").trim(),
+        Remolque: (document.getElementById('remolque').value || "N/A").trim(),
+        "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
+        "Tipo de servicio": tipoServicioString,
+        "Metodo de aplicacion": metodoAplicacionString,
+        "Objetivo de Control": objetivoControlString,
+        "Plagas que controla": inputPlagasDinamico ? inputPlagasDinamico.value.trim() : "",
+        "Producto utilizado": selectProducto.value || "Otro", 
+        "Fecha del Servicio": Timestamp.fromDate(fServicio),
+        "Servicio valido": Timestamp.fromDate(fValido),
+        "Hora de Inicio": Timestamp.fromDate(hInicio),
+        "Hora Finalizacion": Timestamp.fromDate(hFin),
+        Nombre: doc(db, "clientes", clienteSeleccionadoId), 
+        
+        "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
+        "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
+        "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
+        "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
+        "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
+        "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
+        "Codigo de barras": idCertificadoValue
+      };
+
       await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
       
       const certMock = {
@@ -403,9 +449,11 @@ if (formCert) {
 
       prepararYDispararImpresion(certMock);
       formCert.reset();
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
     } catch (error) {
-      console.error("Error al guardar:", error);
-      alert("Error al guardar el certificado en la base de datos.");
+      console.error("Error crítico al intentar guardar:", error);
+      alert("❌ Error al procesar o guardar el certificado:\n" + error.message);
     }
   });
 }
