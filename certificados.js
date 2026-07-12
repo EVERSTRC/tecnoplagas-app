@@ -31,6 +31,7 @@ const inProdMs = document.getElementById('form-prod-ms');
 const inProdLote = document.getElementById('form-prod-lote');
 const inProdDosis = document.getElementById('form-prod-dosis');
 const inProdVence = document.getElementById('form-prod-vence');
+const inPlagasControla = document.getElementById('plagas-controla');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
@@ -48,7 +49,6 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
     if (selectProducto) {
       const option = document.createElement('option');
       option.value = docSnap.id; 
-      // Muestra el "Nombre Comercial" exacto de tu Firestore o el ID del documento como respaldo
       option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
       selectProducto.appendChild(option);
     }
@@ -79,9 +79,12 @@ if (selectProducto) {
       if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
       if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
       if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
-      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; // Sincronizado dinámicamente con Firestore
+      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; 
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
+      
+      // Sincroniza dinámicamente el campo "Plagas que Controla" desde Cloud Firestore
+      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
     } else {
       limpiarCamposProducto();
     }
@@ -95,6 +98,7 @@ function limpiarCamposProducto() {
   if (inProdDosis) inProdDosis.value = "";
   if (inProdLote) inProdLote.value = "";
   if (inProdVence) inProdVence.value = "";
+  if (inPlagasControla) inPlagasControla.value = "";
 }
 
 // Sincronización de Clientes en tiempo real
@@ -117,7 +121,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización e Historial de Certificados mapeado con tus campos exactos de base de datos
+// Sincronización e Historial de Certificados
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -307,7 +311,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario mapeado según tus especificaciones de colecciones
+// Guardado del formulario
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -337,7 +341,7 @@ if (formCert) {
       "Tipo de servicio": document.getElementById('tipo-servicio').value,
       "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
       "Objetivo de Control": document.getElementById('objetivo-control').value,
-      "Plagas que controla": document.getElementById('plagas-controla').value.trim(),
+      "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
       "Producto utilizado": selectProducto.value, 
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
