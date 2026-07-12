@@ -115,7 +115,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización e Historial de Certificados mapeado con tus campos exactos de base de datos
+// Sincronización e Historial de Certificados
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -259,7 +259,6 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    // LÓGICA MÚLTIPLE OBJETIVOS: Evalúa las palabras incluidas para marcar de forma independiente la hoja impresa
     const stringObjetivos = cert.objetivo || "";
     if(document.getElementById('chk-desinsectacion')) {
       document.getElementById('chk-desinsectacion').innerText = stringObjetivos.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
@@ -271,7 +270,6 @@ function prepararYDispararImpresion(cert) {
       document.getElementById('chk-sanitizacion').innerText = stringObjetivos.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
     }
 
-    // LÓGICA MÚLTIPLE MÉTODOS: Evalúa los términos e imprime la marca [X] de forma independiente
     const stringMetodos = cert.metodo || "";
     if(document.getElementById('chk-aspersion')) {
       document.getElementById('chk-aspersion').innerText = stringMetodos.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
@@ -321,7 +319,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardado del formulario mapeado según tus especificaciones de colecciones
+// Guardado del formulario
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -335,7 +333,6 @@ if (formCert) {
       return;
     }
 
-    // PROCESAMIENTO MÚLTIPLE: Extraer Objetivos de Control marcados
     const checkboxesObjetivos = document.querySelectorAll('input[name="obj-control"]:checked');
     const arrayObjetivos = [];
     checkboxesObjetivos.forEach(cb => arrayObjetivos.push(cb.value));
@@ -346,7 +343,6 @@ if (formCert) {
       return;
     }
 
-    // PROCESAMIENTO MÚLTIPLE: Extraer Métodos de Aplicación marcados
     const checkboxesMetodos = document.querySelectorAll('input[name="metodo-aplic"]:checked');
     const arrayMetodos = [];
     checkboxesMetodos.forEach(cb => arrayMetodos.push(cb.value));
@@ -357,7 +353,6 @@ if (formCert) {
       return;
     }
 
-    // LEER EL TEXTO DEL NUEVO DESPLEGABLE DE PLAGAS QUE CONTROLA
     const selectPlagasElement = document.getElementById('plagas-controla');
     const plagasSeleccionadasString = selectPlagasElement ? selectPlagasElement.value : "";
 
@@ -429,7 +424,6 @@ if (formCert) {
       prepararYDispararImpresion(certMock);
       formCert.reset();
       
-      // Limpiar todos los grupos de checkboxes tras el guardado
       checkboxesObjetivos.forEach(cb => cb.checked = false);
       checkboxesMetodos.forEach(cb => cb.checked = false);
 
