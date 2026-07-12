@@ -31,7 +31,6 @@ const inProdMs = document.getElementById('form-prod-ms');
 const inProdLote = document.getElementById('form-prod-lote');
 const inProdDosis = document.getElementById('form-prod-dosis');
 const inProdVence = document.getElementById('form-prod-vence');
-const inPlagasControla = document.getElementById('plagas-controla');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
@@ -83,8 +82,11 @@ if (selectProducto) {
       if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
       if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
       
-      // Sincroniza dinámicamente el campo "Plagas que Controla" desde Cloud Firestore
-      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
+      // SOLUCIÓN: Buscar el input directamente al cambiar el valor para evitar que sea null
+      const inputPlagasDinamico = document.getElementById('plagas-controla');
+      if (inputPlagasDinamico) {
+        inputPlagasDinamico.value = prodEncontrado["Plagas que Controla"] || "";
+      }
     } else {
       limpiarCamposProducto();
     }
@@ -98,7 +100,12 @@ function limpiarCamposProducto() {
   if (inProdDosis) inProdDosis.value = "";
   if (inProdLote) inProdLote.value = "";
   if (inProdVence) inProdVence.value = "";
-  if (inPlagasControla) inPlagasControla.value = "";
+  
+  // SOLUCIÓN: Limpiar el input buscándolo en tiempo real
+  const inputPlagasDinamico = document.getElementById('plagas-controla');
+  if (inputPlagasDinamico) {
+    inputPlagasDinamico.value = "";
+  }
 }
 
 // Sincronización de Clientes en tiempo real
@@ -333,6 +340,8 @@ if (formCert) {
     const hInicio = new Date(document.getElementById('fecha-servicio').value + "T" + hInicioStr);
     const hFin = new Date(document.getElementById('fecha-servicio').value + "T" + hFinStr);
 
+    const inputPlagasDinamico = document.getElementById('plagas-controla');
+
     const payloadCertificado = {
       IdCertificados: idCertificadoValue,
       Cabezal: document.getElementById('cabezal').value.trim(),
@@ -341,7 +350,7 @@ if (formCert) {
       "Tipo de servicio": document.getElementById('tipo-servicio').value,
       "Metodo de aplicacion": document.getElementById('metodo-aplicacion').value,
       "Objetivo de Control": document.getElementById('objetivo-control').value,
-      "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
+      "Plagas que controla": inputPlagasDinamico ? inputPlagasDinamico.value.trim() : "",
       "Producto utilizado": selectProducto.value, 
       "Fecha del Servicio": Timestamp.fromDate(fServicio),
       "Servicio valido": Timestamp.fromDate(fValido),
