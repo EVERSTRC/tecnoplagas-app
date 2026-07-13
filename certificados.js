@@ -157,11 +157,11 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         cabezal: cert.Cabezal || 'N/A',
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
-        tipo: cert["Tipo de servicio"] || '---',
         
-        // CORRECCIÓN AQUÍ: Aseguramos leer correctamente de la base de datos de Firebase
-        metodo: cert["Metodo de aplicacion"] || cert.metodo || '---',
-        objetivo: cert["Objetivo de Control"] || cert.objetivo || '---',
+        // Mapeo idéntico al que usa con éxito "Tipo de servicio"
+        tipo: cert["Tipo de servicio"] || '---',
+        metodo: cert["Metodo de aplicacion"] || '---',
+        objetivo: cert["Objetivo de Control"] || '---',
         
         plagas: cert["Plagas que controla"] || '---',
         horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
@@ -405,9 +405,9 @@ if (formCert) {
         cabezal: payloadCertificado.Cabezal,
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
-        tipo: payloadCertificado["Tipo de servicio"],
         
-        // CORRECCIÓN AQUÍ: Para que la impresión inmediata al guardar también funcione perfectamente
+        // Uso de variables unificadas bajo la misma lógica idéntica de tipo de servicio
+        tipo: tipoServicioString,
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
         
