@@ -16,6 +16,8 @@
       --border-color: #e2e8f0;
       --text-main: #334155;
       --text-muted: #64748b;
+      --amber-btn: #d97706;
+      --amber-hover: #b45309;
     }
 
     body {
@@ -193,6 +195,40 @@
       background-color: var(--blue-hover);
     }
 
+    /* Estilos para los botones de acción en la tabla de historial */
+    .actions-wrapper {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-print {
+      background-color: var(--blue-btn);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-print:hover {
+      background-color: var(--blue-hover);
+    }
+
+    .btn-edit {
+      background-color: var(--amber-btn);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-edit:hover {
+      background-color: var(--amber-hover);
+    }
+
     .search-wrapper {
       position: relative;
       margin-bottom: 25px;
@@ -240,6 +276,7 @@
     table.historial-table td {
       padding: 14px;
       border-bottom: 1px solid var(--border-color);
+      vertical-align: middle;
     }
 
     .seccion-modulo {
@@ -520,7 +557,7 @@
               <th>Cliente</th>
               <th>Fecha Servicio</th>
               <th>Producto</th>
-              <th>Acción</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-historial-body">
