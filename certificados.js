@@ -22,7 +22,7 @@ const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
 const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
-const selectProducto = document.getElementById('producto-utilused');
+const selectProducto = document.getElementById('producto-utilizado');
 
 // Campos de detalles químicos (Inputs de tu formulario)
 const inProdNombre = document.getElementById('form-prod-nombre');
@@ -37,7 +37,7 @@ let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 let listaProductosGlobal = []; 
 
-// Sincronización de Productos
+// Sincronización de Productos (Sin alterar el diseño del select)
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
@@ -158,8 +158,11 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
         tipo: cert["Tipo de servicio"] || '---',
+        
+        // Mapeamos lo que viene de Firebase a las propiedades en minúsculas del visualizador
         metodo: cert["Metodo de aplicacion"] || '---',
         objetivo: cert["Objetivo de Control"] || '---',
+        
         plagas: cert["Plagas que controla"] || '---',
         horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
         horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
@@ -179,6 +182,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
+// Rellena tu tabla inferior usando tus estilos nativos
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -241,7 +245,7 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Vinculación con el área de impresión original de tu HTML
+// Vinculación estricta con el área de impresión original de tu HTML
 function prepararYDispararImpresion(cert) {
   try {
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -257,7 +261,7 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    // Renderizado dinámico de Objetivos Seleccionados
+    // Renderizado dinámico de Objetivos Seleccionados (Solo los elegidos)
     const contenedorObjetivos = document.getElementById('print-objetivos-elegidos');
     if (contenedorObjetivos) {
       contenedorObjetivos.innerHTML = "";
@@ -276,7 +280,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // Renderizado dinámico de Métodos Seleccionados
+    // Renderizado dinámico de Métodos Seleccionados (Solo los elegidos)
     const contenedorMetodos = document.getElementById('print-metodos-elegidos');
     if (contenedorMetodos) {
       contenedorMetodos.innerHTML = "";
@@ -321,6 +325,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
+    // El retraso de 400ms garantiza que el DOM esté completamente listo con los nuevos textos antes de imprimir
     setTimeout(() => { window.print(); }, 400);
   } catch (error) {
     console.error("Error al preparar la impresión:", error);
@@ -329,7 +334,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Captura y almacenamiento lógico del formulario
+// Captura y almacenamiento lógico del formulario (Sin tocar elementos visuales)
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -344,15 +349,12 @@ if (formCert) {
         return;
       }
 
-      // 1. Captura de checkboxes originales
+      // Procesa los checkboxes utilizando exactamente el atributo 'name' de tu HTML
       const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="tipo-servicio"]:checked')).map(cb => cb.value);
       const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
       const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
 
-      // AJUSTE SOLICITADO: Antepone de manera limpia "Control de Plagas " a cada opción de Tipo de Servicio
-      const tiposModificados = tiposSeleccionados.map(valor => `Control de Plagas ${valor}`);
-
-      const tipoServicioString = tiposModificados.join(', ') || "No especificado";
+      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
       const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
       const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
 
@@ -376,7 +378,7 @@ if (formCert) {
         Cabezal: (document.getElementById('cabezal').value || "N/A").trim(),
         Remolque: (document.getElementById('remolque').value || "N/A").trim(),
         "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
-        "Tipo de servicio": tipoServicioString, // Se guarda transformado en Firebase
+        "Tipo de servicio": tipoServicioString,
         "Metodo de aplicacion": metodoAplicacionString,
         "Objetivo de Control": objetivoControlString,
         "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
@@ -408,9 +410,12 @@ if (formCert) {
         cabezal: payloadCertificado.Cabezal,
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
-        tipo: tipoServicioString, // Pasa transformado a la vista de impresión inmediata
+        tipo: tipoServicioString,
+        
+        // CORRECCIÓN CLAVE: Pasamos las variables explícitas que el visualizador de impresión espera
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
+        
         plagas: payloadCertificado["Plagas que controla"],
         horaInicio: hInicioStr,
         horaFin: hFinStr,
@@ -422,8 +427,11 @@ if (formCert) {
         pVence: payloadCertificado["Producto vencimiento"]
       };
 
+      // Disparamos la impresión primero
       prepararYDispararImpresion(certMock);
       
+      // MODIFICACIÓN DE FLUJO: Esperamos un breve momento antes de limpiar el formulario 
+      // para que el script de impresión capture el contenido intacto de las variables.
       setTimeout(() => {
         formCert.reset();
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
