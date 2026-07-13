@@ -157,9 +157,9 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         cabezal: cert.Cabezal || 'N/A',
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
-        
-        // Mapeo idéntico al que usa con éxito "Tipo de servicio"
         tipo: cert["Tipo de servicio"] || '---',
+        
+        // Mapeamos lo que viene de Firebase a las propiedades en minúsculas del visualizador
         metodo: cert["Metodo de aplicacion"] || '---',
         objetivo: cert["Objetivo de Control"] || '---',
         
@@ -268,10 +268,12 @@ function prepararYDispararImpresion(cert) {
       const objTexto = cert.objetivo || "";
       if (objTexto && objTexto !== "No especificado" && objTexto !== "---") {
         objTexto.split(',').forEach(item => {
-          const div = document.createElement('div');
-          div.style.fontWeight = "bold";
-          div.innerText = `• ${item.trim()}`;
-          contenedorObjetivos.appendChild(div);
+          if(item.trim().length > 0) {
+            const div = document.createElement('div');
+            div.style.fontWeight = "bold";
+            div.innerText = `• ${item.trim()}`;
+            contenedorObjetivos.appendChild(div);
+          }
         });
       } else {
         contenedorObjetivos.innerText = "---";
@@ -285,9 +287,11 @@ function prepararYDispararImpresion(cert) {
       const metTexto = cert.metodo || "";
       if (metTexto && metTexto !== "No especificado" && metTexto !== "---") {
         metTexto.split(',').forEach(item => {
-          const div = document.createElement('div');
-          div.innerText = `• ${item.trim()}`;
-          contenedorMetodos.appendChild(div);
+          if(item.trim().length > 0) {
+            const div = document.createElement('div');
+            div.innerText = `• ${item.trim()}`;
+            contenedorMetodos.appendChild(div);
+          }
         });
       } else {
         contenedorMetodos.innerText = "---";
@@ -321,6 +325,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
+    // El retraso de 400ms garantiza que el DOM esté completamente listo con los nuevos textos antes de imprimir
     setTimeout(() => { window.print(); }, 400);
   } catch (error) {
     console.error("Error al preparar la impresión:", error);
@@ -405,9 +410,9 @@ if (formCert) {
         cabezal: payloadCertificado.Cabezal,
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
-        
-        // Uso de variables unificadas bajo la misma lógica idéntica de tipo de servicio
         tipo: tipoServicioString,
+        
+        // CORRECCIÓN CLAVE: Pasamos las variables explícitas que el visualizador de impresión espera
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
         
@@ -422,9 +427,15 @@ if (formCert) {
         pVence: payloadCertificado["Producto vencimiento"]
       };
 
+      // Disparamos la impresión primero
       prepararYDispararImpresion(certMock);
-      formCert.reset();
-      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      
+      // MODIFICACIÓN DE FLUJO: Esperamos un breve momento antes de limpiar el formulario 
+      // para que el script de impresión capture el contenido intacto de las variables.
+      setTimeout(() => {
+        formCert.reset();
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      }, 1000);
 
     } catch (error) {
       console.error(error);
