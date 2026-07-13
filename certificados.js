@@ -158,8 +158,11 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         remolque: cert.Remolque || 'N/A',
         fantasia: cert["Nombre de fantasia"] || '---',
         tipo: cert["Tipo de servicio"] || '---',
-        metodo: cert["Metodo de aplicacion"] || '---',
-        objetivo: cert["Objetivo de Control"] || '---',
+        
+        // CORRECCIÓN AQUÍ: Aseguramos leer correctamente de la base de datos de Firebase
+        metodo: cert["Metodo de aplicacion"] || cert.metodo || '---',
+        objetivo: cert["Objetivo de Control"] || cert.objetivo || '---',
+        
         plagas: cert["Plagas que controla"] || '---',
         horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
         horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
@@ -258,22 +261,38 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    const objTexto = cert.objetivo || "";
-    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = objTexto.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
-    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = objTexto.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
-    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = objTexto.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+    // Renderizado dinámico de Objetivos Seleccionados (Solo los elegidos)
+    const contenedorObjetivos = document.getElementById('print-objetivos-elegidos');
+    if (contenedorObjetivos) {
+      contenedorObjetivos.innerHTML = "";
+      const objTexto = cert.objetivo || "";
+      if (objTexto && objTexto !== "No especificado" && objTexto !== "---") {
+        objTexto.split(',').forEach(item => {
+          const div = document.createElement('div');
+          div.style.fontWeight = "bold";
+          div.innerText = `• ${item.trim()}`;
+          contenedorObjetivos.appendChild(div);
+        });
+      } else {
+        contenedorObjetivos.innerText = "---";
+      }
+    }
 
-    const metTexto = cert.metodo || "";
-    if(document.getElementById('m-aspersion')) document.getElementById('m-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
-    if(document.getElementById('m-termonebulizacion')) document.getElementById('m-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
-    if(document.getElementById('m-nebulizacion-frio')) document.getElementById('m-nebulizacion-frio').innerText = metTexto.includes("Nebulización en frío") ? "[X] Nebulización en frío" : "[ ] Nebulización en frío";
-    if(document.getElementById('m-lami-gomosa')) document.getElementById('m-lami-gomosa').innerText = metTexto.includes("Lami gomosa") ? "[X] Lami gomosa" : "[ ] Lami gomosa";
-    if(document.getElementById('m-prod-granulado')) document.getElementById('m-prod-granulado').innerText = metTexto.includes("Prod granulado") ? "[X] Prod granulado" : "[ ] Prod granulado";
-    if(document.getElementById('m-cebo-roedores')) document.getElementById('m-cebo-roedores').innerText = metTexto.includes("Cebo para roedores") ? "[X] Cebo para roedores" : "[ ] Cebo para roedores";
-    if(document.getElementById('m-trampa-mecanica')) document.getElementById('m-trampa-mecanica').innerText = metTexto.includes("Trampa mecánica") ? "[X] Trampa mecánica" : "[ ] Trampa mecánica";
-    if(document.getElementById('m-prod-gel')) document.getElementById('m-prod-gel').innerText = metTexto.includes("Aplic de prod en gel") ? "[X] Aplic de prod en gel" : "[ ] Aplic de prod en gel";
-    if(document.getElementById('m-gas-fumigeno')) document.getElementById('m-gas-fumigeno').innerText = metTexto.includes("Aplic de Gas Fumígeno") ? "[X] Aplic de Gas Fumígeno" : "[ ] Aplic de Gas Fumígeno";
-    if(document.getElementById('m-prod-polvo')) document.getElementById('m-prod-polvo').innerText = metTexto.includes("Aplic de prod en Polvo") ? "[X] Aplic de prod en Polvo" : "[ ] Aplic de prod en Polvo";
+    // Renderizado dinámico de Métodos Seleccionados (Solo los elegidos)
+    const contenedorMetodos = document.getElementById('print-metodos-elegidos');
+    if (contenedorMetodos) {
+      contenedorMetodos.innerHTML = "";
+      const metTexto = cert.metodo || "";
+      if (metTexto && metTexto !== "No especificado" && metTexto !== "---") {
+        metTexto.split(',').forEach(item => {
+          const div = document.createElement('div');
+          div.innerText = `• ${item.trim()}`;
+          contenedorMetodos.appendChild(div);
+        });
+      } else {
+        contenedorMetodos.innerText = "---";
+      }
+    }
 
     if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
     if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
@@ -387,8 +406,11 @@ if (formCert) {
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
         tipo: payloadCertificado["Tipo de servicio"],
-        metodo: payloadCertificado["Metodo de aplicacion"],
-        objetivo: payloadCertificado["Objetivo de Control"],
+        
+        // CORRECCIÓN AQUÍ: Para que la impresión inmediata al guardar también funcione perfectamente
+        metodo: metodoAplicacionString,
+        objetivo: objetivoControlString,
+        
         plagas: payloadCertificado["Plagas que controla"],
         horaInicio: hInicioStr,
         horaFin: hFinStr,
