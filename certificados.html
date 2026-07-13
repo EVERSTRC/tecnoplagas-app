@@ -1,726 +1,412 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tecnoplagas - Emisión y Control</title>
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Configuración de tu base de datos Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
+  authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+  projectId: "fumigadora-tecnoplagas",
+  storageBucket: "fumigadora-tecnoplagas.firebasestorage.app",
+  messagingSenderId: "510795344519",
+  appId: "1:510795344519:web:9991541f95af051f12a622"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Referencias de los elementos del formulario (Respetando tus IDs originales)
+const formCert = document.getElementById('certificado-form');
+const selectCliente = document.getElementById('select-cliente');
+const inputIdCertificado = document.getElementById('id-certificado');
+const tablaHistorialBody = document.getElementById('tabla-historial-body');
+const inputBuscar = document.getElementById('input-buscar');
+const selectProducto = document.getElementById('producto-utilizado');
+
+// Campos de detalles químicos (Inputs de tu formulario)
+const inProdNombre = document.getElementById('form-prod-nombre');
+const inProdActivo = document.getElementById('form-prod-activo');
+const inProdMs = document.getElementById('form-prod-ms');
+const inProdLote = document.getElementById('form-prod-lote');
+const inProdDosis = document.getElementById('form-prod-dosis');
+const inProdVence = document.getElementById('form-prod-vence');
+const inPlagasControla = document.getElementById('plagas-controla');
+
+let listaClientesGlobal = [];
+let listaCertificadosGlobal = [];
+let listaProductosGlobal = []; 
+
+// Sincronización de Productos (Sin alterar el diseño del select)
+onSnapshot(collection(db, "Productos"), (snapshot) => {
+  if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  listaProductosGlobal = [];
   
-  <style>
-    :root {
-      --primary-color: #00b074; 
-      --primary-hover: #009662;
-      --blue-btn: #2563eb;
-      --blue-hover: #1d4ed8;
-      --bg-body: #f8fafc;
-      --bg-card: #ffffff;
-      --border-color: #e2e8f0;
-      --text-main: #334155;
-      --text-muted: #64748b;
-      --amber-btn: #d97706;
-      --amber-hover: #b45309;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-body);
-      color: var(--text-main);
-      margin: 0;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      background: var(--bg-card);
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      padding: 30px;
-    }
-
-    .nav-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
-    }
-
-    .tabs-left {
-      display: flex;
-      gap: 10px;
-    }
-
-    .tab-btn {
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-      border: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active-green {
-      background-color: #00b074;
-      color: white;
-    }
+  snapshot.forEach((docSnap) => {
+    const producto = docSnap.data();
+    listaProductosGlobal.push({ id: docSnap.id, ...producto });
     
-    .tab-btn.inactive-gray {
-      background-color: #e2e8f0;
-      color: #475569;
+    if (selectProducto) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
+      selectProducto.appendChild(option);
+    }
+  });
+
+  if (selectProducto) {
+    const optionOtro = document.createElement('option');
+    optionOtro.value = "Otro";
+    optionOtro.textContent = "Otro (Manual)";
+    selectProducto.appendChild(optionOtro);
+  }
+});
+
+// Autocompletado de los campos del formulario al cambiar producto
+if (selectProducto) {
+  selectProducto.addEventListener('change', () => {
+    const valorSeleccionado = selectProducto.value;
+
+    if (!valorSeleccionado || valorSeleccionado === "Otro") {
+      limpiarCamposProducto();
+      return;
     }
 
-    .btn-inicio {
-      background-color: #64748b;
-      color: white;
-      text-decoration: none;
-      padding: 10px 16px;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: bold;
-    }
+    const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
 
-    .titulo-modulo {
-      font-size: 26px;
-      font-weight: bold;
-      color: #1e293b;
-      margin-top: 0;
-      margin-bottom: 25px;
+    if (prodEncontrado) {
+      if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
+      if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
+      if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
+      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; 
+      if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
+      if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
+      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
+    } else {
+      limpiarCamposProducto();
     }
+  });
+}
 
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 20px;
-    }
+function limpiarCamposProducto() {
+  if (inProdNombre) inProdNombre.value = "";
+  if (inProdActivo) inProdActivo.value = "";
+  if (inProdMs) inProdMs.value = "";
+  if (inProdDosis) inProdDosis.value = "";
+  if (inProdLote) inProdLote.value = "";
+  if (inProdVence) inProdVence.value = "";
+  if (inPlagasControla) inPlagasControla.value = "";
+}
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+// Sincronización de Clientes
+onSnapshot(collection(db, "clientes"), (snapshot) => {
+  if (selectCliente) selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+  listaClientesGlobal = [];
+  snapshot.forEach((docSnap) => {
+    const cliente = docSnap.data();
+    listaClientesGlobal.push({ id: docSnap.id, ...cliente });
+    if (selectCliente) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre || cliente.razonSocial || "Cliente"}`;
+      selectCliente.appendChild(option);
     }
+  });
+  
+  if(listaCertificadosGlobal.length > 0) {
+    renderTablaHistorial(listaCertificadosGlobal);
+  }
+});
 
-    .form-group.full-width {
-      grid-column: 1 / -1;
-    }
+// Sincronización del Historial e ID Autoincrementable
+onSnapshot(collection(db, "certificados"), (snapshot) => {
+  listaCertificadosGlobal = [];
+  
+  const totalCertificados = snapshot.size;
+  const numeroSiguiente = totalCertificados + 1;
+  const formatoNumero = String(numeroSiguiente).padStart(6, '0');
+  if(formCert && !formCert.dataset.editMode && inputIdCertificado) {
+    inputIdCertificado.value = `CERT-${formatoNumero}`;
+  }
 
-    label {
-      font-size: 13px;
-      font-weight: bold;
-      color: #475569;
-    }
+  if(snapshot.empty) {
+    if (tablaHistorialBody) tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados registrados.</td></tr>`;
+    return;
+  }
 
-    input[type="text"], input[type="date"], input[type="time"], select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-      color: var(--text-main);
-      background-color: #fff;
-    }
+  snapshot.forEach((docSnap) => {
+    try {
+      const cert = docSnap.data();
+      if (!cert) return;
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: #00b074;
-      box-shadow: 0 0 0 3px rgba(0, 176, 116, 0.15);
-    }
-
-    input[readonly] {
-      background-color: #f1f5f9;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .checkbox-group {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 10px;
-      margin-top: 5px;
-      background: #ffffff;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-    }
-    .checkbox-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .checkbox-item input {
-      width: auto;
-      margin: 0;
-      cursor: pointer;
-    }
-
-    fieldset {
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
-      margin-top: 30px;
-      background-color: #f8fafc;
-    }
-
-    legend {
-      font-weight: bold;
-      font-size: 14px;
-      color: #1e293b;
-      padding: 0 10px;
-    }
-
-    .btn-submit {
-      width: 100%;
-      background-color: var(--blue-btn); 
-      color: white;
-      border: none;
-      padding: 15px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-top: 25px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-submit:hover {
-      background-color: var(--blue-hover);
-    }
-
-    /* Estilos para los botones de acción en la tabla de historial */
-    .actions-wrapper {
-      display: flex;
-      gap: 8px;
-    }
-
-    .btn-print {
-      background-color: var(--blue-btn);
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: bold;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn-print:hover {
-      background-color: var(--blue-hover);
-    }
-
-    .btn-edit {
-      background-color: var(--amber-btn);
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      font-size: 13px;
-      font-weight: bold;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn-edit:hover {
-      background-color: var(--amber-hover);
-    }
-
-    .search-wrapper {
-      position: relative;
-      margin-bottom: 25px;
-    }
-
-    .search-input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px 14px 14px 45px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    .search-wrapper::before {
-      content: "🔍";
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 16px;
-    }
-
-    .table-container {
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-    }
-
-    table.historial-table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 14px;
-    }
-
-    table.historial-table th {
-      background-color: #f1f5f9;
-      color: #475569;
-      font-weight: bold;
-      padding: 14px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    table.historial-table td {
-      padding: 14px;
-      border-bottom: 1px solid var(--border-color);
-      vertical-align: middle;
-    }
-
-    .seccion-modulo {
-      display: none;
-    }
-    .seccion-modulo.active {
-      display: block;
-    }
-
-    /* =========================================================================
-       CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE)
-       ========================================================================= */
-    @media print {
-      .no-print { display: none !important; }
-      .only-print { display: block !important; }
-      
-      @page {
-        size: A4 landscape; 
-        margin: 6mm 8mm 6mm 8mm; 
-      }
-      
-      body {
-        background: #fff;
-        color: #000;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        font-size: 11px;
-        line-height: 1.25;
-        padding: 0;
-        margin: 0;
-        position: relative;
+      let idClienteRelacionado = "";
+      if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
+        idClienteRelacionado = cert.Nombre.id;
+      } else if (cert.Nombre && typeof cert.Nombre === 'string') {
+        idClienteRelacionado = cert.Nombre.split('/').pop();
       }
 
-      body::before {
-        content: "";
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 65%;
-        height: 65%;
-        background-image: url('https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/677ca6b312a9bb696385ebe2612087a36249f256/TecnoPlagas%20Logo.png');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        opacity: 0.07; 
-        z-index: -1000;
-        pointer-events: none;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-      }
-
-      .certificate-border {
-        border: 3px double #475569;
-        padding: 12px;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-
-      table.print-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 6px;
-      }
-
-      table.print-table th, table.print-table td {
-        border: 1px solid #94a3b8;
-        padding: 5px 8px;
-        vertical-align: middle;
-      }
-
-      table.print-table th {
-        background-color: #f1f5f9 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-weight: bold;
-        text-align: left;
-        color: #1e293b;
-      }
-
-      .print-header-title {
-        text-align: center;
-        font-weight: bold;
-        font-size: 18px;
-        letter-spacing: 2px;
-        color: #0f172a;
-        margin: 0 0 10px 0;
-        padding-bottom: 3px;
-        border-bottom: 2px dashed #475569;
-      }
-      
-      .legal-text {
-        font-size: 8.5px;
-        color: #334155;
-        text-align: center;
-        line-height: 1.2;
-        margin-top: 8px;
-        border-top: 1px solid #cbd5e1;
-        padding-top: 4px;
-      }
-
-      .flex-row-print {
-        display: table;
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      .flex-col-print {
-        display: table-cell;
-        width: 50%;
-        vertical-align: top;
-      }
+      listaCertificadosGlobal.push({
+        id: cert.IdCertificados || docSnap.id,
+        clienteId: idClienteRelacionado,
+        clienteNombre: "Cargando datos...", 
+        direccion: cert.Direccion || "---", 
+        fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
+        vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
+        producto: cert["Producto utilizado"] || cert["Nombre del producto"] || '---',
+        cabezal: cert.Cabezal || 'N/A',
+        remolque: cert.Remolque || 'N/A',
+        fantasia: cert["Nombre de fantasia"] || '---',
+        tipo: cert["Tipo de servicio"] || '---',
+        metodo: cert["Metodo de aplicacion"] || '---',
+        objetivo: cert["Objetivo de Control"] || '---',
+        plagas: cert["Plagas que controla"] || '---',
+        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+        pNombre: cert["Nombre del producto"] || '---',
+        pActivo: cert["Ingrediente Activo"] || '---',
+        pReg: cert["Registro M.S."] || '---',
+        pLote: cert["Lote del producto"] || '---',
+        pDosis: cert["Dosis recomendada"] || '---',
+        pVence: cert["Producto vencimiento"] || '---'
+      });
+    } catch (e) {
+      console.warn("Inconsistencia en documento omitida:", docSnap.id);
     }
-    
-    .only-print { display: none; }
-  </style>
+  });
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-</head>
-<body>
+  listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
+  renderTablaHistorial(listaCertificadosGlobal);
+});
 
-  <div class="no-print container">
-    <div class="nav-bar">
-      <div class="tabs-left">
-        <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Emitir Certificado</button>
-        <button id="tab-consultar" class="tab-btn inactive-gray" onclick="cambiarVista('consultar')">🔍 Consultar Historial</button>
-      </div>
-      <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
-    </div>
+// Rellena tu tabla inferior usando tus estilos nativos
+function renderTablaHistorial(lista) {
+  if (!tablaHistorialBody) return;
+  tablaHistorialBody.innerHTML = "";
+  
+  if(lista.length === 0) {
+    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>`;
+    return;
+  }
 
-    <div id="vista-emision" class="seccion-modulo active">
-      <div class="titulo-modulo">Fumigadora Tecnoplagas - Nuevo Certificado</div>
-      
-      <form id="certificado-form" novalidate>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Consecutivo / N° de Certificado</label>
-            <input type="text" id="id-certificado" readonly>
-          </div>
-          <div class="form-group">
-            <label for="select-cliente">Cliente Destino</label>
-            <select id="select-cliente" required>
-              <option value="">Seleccione un cliente...</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="nombre-fantasia">Nombre de Fantasía</label>
-            <input type="text" id="nombre-fantasia" placeholder="Opcional">
-          </div>
-          <div class="form-group">
-            <label for="cabezal">Placa Cabezal</label>
-            <input type="text" id="cabezal" placeholder="Ej: C160799 (N/A si no aplica)">
-          </div>
-          <div class="form-group">
-            <label for="remolque">Placa Remolque</label>
-            <input type="text" id="remolque" placeholder="Ej: S012452 (N/A si no aplica)">
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="fecha-servicio">Fecha de Aplicación</label>
-            <input type="date" id="fecha-servicio" required>
-          </div>
-          <div class="form-group">
-            <label for="servicio-valido">Vencimiento del Servicio</label>
-            <input type="date" id="servicio-valido" required>
-          </div>
-          <div class="form-group">
-            <label for="hora-inicio">Hora Inicio</label>
-            <input type="time" id="hora-inicio" value="08:00" required>
-          </div>
-          <div class="form-group">
-            <label for="hora-finalizacion">Hora Finalización</label>
-            <input type="time" id="hora-finalizacion" value="09:00" required>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Tipo de Servicio:</label>
-          <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Comercial"> Comercial</label>
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Residencial"> Residencial</label>
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Vehicular / Transporte"> Vehicular / Transporte</label>
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Industrial"> Industrial</label>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Objetivo de Control:</label>
-          <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desinsectación"> Desinsectación</label>
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desratización"> Desratización</label>
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Sanitización"> Sanitización</label>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Método de Aplicación:</label>
-          <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aspersión"> Aspersión</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Termonebulización"> Termonebulización</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Nebulización en frío"> Nebulización en frío</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Lami gomosa"> Lami gomosa</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Prod granulado"> Prod granulado</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Cebo para roedores"> Cebo para roedores</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Trampa mecánica"> Trampa mecánica</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en gel"> Aplic de prod en gel</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de Gas Fumígeno"> Aplic de Gas Fumígeno</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en Polvo"> Aplic de prod en Polvo</label>
-          </div>
-        </div>
-
-        <fieldset>
-          <legend>🧪 Ficha Técnica del Producto Químico</legend>
-          
-          <div class="form-group" style="margin-bottom: 15px;">
-            <label for="producto-utilizado">Producto Utilizado</label>
-            <select id="producto-utilizado" required>
-              <option value="">Seleccione el producto químico...</option>
-            </select>
-          </div>
-
-          <div class="form-group full-width" style="margin-bottom: 20px;">
-            <label for="plagas-controla">Plagas que Controla</label>
-            <input type="text" id="plagas-controla" required placeholder="control de insectos rastreros, arácnidos, insectos voladores y termitas">
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nombre Comercial</label>
-              <input type="text" id="form-prod-nombre" required>
-            </div>
-            <div class="form-group">
-              <label>Ingrediente Activo</label>
-              <input type="text" id="form-prod-activo" required>
-            </div>
-            <div class="form-group">
-              <label>Registro M.S.</label>
-              <input type="text" id="form-prod-ms" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Dosis Recomendada</label>
-              <input type="text" id="form-prod-dosis" required>
-            </div>
-            <div class="form-group">
-              <label>Lote</label>
-              <input type="text" id="form-prod-lote" placeholder="Ej: 2301234">
-            </div>
-            <div class="form-group">
-              <label>Vencimiento de Producto</label>
-              <input type="text" id="form-prod-vence" required>
-            </div>
-          </div>
-        </fieldset>
-
-        <button type="submit" class="btn-submit">
-          💾 Guardar e Imprimir Certificado
-        </button>
-      </form>
-    </div>
-
-    <div id="vista-consulta" class="seccion-modulo">
-      <div class="titulo-modulo">Fumigadora Tecnoplagas - Panel de Historial</div>
-      <div class="search-wrapper">
-        <input type="text" id="input-buscar" class="search-input" placeholder="Buscar por ID de Certificado o Nombre de Cliente...">
-      </div>
-      <div class="table-container">
-        <table class="historial-table">
-          <thead>
-            <tr>
-              <th>ID Certificado</th>
-              <th>Cliente</th>
-              <th>Fecha Servicio</th>
-              <th>Producto</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-historial-body">
-            <tr>
-              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                Cargando historial en tiempo real...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div id="vista-impresion" class="only-print">
-    <div class="certificate-border">
-      
-      <div class="flex-row-print">
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; width: 90%;">Datos del Cliente</h3>
-          <table style="width: 95%; border-collapse: collapse; font-size: 11px;">
-            <tr><td style="padding: 3px 0; font-weight: bold; width: 35%;">Razón Social:</td><td style="padding: 3px 0;" id="print-cliente">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Nombre Fantasía:</td><td style="padding: 3px 0;" id="print-fantasia">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Dirección Física:</td><td style="padding: 3px 0;" id="print-direccion">---</td></tr>
-          </table>
-        </div>
-        
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">Datos de la Empresa de Servicio</h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.3;">
-            <tr><td style="padding: 2px 0; font-weight: bold; width: 30%;">Razón Social:</td><td style="padding: 2px 0;">Fumigadora TecnoPlagas C.R.C</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Sede Central:</td><td style="padding: 2px 0;">Tres Ríos, La Unión, Cartago</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Permiso Sanitario:</td><td style="padding: 2px 0; font-weight: bold; color: #0f172a;">ARSLU-3160-02-2025</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Código CIIU:</td><td style="padding: 2px 0;">8129.0 Grupo de Riesgo: B</td></tr>
-          </table>
-        </div>
-      </div>
-
-      <div class="print-header-title">CERTIFICADO DE MANEJO INTEGRADO DE PLAGAS #<span id="print-num-cert">---</span></div>
-
-      <table class="print-table">
-        <tr>
-          <td><strong>Prestación del Servicio:</strong> <span id="print-fecha">---</span></td>
-          <td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
-          <td><strong>Horario Técnico:</strong> <span id="print-inicio">00:00</span> a <span id="print-fin">00:00</span></td>
-        </tr>
-        <tr>
-          <td><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
-          <td><strong>Placa Cabezal:</strong> <span id="print-cabezal">N/A</span></td>
-          <td><strong>Placa Remolque / Cont.:</strong> <span id="print-remolque">N/A</span></td>
-        </tr>
-      </table>
-
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 30%;">Objetivo de Control</th>
-            <th style="width: 30%;">Método de Aplicación</th>
-            <th style="width: 40%;">Plagas que Controla (Rastreros / Voladores / Arácnidos)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="line-height: 1.6; padding: 6px;">
-              <div id="chk-desinsectacion">[ ] Desinsectación</div>
-              <div id="chk-desratizacion">[ ] Desratización</div>
-              <div id="chk-sanitizacion">[ ] Sanitización</div>
-            </td>
-            <td style="line-height: 1.4; padding: 6px; font-size: 10px;">
-              <div id="m-aspersion">[ ] Aspersión</div>
-              <div id="m-termonebulizacion">[ ] Termonebulización</div>
-              <div id="m-nebulizacion-frio">[ ] Nebulización en frío</div>
-              <div id="m-lami-gomosa">[ ] Lami gomosa</div>
-              <div id="m-prod-granulado">[ ] Prod granulado</div>
-              <div id="m-cebo-roedores">[ ] Cebo para roedores</div>
-              <div id="m-trampa-mecanica">[ ] Trampa mecánica</div>
-              <div id="m-prod-gel">[ ] Aplic de prod en gel</div>
-              <div id="m-gas-fumigeno">[ ] Aplic de Gas Fumígeno</div>
-              <div id="m-prod-polvo">[ ] Aplic de prod en Polvo</div>
-            </td>
-            <td id="print-plagas" style="padding: 8px; font-style: italic; vertical-align: top; color: #334155;">
-              ---
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h4 style="margin: 8px 0 4px 0; font-size: 11px; color: #1e293b; font-weight: bold;">Especificación de los Productos Químicos Utilizados:</h4>
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th>Producto Utilizado</th>
-            <th>Ingrediente Activo</th>
-            <th>N° Registro M.S.</th>
-            <th>Lote Fabricación</th>
-            <th>Dosis Aplicada</th>
-            <th>Vencimiento Químico</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td id="td-prod-nombre" style="font-weight: bold; color: #0f172a;">---</td>
-            <td id="td-prod-activo">---</td>
-            <td id="td-prod-ms">---</td>
-            <td id="td-prod-lote">---</td>
-            <td id="td-prod-dosis">---</td>
-            <td id="td-prod-vence">---</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <tr>
-          <td style="width: 35%; text-align: center; border: none; padding: 0;">
-            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 80%; margin-left: auto; margin-right: auto;">
-              <strong>Everst Rojas Camacho</strong><br>Técnico Responsable Aplicador
-            </div>
-          </td>
-          <td style="width: 35%; text-align: center; border: none; padding: 0;">
-            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 80%; margin-left: auto; margin-right: auto;">
-              <br>Firma / Sello de Recibido Cliente
-            </div>
-          </td>
-          <td style="width: 30%; text-align: right; border: none; padding: 0; vertical-align: bottom;">
-            <div style="display: inline-block; text-align: center; padding: 5px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;">
-              <div style="font-size: 8px; font-weight: bold; color: #475569; margin-bottom: 3px; max-width: 100px; line-height: 1.1; margin-left: auto; margin-right: auto;">
-                Consulte la validez y autenticidad aquí
-              </div>
-              <div id="qrcode" style="display: inline-block;"></div>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <div class="legal-text">
-        De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud). <br>
-        <strong>Contacto Corporativo:</strong> Teléfono Oficina: 7232-5001 o 8987-7776 | Email: Info@tecnoplagascrc.com | Web: http://tecnoplagascrc.com
-      </div>
-
-    </div>
-  </div>
-
-  <script>
-    function cambiarVista(vista) {
-      const btnEmitir = document.getElementById('tab-emitir');
-      const btnConsultar = document.getElementById('tab-consultar');
-      const vistaEmision = document.getElementById('vista-emision');
-      const vistaConsulta = document.getElementById('vista-consulta');
-
-      if (vista === 'emitir') {
-        btnEmitir.className = 'tab-btn active-green';
-        btnConsultar.className = 'tab-btn inactive-gray';
-        vistaEmision.classList.add('active');
-        vistaConsulta.classList.remove('active');
+  lista.forEach(cert => {
+    if (cert.clienteId) {
+      const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
+      if (match) {
+        cert.clienteNombre = match.nombre || match.razonSocial || "Sin nombre";
+        cert.direccion = match.direccion || "---";
       } else {
-        btnEmitir.className = 'tab-btn inactive-gray';
-        btnConsultar.className = 'tab-btn active-green';
-        vistaEmision.classList.remove('active');
-        vistaConsulta.classList.add('active');
+        cert.clienteNombre = "Cliente: " + cert.clienteId;
+      }
+    } else {
+      cert.clienteNombre = "No especificado";
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${cert.id}</strong></td>
+      <td>${cert.clienteNombre}</td>
+      <td>${cert.fecha}</td>
+      <td>${cert.pNombre}</td>
+      <td><button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Re-Imprimir</button></td>
+    `;
+    tablaHistorialBody.appendChild(tr);
+  });
+}
+
+if (inputBuscar) {
+  inputBuscar.addEventListener('input', (e) => {
+    const termino = e.target.value.toLowerCase().trim();
+    const filtrados = listaCertificadosGlobal.filter(c => 
+      c.id.toLowerCase().includes(termino) || 
+      c.clienteNombre.toLowerCase().includes(termino)
+    );
+    renderTablaHistorial(filtrados);
+  });
+}
+
+window.ejecutarReimpresionDirecta = async function(idCert) {
+  const cert = listaCertificadosGlobal.find(c => c.id === idCert);
+  if (!cert) {
+    alert("Certificado no localizado.");
+    return;
+  }
+  if (cert.direccion === "---" && cert.clienteId) {
+    try {
+      const snap = await getDoc(doc(db, "clientes", cert.clienteId));
+      if(snap.exists()) cert.direccion = snap.data().direccion || "---";
+    } catch(err) {
+      console.error(err);
+    }
+  }
+  prepararYDispararImpresion(cert);
+};
+
+// Vinculación estricta con el área de impresión original de tu HTML
+function prepararYDispararImpresion(cert) {
+  try {
+    if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
+    if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || '---';
+    if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
+    if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
+    if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '00:00';
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '00:00';
+    if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
+    if(document.getElementById('print-cabezal')) document.getElementById('print-cabezal').innerText = cert.cabezal || 'N/A';
+    if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
+    if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
+
+    const objTexto = cert.objetivo || "";
+    if(document.getElementById('chk-desinsectacion')) document.getElementById('chk-desinsectacion').innerText = objTexto.includes("Desinsectación") ? "[X] Desinsectación" : "[ ] Desinsectación";
+    if(document.getElementById('chk-desratizacion')) document.getElementById('chk-desratizacion').innerText = objTexto.includes("Desratización") ? "[X] Desratización" : "[ ] Desratización";
+    if(document.getElementById('chk-sanitizacion')) document.getElementById('chk-sanitizacion').innerText = objTexto.includes("Sanitización") ? "[X] Sanitización" : "[ ] Sanitización";
+
+    const metTexto = cert.metodo || "";
+    if(document.getElementById('m-aspersion')) document.getElementById('m-aspersion').innerText = metTexto.includes("Aspersión") ? "[X] Aspersión" : "[ ] Aspersión";
+    if(document.getElementById('m-termonebulizacion')) document.getElementById('m-termonebulizacion').innerText = metTexto.includes("Termonebulización") ? "[X] Termonebulización" : "[ ] Termonebulización";
+    if(document.getElementById('m-nebulizacion-frio')) document.getElementById('m-nebulizacion-frio').innerText = metTexto.includes("Nebulización en frío") ? "[X] Nebulización en frío" : "[ ] Nebulización en frío";
+    if(document.getElementById('m-lami-gomosa')) document.getElementById('m-lami-gomosa').innerText = metTexto.includes("Lami gomosa") ? "[X] Lami gomosa" : "[ ] Lami gomosa";
+    if(document.getElementById('m-prod-granulado')) document.getElementById('m-prod-granulado').innerText = metTexto.includes("Prod granulado") ? "[X] Prod granulado" : "[ ] Prod granulado";
+    if(document.getElementById('m-cebo-roedores')) document.getElementById('m-cebo-roedores').innerText = metTexto.includes("Cebo para roedores") ? "[X] Cebo para roedores" : "[ ] Cebo para roedores";
+    if(document.getElementById('m-trampa-mecanica')) document.getElementById('m-trampa-mecanica').innerText = metTexto.includes("Trampa mecánica") ? "[X] Trampa mecánica" : "[ ] Trampa mecánica";
+    if(document.getElementById('m-prod-gel')) document.getElementById('m-prod-gel').innerText = metTexto.includes("Aplic de prod en gel") ? "[X] Aplic de prod en gel" : "[ ] Aplic de prod en gel";
+    if(document.getElementById('m-gas-fumigeno')) document.getElementById('m-gas-fumigeno').innerText = metTexto.includes("Aplic de Gas Fumígeno") ? "[X] Aplic de Gas Fumígeno" : "[ ] Aplic de Gas Fumígeno";
+    if(document.getElementById('m-prod-polvo')) document.getElementById('m-prod-polvo').innerText = metTexto.includes("Aplic de prod en Polvo") ? "[X] Aplic de prod en Polvo" : "[ ] Aplic de prod en Polvo";
+
+    if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
+    if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
+    if(document.getElementById('td-prod-ms')) document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
+    if(document.getElementById('td-prod-lote')) document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
+    if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
+    if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
+
+    const qrContainer = document.getElementById('qrcode');
+    if (qrContainer) {
+      qrContainer.innerHTML = ""; 
+      const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+      const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
+      const textoQrPublico = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
+
+      const InstanciaQRCode = window.QRCode || QRCode;
+      if (typeof InstanciaQRCode !== 'undefined') {
+        new InstanciaQRCode(qrContainer, {
+          text: textoQrPublico,
+          width: 115,
+          height: 115,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
+        });
       }
     }
-  </script>
 
-  <script type="module" src="certificados.js"></script>
-</body>
-</html>
+    setTimeout(() => { window.print(); }, 400);
+  } catch (error) {
+    console.error("Error al preparar la impresión:", error);
+  }
+}
+
+window.prepararYDispararImpresion = prepararYDispararImpresion;
+
+// Captura y almacenamiento lógico del formulario (Sin tocar elementos visuales)
+if (formCert) {
+  formCert.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    try {
+      const idCertificadoValue = inputIdCertificado.value;
+      const clienteSeleccionadoId = selectCliente.value;
+      const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
+
+      if(!clienteSeleccionadoId) {
+        alert("⚠️ Por favor seleccione un cliente de la lista.");
+        return;
+      }
+
+      // Procesa los checkboxes utilizando exactamente el atributo 'name' de tu HTML
+      const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="tipo-servicio"]:checked')).map(cb => cb.value);
+      const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
+      const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
+
+      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
+      const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
+      const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
+
+      const fechaServicioRaw = document.getElementById('fecha-servicio').value;
+      const servicioValidoRaw = document.getElementById('servicio-valido').value;
+      if (!fechaServicioRaw || !servicioValidoRaw) {
+        alert("⚠️ Por favor asigne la Fecha del Servicio y su vencimiento.");
+        return;
+      }
+
+      const fServicio = new Date(fechaServicioRaw + "T00:00:00");
+      const fValido = new Date(servicioValidoRaw + "T00:00:00");
+      
+      const hInicioStr = document.getElementById('hora-inicio').value || "08:00";
+      const hFinStr = document.getElementById('hora-finalizacion').value || "09:00";
+      const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
+      const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
+
+      const payloadCertificado = {
+        IdCertificados: idCertificadoValue,
+        Cabezal: (document.getElementById('cabezal').value || "N/A").trim(),
+        Remolque: (document.getElementById('remolque').value || "N/A").trim(),
+        "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
+        "Tipo de servicio": tipoServicioString,
+        "Metodo de aplicacion": metodoAplicacionString,
+        "Objetivo de Control": objetivoControlString,
+        "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
+        "Producto utilizado": selectProducto.value || "Otro", 
+        "Fecha del Servicio": Timestamp.fromDate(fServicio),
+        "Servicio valido": Timestamp.fromDate(fValido),
+        "Hora de Inicio": Timestamp.fromDate(hInicio),
+        "Hora Finalizacion": Timestamp.fromDate(hFin),
+        Nombre: doc(db, "clientes", clienteSeleccionadoId), 
+        
+        "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
+        "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
+        "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
+        "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
+        "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
+        "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
+        "Codigo de barras": idCertificadoValue
+      };
+
+      await setDoc(doc(db, "certificados", idCertificadoValue), payloadCertificado);
+      
+      const certMock = {
+        id: idCertificadoValue,
+        clienteNombre: clienteEncontrado ? (clienteEncontrado.nombre || clienteEncontrado.razonSocial) : 'N/A',
+        direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
+        fecha: fServicio.toLocaleDateString('es-CR'),
+        vence: fValido.toLocaleDateString('es-CR'),
+        producto: selectProducto.value,
+        cabezal: payloadCertificado.Cabezal,
+        remolque: payloadCertificado.Remolque,
+        fantasia: payloadCertificado["Nombre de fantasia"],
+        tipo: payloadCertificado["Tipo de servicio"],
+        metodo: payloadCertificado["Metodo de aplicacion"],
+        objetivo: payloadCertificado["Objetivo de Control"],
+        plagas: payloadCertificado["Plagas que controla"],
+        horaInicio: hInicioStr,
+        horaFin: hFinStr,
+        pNombre: payloadCertificado["Nombre del producto"],
+        pActivo: payloadCertificado["Ingrediente Activo"],
+        pReg: payloadCertificado["Registro M.S."],
+        pLote: payloadCertificado["Lote del producto"],
+        pDosis: payloadCertificado["Dosis recomendada"],
+        pVence: payloadCertificado["Producto vencimiento"]
+      };
+
+      prepararYDispararImpresion(certMock);
+      formCert.reset();
+      document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+    } catch (error) {
+      console.error(error);
+      alert("❌ Ocurrió un error al guardar: " + error.message);
+    }
+  });
+}
