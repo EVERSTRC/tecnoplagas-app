@@ -35,7 +35,7 @@
     .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 12px; position: relative; }
     .doc-badge { position: absolute; top: 15px; right: 15px; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; }
     .badge-factura { background: #fee2e2; color: #991b1b; }
-    .badge-codizacion { background: #f3e8ff; color: #6b21a8; }
+    .badge-cotizacion { background: #f3e8ff; color: #6b21a8; }
     .doc-title { font-weight: bold; color: #1e293b; margin: 0 0 5px 0; font-size: 15px; }
     .doc-meta { font-size: 12px; color: #64748b; margin: 0; }
     .doc-totals { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; text-align: center; font-size: 12px; }
@@ -140,9 +140,9 @@
       getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ⚠️ REEMPLAZA ESTO CON LAS CREDENCIALES REALES DE TU CONSOLA FIREBASE
+    // ⚠️ REEMPLAZA ESTO CON TUS CREDENCIALES DE TU CONSOLA FIREBASE
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
+      apiKey: "TU_API_KEY_AQUÍ",
       authDomain: "TU_PROYECTO.firebaseapp.com",
       projectId: "TU_PROYECTO_ID",
       storageBucket: "TU_PROYECTO.appspot.com",
@@ -154,52 +154,72 @@
     const db = getFirestore(app);
     
     const colVentas = collection(db, "Ventas"); 
-    // Si tu colección en Firestore se llama "Clientes" con C mayúscula déjalo así. Si es minúscula, cámbialo a "clientes"
     const colClientes = collection(db, "Clientes"); 
 
-    // CARGAR CLIENTES DIRECTOS EN EL SELECT
+    // CARGAR CLIENTES ASÍNCRONAMENTE CON TRATAMIENTO DE REFERENCIAS Y DIAGNÓSTICO
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
       
-      // Temporizador de aviso por si las credenciales fallan o el internet está lento
-      const avisoSeguridad = setTimeout(() => {
-        select.innerHTML = '<option value="">⚠️ Sigue cargando... Verifica tus credenciales de Firebase en el código</option>';
-      }, 4000);
+      // Alerta visual por si tarda más de 3.5 segundos (problema de llaves o dominio bloqueado)
+      const temporizadorAlerta = setTimeout(() => {
+        select.innerHTML = '<option value="">⚠️ Sigue cargando... Abre la consola (F12) o verifica tus credenciales de Firebase en el código.</option>';
+      }, 3500);
 
       try {
         const snapshot = await getDocs(colClientes);
-        clearTimeout(avisoSeguridad);
+        clearTimeout(temporizadorAlerta);
+        
         select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
         
         if (snapshot.empty) {
-          select.innerHTML = '<option value="">No se encontraron clientes registrados</option>';
+          select.innerHTML = '<option value="">No hay clientes en la colección Clientes</option>';
           return;
         }
 
-        snapshot.forEach((documento) => {
+        // Usamos un bucle for...of para procesar correctamente los "await" asíncronos de cada referencia de nombre
+        for (const documento of snapshot.docs) {
           const clienteData = documento.data();
           const idDocCliente = documento.id;
-          const consecutivo = clienteData.Consecutivo || "Sin código";
+          const consecutivo = clienteData.Consecutivo || "S/C";
           const cedula = clienteData.Cedula ? ` - Céd: ${clienteData.Cedula}` : "";
           
-          // Lógica simplificada y segura para evitar que se congele el select
-          let nombreAMostrar = `Cliente ${consecutivo}${cedula}`;
+          let nombreFinal = `Cliente ${consecutivo}${cedula}`;
+
+          // Resolver el segundo salto si el campo "nombre" contiene un objeto referencia externo
+          if (clienteData.nombre && clienteData.nombre.path) {
+            try {
+              const nombreSnap = await getDoc(clienteData.nombre);
+              if (nombreSnap.exists()) {
+                const nombreData = nombreSnap.data();
+                const textoNombre = nombreData.nombre || nombreData.Nombre || nombreData.valor || "";
+                if (textoNombre) {
+                  nombreFinal = `${textoNombre} (${consecutivo})`;
+                }
+              }
+            } catch (errSubDoc) {
+              console.error("Error al resolver la sub-referencia de nombre:", errSubDoc);
+            }
+          } else if (typeof clienteData.nombre === "string" && clienteData.nombre.trim() !== "") {
+            nombreFinal = `${clienteData.nombre} (${consecutivo})`;
+          }
 
           const option = document.createElement('option');
           option.value = idDocCliente;
-          option.textContent = nombreAMostrar;
+          option.textContent = nombreFinal;
           select.appendChild(option);
-        });
+        }
+
       } catch (error) {
-        clearTimeout(avisoSeguridad);
-        console.error("Error crítico cargando clientes:", error);
-        select.innerHTML = '<option value="">❌ Error de conexión. Revisa la consola F12</option>';
+        clearTimeout(temporizadorAlerta);
+        console.error("Error crítico al leer la colección Clientes:", error);
+        select.innerHTML = '<option value="">❌ Error al conectar. Habilita tu dominio en Firebase Auth o revisa las reglas.</option>';
       }
     }
 
+    // Ejecutar inmediatamente
     cargarClientesEnFormulario();
 
-    // GUARDAR DOCUMENTO
+    // GUARDAR EN BASE DE DATOS
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -213,7 +233,7 @@
 
       const idClienteSeleccionado = document.getElementById('clienteSelect').value;
       if (!idClienteSeleccionado) {
-        alert("Por favor, selecciona un cliente válido de la lista.");
+        alert("Por favor, elija un cliente de la lista desplegable.");
         return;
       }
 
@@ -236,19 +256,19 @@
 
       try {
         await addDoc(colVentas, nuevoDoc);
-        alert(`¡${nuevoDoc["Tipo de documento"]} registrada con éxito!`);
+        alert(`¡${nuevoDoc["Tipo de documento"]} registrada exitosamente!`);
         document.getElementById('formIngreso').reset();
       } catch (err) {
-        console.error("Error al guardar:", err);
-        alert("No se pudo guardar. Revisa tus reglas de Firebase.");
+        console.error("Error al registrar venta:", err);
+        alert("No se pudo guardar el registro en Firestore.");
       }
     });
 
-    // LEER HISTORIAL
+    // LEER HISTORIAL COMERCIAL
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
-      lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Buscando en registros nam5...</p>';
+      lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Consultando base de datos nam5...</p>';
 
       try {
         let q = colVentas;
@@ -260,7 +280,7 @@
         lista.innerHTML = '';
 
         if (snapshot.empty) {
-          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No hay registros con este filtro.</p>';
+          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron transacciones comerciales.</p>';
           return;
         }
 
@@ -285,9 +305,19 @@
                 const clienteData = clienteSnap.data();
                 codigoCliente = clienteData.Consecutivo || "S/C";
                 nombreFinalTexto = codigoCliente;
+
+                if (clienteData.nombre && clienteData.nombre.path) {
+                  const nombreSnap = await getDoc(clienteData.nombre);
+                  if (nombreSnap.exists()) {
+                    const nombreData = nombreSnap.data();
+                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || nombreData.valor || codigoCliente;
+                  }
+                } else if (typeof clienteData.nombre === "string") {
+                  nombreFinalTexto = clienteData.nombre;
+                }
               }
-            } catch (errorRef) {
-              console.error(errorRef);
+            } catch (e) {
+              console.error(e);
             }
           }
 
@@ -297,7 +327,8 @@
               <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Cliente de Referencia:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span>
+                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span>
+                <span style="color: #94a3b8; font-size: 11px;">(${codigoCliente})</span>
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
@@ -309,7 +340,7 @@
         }
       } catch (err) {
         console.error(err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error al cargar el historial.</p>';
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de comunicación al generar el historial.</p>';
       }
     });
   </script>
