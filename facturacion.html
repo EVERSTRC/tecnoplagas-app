@@ -194,7 +194,7 @@
       }
     });
 
-    // PROCESAR CONSULTA DINÁMICA CON RESOLUCIÓN DE NOMBRE DE CLIENTE
+    // PROCESAR CONSULTA DINÁMICA CON RESOLUCIÓN MULTI-REFERENCIA
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -214,27 +214,43 @@
           return;
         }
 
-        // Usamos un bucle clásico for...of para poder usar "await" dentro al traer el cliente
         for (const documento of snapshot.docs) {
           const d = documento.data();
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          // --- LÓGICA PARA LEER EL NOMBRE DEL CLIENTE DESDE SU REFERENCIA ---
-          let nombreCliente = "Cliente Desconocido o Eliminado";
-          
+          // --- LÓGICA DE DOBLE SALTO PARA RESOLVER EL NOMBRE ---
+          let nombreFinalTexto = "Cargando...";
+          let codigoCliente = "S/C";
+
           if (d.Cliente && d.Cliente.path) {
             try {
-              // Hacemos una consulta rápida al documento apuntado por la referencia
+              // 1° Salto: Leer el documento del Cliente
               const clienteSnap = await getDoc(d.Cliente);
               if (clienteSnap.exists()) {
                 const clienteData = clienteSnap.data();
-                // NOTA: Si en tu tabla Clientes el campo se llama de otra forma (ej: 'nombreCompleto' o 'razonSocial'), cámbialo aquí abajo:
-                nombreCliente = clienteData.nombre || clienteData.Nombre || "Sin campo nombre asignado";
+                codigoCliente = clienteData.Consecutivo || "S/C";
+                
+                // 2° Salto: El campo 'nombre' es otra referencia (ej: /Clientes/sBIifj7...)
+                if (clienteData.nombre && clienteData.nombre.path) {
+                  const nombreSnap = await getDoc(clienteData.nombre);
+                  if (nombreSnap.exists()) {
+                    const nombreData = nombreSnap.data();
+                    // Extraemos el string final (asumiendo que ese documento final tiene un campo 'nombre' o 'valor')
+                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || "Texto no encontrado";
+                  } else {
+                    nombreFinalTexto = "Ref de nombre vacía";
+                  }
+                } else {
+                  // Si no hay segunda referencia pero el campo tiene texto directo por si acaso
+                  nombreFinalTexto = clienteData.nombre || "Sin referencia de nombre";
+                }
+              } else {
+                nombreFinalTexto = "Ficha de cliente eliminada";
               }
             } catch (errorRef) {
-              console.error("Error obteniendo referencia del cliente:", errorRef);
-              nombreCliente = `Error al cargar (${d.Cliente.id})`;
+              console.error("Error en la cadena de referencias del cliente:", errorRef);
+              nombreFinalTexto = "Error al enlazar datos";
             }
           }
 
@@ -243,7 +259,10 @@
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
               <p class="doc-title">${d.Descripcion || 'Sin descripción de servicio'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
-              <p class="doc-meta" style="color: #1e293b; margin-top: 4px;"><b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreCliente}</span></p>
+              <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
+                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span> 
+                <span style="color: #94a3b8; font-size: 11px;">(${codigoCliente})</span>
+              </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
                 <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || 0}</b></div>
