@@ -16,7 +16,6 @@
     .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     h2 { color: #1e293b; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 20px; }
     
-    /* Formularios */
     .form-group { margin-bottom: 15px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
     .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
@@ -29,7 +28,6 @@
     .btn-search { background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
     .btn-search:hover { background: #059669; }
 
-    /* Resultados de búsqueda */
     .search-filter { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
     .results-container { max-height: 450px; overflow-y: auto; padding-right: 5px; }
     .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 12px; position: relative; }
@@ -140,9 +138,9 @@
       getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ⚠️ REEMPLAZA ESTO CON TUS CREDENCIALES DE TU CONSOLA FIREBASE
+    // ⬇️ REEMPLAZA ESTO CON TUS CREDENCIALES REALES DE CLIENTES.HTML ⬇️
     const firebaseConfig = {
-      apiKey: "TU_API_KEY_AQUÍ",
+      apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
       projectId: "TU_PROYECTO_ID",
       storageBucket: "TU_PROYECTO.appspot.com",
@@ -156,19 +154,18 @@
     const colVentas = collection(db, "Ventas"); 
     const colClientes = collection(db, "Clientes"); 
 
-    // CARGAR CLIENTES ASÍNCRONAMENTE CON TRATAMIENTO DE REFERENCIAS Y DIAGNÓSTICO
+    // CARGAR LISTA DE CLIENTES AL SELECT (VERSIÓN ULTRA RÁPIDA SIN HANGS)
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
-      
-      // Alerta visual por si tarda más de 3.5 segundos (problema de llaves o dominio bloqueado)
-      const temporizadorAlerta = setTimeout(() => {
-        select.innerHTML = '<option value="">⚠️ Sigue cargando... Abre la consola (F12) o verifica tus credenciales de Firebase en el código.</option>';
-      }, 3500);
+
+      // Si olvidaste cambiar las llaves, el sistema te avisará de inmediato aquí
+      if(firebaseConfig.apiKey === "TU_API_KEY") {
+        select.innerHTML = '<option value="">⚠️ Error: Debes pegar tus credenciales reales de Firebase en el código</option>';
+        return;
+      }
 
       try {
         const snapshot = await getDocs(colClientes);
-        clearTimeout(temporizadorAlerta);
-        
         select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
         
         if (snapshot.empty) {
@@ -176,47 +173,27 @@
           return;
         }
 
-        // Usamos un bucle for...of para procesar correctamente los "await" asíncronos de cada referencia de nombre
-        for (const documento of snapshot.docs) {
+        snapshot.forEach((documento) => {
           const clienteData = documento.data();
           const idDocCliente = documento.id;
-          const consecutivo = clienteData.Consecutivo || "S/C";
-          const cedula = clienteData.Cedula ? ` - Céd: ${clienteData.Cedula}` : "";
+          const consecutivo = clienteData.Consecutivo || "Sin código";
+          const cedula = clienteData.Cedula ? ` - Ced: ${clienteData.Cedula}` : "";
           
-          let nombreFinal = `Cliente ${consecutivo}${cedula}`;
-
-          // Resolver el segundo salto si el campo "nombre" contiene un objeto referencia externo
-          if (clienteData.nombre && clienteData.nombre.path) {
-            try {
-              const nombreSnap = await getDoc(clienteData.nombre);
-              if (nombreSnap.exists()) {
-                const nombreData = nombreSnap.data();
-                const textoNombre = nombreData.nombre || nombreData.Nombre || nombreData.valor || "";
-                if (textoNombre) {
-                  nombreFinal = `${textoNombre} (${consecutivo})`;
-                }
-              }
-            } catch (errSubDoc) {
-              console.error("Error al resolver la sub-referencia de nombre:", errSubDoc);
-            }
-          } else if (typeof clienteData.nombre === "string" && clienteData.nombre.trim() !== "") {
-            nombreFinal = `${clienteData.nombre} (${consecutivo})`;
-          }
+          // Usamos los datos directos del documento para evitar bucles asíncronos lentos
+          let nombreAMostrar = `Cliente: ${consecutivo}${cedula}`;
 
           const option = document.createElement('option');
           option.value = idDocCliente;
-          option.textContent = nombreFinal;
+          option.textContent = nombreAMostrar;
           select.appendChild(option);
-        }
+        });
 
       } catch (error) {
-        clearTimeout(temporizadorAlerta);
-        console.error("Error crítico al leer la colección Clientes:", error);
-        select.innerHTML = '<option value="">❌ Error al conectar. Habilita tu dominio en Firebase Auth o revisa las reglas.</option>';
+        console.error("Error al leer Clientes:", error);
+        select.innerHTML = '<option value="">❌ Error al conectar. Verifica las reglas de Firestore</option>';
       }
     }
 
-    // Ejecutar inmediatamente
     cargarClientesEnFormulario();
 
     // GUARDAR EN BASE DE DATOS
@@ -233,7 +210,7 @@
 
       const idClienteSeleccionado = document.getElementById('clienteSelect').value;
       if (!idClienteSeleccionado) {
-        alert("Por favor, elija un cliente de la lista desplegable.");
+        alert("Por favor, elija un cliente de la lista.");
         return;
       }
 
@@ -259,12 +236,12 @@
         alert(`¡${nuevoDoc["Tipo de documento"]} registrada exitosamente!`);
         document.getElementById('formIngreso').reset();
       } catch (err) {
-        console.error("Error al registrar venta:", err);
-        alert("No se pudo guardar el registro en Firestore.");
+        console.error(err);
+        alert("No se pudo guardar el registro.");
       }
     });
 
-    // LEER HISTORIAL COMERCIAL
+    // HISTORIAL FINANCIERO
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -280,7 +257,7 @@
         lista.innerHTML = '';
 
         if (snapshot.empty) {
-          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron transacciones comerciales.</p>';
+          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron registros.</p>';
           return;
         }
 
@@ -295,26 +272,13 @@
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          let nombreFinalTexto = "Cliente de Sistema";
           let codigoCliente = "S/C";
 
           if (d.Cliente && d.Cliente.path) {
             try {
               const clienteSnap = await getDoc(d.Cliente);
               if (clienteSnap.exists()) {
-                const clienteData = clienteSnap.data();
-                codigoCliente = clienteData.Consecutivo || "S/C";
-                nombreFinalTexto = codigoCliente;
-
-                if (clienteData.nombre && clienteData.nombre.path) {
-                  const nombreSnap = await getDoc(clienteData.nombre);
-                  if (nombreSnap.exists()) {
-                    const nombreData = nombreSnap.data();
-                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || nombreData.valor || codigoCliente;
-                  }
-                } else if (typeof clienteData.nombre === "string") {
-                  nombreFinalTexto = clienteData.nombre;
-                }
+                codigoCliente = clienteSnap.data().Consecutivo || "S/C";
               }
             } catch (e) {
               console.error(e);
@@ -327,12 +291,11 @@
               <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span>
-                <span style="color: #94a3b8; font-size: 11px;">(${codigoCliente})</span>
+                <b>👤 Código Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${codigoCliente}</span>
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
-                <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || d["Total Impuesto"]?.toFixed(2) || 0}</b></div>
+                <div>Impuesto<br><b>$${d.TotalImpuesto?.toFixed(2) || d["Total Impuesto"]?.toFixed(2) || 0}</b></div>
                 <div class="total-bold">Total General<br><b>$${d["Total Factura"]?.toFixed(2) || 0}</b></div>
               </div>
             </div>
