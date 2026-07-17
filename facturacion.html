@@ -132,14 +132,14 @@
 
   </div>
 
-  <!-- Integración con Firestore -->
+  <!-- Integración con Firestore SDK Modular -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // COLOCA AQUÍ TUS CREDENCIALES DE FIREBASE CONSOLA
+    // CONFIGURACIÓN DE TU PROYECTO FIREBASE
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -151,9 +151,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    
+    // IMPORTANTE: Asegúrate de que tu colección se llama exactamente "Clientes" y "Ventas" (o cámbialas aquí)
     const colRef = collection(db, "Ventas"); 
 
-    // GUARDAR EN BASE DE DATOS
+    // GUARDAR EN BASE DE DATOS CON CALCULOS AUTOMÁTICOS
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -190,18 +192,18 @@
         document.getElementById('formIngreso').reset();
       } catch (err) {
         console.error("Error al guardar:", err);
-        alert("Error al procesar el guardado. Revisa tus reglas de base de datos.");
+        alert("Error al guardar. Revisa la consola y tus reglas en Firebase.");
       }
     });
 
-    // CONSULTA CON DOBLE SALTO DE REFERENCIAS
+    // CONSULTA RESISTENTE CON DOBLE SALTO DE REFERENCIA EN CLIENTE
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
       lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Buscando en registros nam5...</p>';
 
       try {
-        // Consulta base sin orderBy dinámico para evitar la necesidad estricta de índices compuestos
+        // Consulta base limpia (sin orderBy para no forzar la creación manual de índices complejos en Firestore)
         let q = colRef;
         if (filtro !== "Todos") {
           q = query(colRef, where("Tipo de documento", "==", filtro));
@@ -215,7 +217,7 @@
           return;
         }
 
-        // Convertimos a array y ordenamos localmente por fecha (descendente) de forma segura
+        // Ordenamos los registros localmente en el navegador por fecha de emisión (de más nuevo a más viejo)
         const listaDocumentos = snapshot.docs.sort((a, b) => {
           const fechaA = a.data()["Fecha de Emision"]?.toMillis() || 0;
           const fechaB = b.data()["Fecha de Emision"]?.toMillis() || 0;
@@ -227,43 +229,43 @@
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          let nombreFinalTexto = "Cargando...";
+          let nombreFinalTexto = "Cliente Sin Nombre";
           let codigoCliente = "S/C";
 
-          // --- TRATAMIENTO CADENA DE REFERENCIAS ---
+          // --- TRATAMIENTO SEGURO DEL DOBLE SALTO DE REFERENCIAS ---
           if (d.Cliente && d.Cliente.path) {
             try {
-              // 1° Salto: Traer la ficha del cliente
+              // 1° Salto: Leer la ficha del cliente
               const clienteSnap = await getDoc(d.Cliente);
               if (clienteSnap.exists()) {
                 const clienteData = clienteSnap.data();
                 codigoCliente = clienteData.Consecutivo || "S/C";
-                
-                // 2° Salto: Validar si el campo 'nombre' es un puntero de referencia
+                nombreFinalTexto = codigoCliente; // Usamos el consecutivo como salvaguarda inicial
+
+                // 2° Salto: Si 'nombre' es otra referencia independiente
                 if (clienteData.nombre && clienteData.nombre.path) {
                   const nombreSnap = await getDoc(clienteData.nombre);
                   if (nombreSnap.exists()) {
                     const nombreData = nombreSnap.data();
-                    // Extrae el string del nombre final
-                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || "Texto no encontrado";
-                  } else {
-                    nombreFinalTexto = "Referencia rota";
+                    // Extrae el texto del nombre evaluando mayúsculas/minúsculas o campos comunes
+                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || nombreData.valor || codigoCliente;
                   }
-                } else {
-                  // Salvaguarda por si el campo 'nombre' tuviera texto plano directo
-                  nombreFinalTexto = clienteData.nombre || "Sin nombre asignado";
+                } else if (typeof clienteData.nombre === "string") {
+                  // Por si acaso en algún registro el nombre se guardó directamente como texto
+                  nombreFinalTexto = clienteData.nombre;
                 }
               } else {
-                nombreFinalTexto = "Cliente no existe";
+                nombreFinalTexto = "Cliente no encontrado";
               }
             } catch (errorRef) {
-              console.error("Error en cadena de referencias:", errorRef);
+              console.error("Error resolviendo la referencia del cliente:", errorRef);
               nombreFinalTexto = "Error de enlace";
             }
           } else {
-            nombreFinalTexto = "Sin Cliente asignado";
+            nombreFinalTexto = "Sin asignar";
           }
 
+          // Inyección del elemento al HTML
           lista.innerHTML += `
             <div class="doc-item">
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
@@ -282,8 +284,8 @@
           `;
         }
       } catch (err) {
-        console.error("Error general en consulta:", err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error al consultar. Abre la consola de tu navegador (F12) para ver los detalles técnicos del bloqueo.</p>';
+        console.error("Error crítico en consulta:", err);
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de consulta. Asegúrate de autorizar tu dominio de GitHub Pages en Firebase Authentication.</p>';
       }
     });
   </script>
