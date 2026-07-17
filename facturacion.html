@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnoplagas - Facturación y Cotizaciones</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+    .container { max-width: 1100px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px; }
+    @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+    
+    .header-bar { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .btn-back { background: #64748b; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; }
+    .btn-back:hover { background: #475569; }
+    
+    .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    <h2> { color: #1e293b; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 20px; }
+    
+    /* Formularios */
+    .form-group { margin-bottom: 15px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    label { display: block; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 5px; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    
+    .btn-submit { background: #2563eb; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+    .btn-submit:hover { background: #1d4ed8; }
+    .btn-search { background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .btn-search:hover { background: #059669; }
+
+    /* Resultados de búsqueda */
+    .search-filter { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
+    .results-container { max-height: 450px; overflow-y: auto; padding-right: 5px; }
+    .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 12px; position: relative; }
+    .doc-badge { position: absolute; top: 15px; right: 15px; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; }
+    .badge-factura { background: #fee2e2; color: #991b1b; }
+    .badge-cotizacion { background: #f3e8ff; color: #6b21a8; }
+    .doc-title { font-weight: bold; color: #1e293b; margin: 0 0 5px 0; font-size: 15px; }
+    .doc-meta { font-size: 12px; color: #64748b; margin: 0; }
+    .doc-totals { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; text-align: center; font-size: 12px; }
+    .total-bold { font-weight: bold; color: #2563eb; }
+  </style>
+</head>
+<body>
+
+  <div class="header-bar">
+    <h1 style="margin:0; color:#1e293b; font-size: 24px;">💵 Ventas y Cotizaciones</h1>
+    <a href="index.html" class="btn-back">⬅️ Volver al Menú</a>
+  </div>
+
+  <div class="container">
+    
+    <!-- ================= FORMULARIO DE INGRESO ================= -->
+    <div class="card">
+      <h2>➕ Generar Documento Comercial</h2>
+      <form id="formIngreso">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Documento</label>
+            <select id="tipoDoc">
+              <option value="Factura">Factura</option>
+              <option value="Cotización">Cotización</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>N° Consecutivo</label>
+            <input type="text" id="consecutivo" placeholder="FAC-0001 o COT-0001" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>ID Único del Cliente (En Clientes/)</label>
+          <input type="text" id="clienteId" placeholder="KEFua851iZUIqptZhs6y" required>
+        </div>
+
+        <div class="form-group">
+          <label>Detalle del Servicio / Descripción</label>
+          <input type="text" id="descripcion" placeholder="Fumigación de control de plagas y termitas" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Condición de Venta</label>
+            <input type="text" id="condicionVenta" placeholder="Contado / Crédito 30 días">
+          </div>
+          <div class="form-group">
+            <label>Medio de Pago sugerido</label>
+            <input type="text" id="medioPago" placeholder="Efectivo / Transferencia Sinpe">
+          </div>
+        </div>
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label>Cantidad</label>
+            <input type="number" id="cantidad" value="1" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Precio Unitario ($)</label>
+            <input type="number" id="precioUnitario" step="0.01" value="0.00" required>
+          </div>
+          <div class="form-group">
+            <label>Tasa IVA (Ej: 0.13)</label>
+            <input type="number" id="iva" step="0.01" value="0.13" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">Registrar Venta / Propuesta</button>
+      </form>
+    </div>
+
+    <!-- ================= SECCIÓN DE CONSULTA ================= -->
+    <div class="card" style="display: flex; flex-direction: column;">
+      <h2>🔍 Historial Financiero</h2>
+      
+      <div class="search-filter">
+        <div style="flex: 1;">
+          <label>Mostrar en el reporte</label>
+          <select id="filtroTipo">
+            <option value="Todos">Todos los registros comerciales</option>
+            <option value="Factura">Solo Facturas en firme</option>
+            <option value="Cotización">Solo Cotizaciones enviadas</option>
+          </select>
+        </div>
+        <button id="btnBuscar" class="btn-search">Filtrar</button>
+      </div>
+
+      <div class="results-container" id="resultados">
+        <p style="text-align: center; color: #94a3b8; font-style: italic; margin-top: 40px;">Usa los filtros superiores para consultar la base de datos nam5.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Integración con Firestore -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, doc, getDocs, query, where, orderBy, Timestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // REEMPLAZA ESTO CON TUS CREDENCIALES REALES DE FIREBASE
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_PROYECTO.firebaseapp.com",
+      projectId: "TU_PROYECTO_ID",
+      storageBucket: "TU_PROYECTO.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const colRef = collection(db, "Ventas"); // Tu colección en la región nam5
+
+    // PROCESAR GUARDADO CON CÁLCULOS MATEMÁTICOS AUTOMÁTICOS
+    document.getElementById('formIngreso').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const cantidad = parseInt(document.getElementById('cantidad').value, 10);
+      const precio = parseFloat(document.getElementById('precioUnitario').value);
+      const iva = parseFloat(document.getElementById('iva').value);
+
+      const subTotal = cantidad * precio;
+      const totalImpuesto = subTotal * iva;
+      const totalFactura = subTotal + totalImpuesto;
+
+      const idCliente = document.getElementById('clienteId').value.trim();
+
+      const nuevoDoc = {
+        Cantidad: cantidad,
+        Cliente: doc(db, "Clientes", idCliente),
+        "Condición de venta": document.getElementById('condicionVenta').value,
+        Consecutivo: document.getElementById('consecutivo').value,
+        Descripcion: document.getElementById('descripcion').value,
+        "Fecha de Emision": Timestamp.now(),
+        IVA: iva,
+        "Medio de Pago": document.getElementById('medioPago').value,
+        "Precio Unitario": precio,
+        SubTotal: subTotal,
+        Subtotal Neto: subTotal,
+        "Tipo de documento": document.getElementById('tipoDoc').value,
+        "Total Factura": totalFactura,
+        "Total Impuesto": totalImpuesto
+      };
+
+      try {
+        await addDoc(colRef, nuevoDoc);
+        alert(`¡${nuevoDoc["Tipo de documento"]} guardada con éxito en Firestore!`);
+        document.getElementById('formIngreso').reset();
+      } catch (err) {
+        console.error(err);
+        alert("Error al procesar el guardado. Revisa la consola.");
+      }
+    });
+
+    // PROCESAR CONSULTA DINÁMICA
+    document.getElementById('btnBuscar').addEventListener('click', async () => {
+      const lista = document.getElementById('resultados');
+      const filtro = document.getElementById('filtroTipo').value;
+      lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Buscando en registros nam5...</p>';
+
+      try {
+        let q = query(colRef, orderBy("Fecha de Emision", "desc"));
+        if (filtro !== "Todos") {
+          q = query(colRef, where("Tipo de documento", "==", filtro), orderBy("Fecha de Emision", "desc"));
+        }
+
+        const snapshot = await getDocs(q);
+        lista.innerHTML = '';
+
+        if (snapshot.empty) {
+          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron transacciones con este criterio.</p>';
+          return;
+        }
+
+        snapshot.forEach(documento => {
+          const d = documento.data();
+          const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
+          const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
+
+          lista.innerHTML += `
+            <div class="doc-item">
+              <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
+              <p class="doc-title">${d.Descripcion || 'Sin descripción de servicio'}</p>
+              <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
+              <p class="doc-meta"><b>Cliente ID:</b> ${d.Cliente?.id || 'N/A'}</p>
+              <div class="doc-totals">
+                <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
+                <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || 0}</b></div>
+                <div class="total-bold">Total General<br><b>$${d["Total Factura"]?.toFixed(2) || 0}</b></div>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error(err);
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error en la consulta. Recuerda crear los índices compuestos en tu consola de Firebase si filtras y ordenas a la vez.</p>';
+      }
+    });
+  </script>
+</body>
+</html>
