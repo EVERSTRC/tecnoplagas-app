@@ -69,9 +69,12 @@
           </div>
         </div>
 
+        <!-- CAMBIO CLAVE: Ahora es un campo SELECT para escoger el cliente de forma interactiva -->
         <div class="form-group">
-          <label>ID Único del Cliente (En Clientes/)</label>
-          <input type="text" id="clienteId" placeholder="KEFua851iZUIqptZhs6y" required>
+          <label>Seleccionar Cliente</label>
+          <select id="clienteSelect" required>
+            <option value="">Cargando clientes desde Firestore...</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -152,10 +155,60 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    // IMPORTANTE: Asegúrate de que tu colección se llama exactamente "Clientes" y "Ventas" (o cámbialas aquí)
-    const colRef = collection(db, "Ventas"); 
+    const colVentas = collection(db, "Ventas"); 
+    const colClientes = collection(db, "Clientes"); 
 
-    // GUARDAR EN BASE DE DATOS CON CALCULOS AUTOMÁTICOS
+    // === NUEVA FUNCIÓN: CARGAR CLIENTES EN EL SELECT AL INICIAR LA PÁGINA ===
+    async function cargarClientesEnFormulario() {
+      const select = document.getElementById('clienteSelect');
+      try {
+        const snapshot = await getDocs(colClientes);
+        select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
+        
+        if (snapshot.empty) {
+          select.innerHTML = '<option value="">No hay clientes registrados en Firestore</option>';
+          return;
+        }
+
+        for (const documento of snapshot.docs) {
+          const clienteData = documento.data();
+          const idDocCliente = documento.id; // El ID largo (ej: KEFua851...)
+          const consecutivo = clienteData.Consecutivo || "S/C";
+          
+          let nombreAMostrar = consecutivo;
+
+          // Hacemos el salto para leer el nombre si el campo es una referencia interna
+          if (clienteData.nombre && clienteData.nombre.path) {
+            try {
+              const nombreSnap = await getDoc(clienteData.nombre);
+              if (nombreSnap.exists()) {
+                const nombreData = nombreSnap.data();
+                nombreAMostrar = `${nombreData.nombre || nombreData.Nombre || "Sin nombre"} (${consecutivo})`;
+              }
+            } catch (err) {
+              console.error("Error leyendo sub-nombre del cliente:", err);
+            }
+          } else if (typeof clienteData.nombre === "string") {
+            nombreAMostrar = `${clienteData.nombre} (${consecutivo})`;
+          }
+
+          // Agregamos la opción guardando el ID del documento como el valor real
+          const option = document.createElement('option');
+          option.value = idDocCliente;
+          option.textContent = nombreAMostrar;
+          select.appendChild(option);
+        }
+      } catch (error) {
+        console.error("Error al cargar lista de clientes:", error);
+        select.innerHTML = '<option value="">Error al conectar con la tabla de Clientes</option>';
+      }
+    }
+
+    // Ejecutar la carga de clientes automáticamente al abrir la app
+    cargarClientesEnFormulario();
+
+
+    // GUARDAR EN BASE DE DATOS
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -167,11 +220,16 @@
       const totalImpuesto = subTotal * iva;
       const totalFactura = subTotal + totalImpuesto;
 
-      const idCliente = document.getElementById('clienteId').value.trim();
+      // Obtenemos el ID seleccionado del menú desplegable
+      const idClienteSeleccionado = document.getElementById('clienteSelect').value;
+      if (!idClienteSeleccionado) {
+        alert("Por favor, selecciona un cliente válido.");
+        return;
+      }
 
       const nuevoDoc = {
         Cantidad: cantidad,
-        Cliente: doc(db, "Clientes", idCliente),
+        Cliente: doc(db, "Clientes", idClienteSeleccionado), // Crea la referencia nativa de Firestore
         "Condición de venta": document.getElementById('condicionVenta').value,
         Consecutivo: document.getElementById('consecutivo').value,
         Descripcion: document.getElementById('descripcion').value,
@@ -187,26 +245,25 @@
       };
 
       try {
-        await addDoc(colRef, nuevoDoc);
+        await addDoc(colVentas, nuevoDoc);
         alert(`¡${nuevoDoc["Tipo de documento"]} guardada con éxito!`);
         document.getElementById('formIngreso').reset();
       } catch (err) {
         console.error("Error al guardar:", err);
-        alert("Error al guardar. Revisa la consola y tus reglas en Firebase.");
+        alert("Error al procesar el guardado.");
       }
     });
 
-    // CONSULTA RESISTENTE CON DOBLE SALTO DE REFERENCIA EN CLIENTE
+    // CONSULTA DEL HISTORIAL FINANCIERO
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
       lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Buscando en registros nam5...</p>';
 
       try {
-        // Consulta base limpia (sin orderBy para no forzar la creación manual de índices complejos en Firestore)
-        let q = colRef;
+        let q = colVentas;
         if (filtro !== "Todos") {
-          q = query(colRef, where("Tipo de documento", "==", filtro));
+          q = query(colVentas, where("Tipo de documento", "==", filtro));
         }
 
         const snapshot = await getDocs(q);
@@ -217,7 +274,6 @@
           return;
         }
 
-        // Ordenamos los registros localmente en el navegador por fecha de emisión (de más nuevo a más viejo)
         const listaDocumentos = snapshot.docs.sort((a, b) => {
           const fechaA = a.data()["Fecha de Emision"]?.toMillis() || 0;
           const fechaB = b.data()["Fecha de Emision"]?.toMillis() || 0;
@@ -232,40 +288,32 @@
           let nombreFinalTexto = "Cliente Sin Nombre";
           let codigoCliente = "S/C";
 
-          // --- TRATAMIENTO SEGURO DEL DOBLE SALTO DE REFERENCIAS ---
           if (d.Cliente && d.Cliente.path) {
             try {
-              // 1° Salto: Leer la ficha del cliente
               const clienteSnap = await getDoc(d.Cliente);
               if (clienteSnap.exists()) {
                 const clienteData = clienteSnap.data();
                 codigoCliente = clienteData.Consecutivo || "S/C";
-                nombreFinalTexto = codigoCliente; // Usamos el consecutivo como salvaguarda inicial
+                nombreFinalTexto = codigoCliente;
 
-                // 2° Salto: Si 'nombre' es otra referencia independiente
                 if (clienteData.nombre && clienteData.nombre.path) {
                   const nombreSnap = await getDoc(clienteData.nombre);
                   if (nombreSnap.exists()) {
                     const nombreData = nombreSnap.data();
-                    // Extrae el texto del nombre evaluando mayúsculas/minúsculas o campos comunes
                     nombreFinalTexto = nombreData.nombre || nombreData.Nombre || nombreData.valor || codigoCliente;
                   }
                 } else if (typeof clienteData.nombre === "string") {
-                  // Por si acaso en algún registro el nombre se guardó directamente como texto
                   nombreFinalTexto = clienteData.nombre;
                 }
               } else {
                 nombreFinalTexto = "Cliente no encontrado";
               }
             } catch (errorRef) {
-              console.error("Error resolviendo la referencia del cliente:", errorRef);
+              console.error(errorRef);
               nombreFinalTexto = "Error de enlace";
             }
-          } else {
-            nombreFinalTexto = "Sin asignar";
           }
 
-          // Inyección del elemento al HTML
           lista.innerHTML += `
             <div class="doc-item">
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
@@ -284,8 +332,8 @@
           `;
         }
       } catch (err) {
-        console.error("Error crítico en consulta:", err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de consulta. Asegúrate de autorizar tu dominio de GitHub Pages en Firebase Authentication.</p>';
+        console.error(err);
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de consulta.</p>';
       }
     });
   </script>
