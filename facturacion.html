@@ -35,7 +35,7 @@
     .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 12px; position: relative; }
     .doc-badge { position: absolute; top: 15px; right: 15px; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; }
     .badge-factura { background: #fee2e2; color: #991b1b; }
-    .badge-cotizacion { background: #f3e8ff; color: #6b21a8; }
+    .badge-codizacion { background: #f3e8ff; color: #6b21a8; }
     .doc-title { font-weight: bold; color: #1e293b; margin: 0 0 5px 0; font-size: 15px; }
     .doc-meta { font-size: 12px; color: #64748b; margin: 0; }
     .doc-totals { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; text-align: center; font-size: 12px; }
@@ -69,7 +69,6 @@
           </div>
         </div>
 
-        <!-- CAMBIO CLAVE: Ahora es un campo SELECT para escoger el cliente de forma interactiva -->
         <div class="form-group">
           <label>Seleccionar Cliente</label>
           <select id="clienteSelect" required>
@@ -135,14 +134,13 @@
 
   </div>
 
-  <!-- Integración con Firestore SDK Modular -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
       getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // CONFIGURACIÓN DE TU PROYECTO FIREBASE
+    // ⚠️ REEMPLAZA ESTO CON LAS CREDENCIALES REALES DE TU CONSOLA FIREBASE
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -156,59 +154,52 @@
     const db = getFirestore(app);
     
     const colVentas = collection(db, "Ventas"); 
+    // Si tu colección en Firestore se llama "Clientes" con C mayúscula déjalo así. Si es minúscula, cámbialo a "clientes"
     const colClientes = collection(db, "Clientes"); 
 
-    // === NUEVA FUNCIÓN: CARGAR CLIENTES EN EL SELECT AL INICIAR LA PÁGINA ===
+    // CARGAR CLIENTES DIRECTOS EN EL SELECT
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
+      
+      // Temporizador de aviso por si las credenciales fallan o el internet está lento
+      const avisoSeguridad = setTimeout(() => {
+        select.innerHTML = '<option value="">⚠️ Sigue cargando... Verifica tus credenciales de Firebase en el código</option>';
+      }, 4000);
+
       try {
         const snapshot = await getDocs(colClientes);
+        clearTimeout(avisoSeguridad);
         select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
         
         if (snapshot.empty) {
-          select.innerHTML = '<option value="">No hay clientes registrados en Firestore</option>';
+          select.innerHTML = '<option value="">No se encontraron clientes registrados</option>';
           return;
         }
 
-        for (const documento of snapshot.docs) {
+        snapshot.forEach((documento) => {
           const clienteData = documento.data();
-          const idDocCliente = documento.id; // El ID largo (ej: KEFua851...)
-          const consecutivo = clienteData.Consecutivo || "S/C";
+          const idDocCliente = documento.id;
+          const consecutivo = clienteData.Consecutivo || "Sin código";
+          const cedula = clienteData.Cedula ? ` - Céd: ${clienteData.Cedula}` : "";
           
-          let nombreAMostrar = consecutivo;
+          // Lógica simplificada y segura para evitar que se congele el select
+          let nombreAMostrar = `Cliente ${consecutivo}${cedula}`;
 
-          // Hacemos el salto para leer el nombre si el campo es una referencia interna
-          if (clienteData.nombre && clienteData.nombre.path) {
-            try {
-              const nombreSnap = await getDoc(clienteData.nombre);
-              if (nombreSnap.exists()) {
-                const nombreData = nombreSnap.data();
-                nombreAMostrar = `${nombreData.nombre || nombreData.Nombre || "Sin nombre"} (${consecutivo})`;
-              }
-            } catch (err) {
-              console.error("Error leyendo sub-nombre del cliente:", err);
-            }
-          } else if (typeof clienteData.nombre === "string") {
-            nombreAMostrar = `${clienteData.nombre} (${consecutivo})`;
-          }
-
-          // Agregamos la opción guardando el ID del documento como el valor real
           const option = document.createElement('option');
           option.value = idDocCliente;
           option.textContent = nombreAMostrar;
           select.appendChild(option);
-        }
+        });
       } catch (error) {
-        console.error("Error al cargar lista de clientes:", error);
-        select.innerHTML = '<option value="">Error al conectar con la tabla de Clientes</option>';
+        clearTimeout(avisoSeguridad);
+        console.error("Error crítico cargando clientes:", error);
+        select.innerHTML = '<option value="">❌ Error de conexión. Revisa la consola F12</option>';
       }
     }
 
-    // Ejecutar la carga de clientes automáticamente al abrir la app
     cargarClientesEnFormulario();
 
-
-    // GUARDAR EN BASE DE DATOS
+    // GUARDAR DOCUMENTO
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -220,16 +211,15 @@
       const totalImpuesto = subTotal * iva;
       const totalFactura = subTotal + totalImpuesto;
 
-      // Obtenemos el ID seleccionado del menú desplegable
       const idClienteSeleccionado = document.getElementById('clienteSelect').value;
       if (!idClienteSeleccionado) {
-        alert("Por favor, selecciona un cliente válido.");
+        alert("Por favor, selecciona un cliente válido de la lista.");
         return;
       }
 
       const nuevoDoc = {
         Cantidad: cantidad,
-        Cliente: doc(db, "Clientes", idClienteSeleccionado), // Crea la referencia nativa de Firestore
+        Cliente: doc(db, "Clientes", idClienteSeleccionado),
         "Condición de venta": document.getElementById('condicionVenta').value,
         Consecutivo: document.getElementById('consecutivo').value,
         Descripcion: document.getElementById('descripcion').value,
@@ -246,15 +236,15 @@
 
       try {
         await addDoc(colVentas, nuevoDoc);
-        alert(`¡${nuevoDoc["Tipo de documento"]} guardada con éxito!`);
+        alert(`¡${nuevoDoc["Tipo de documento"]} registrada con éxito!`);
         document.getElementById('formIngreso').reset();
       } catch (err) {
         console.error("Error al guardar:", err);
-        alert("Error al procesar el guardado.");
+        alert("No se pudo guardar. Revisa tus reglas de Firebase.");
       }
     });
 
-    // CONSULTA DEL HISTORIAL FINANCIERO
+    // LEER HISTORIAL
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -270,7 +260,7 @@
         lista.innerHTML = '';
 
         if (snapshot.empty) {
-          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron transacciones con este criterio.</p>';
+          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No hay registros con este filtro.</p>';
           return;
         }
 
@@ -285,7 +275,7 @@
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          let nombreFinalTexto = "Cliente Sin Nombre";
+          let nombreFinalTexto = "Cliente de Sistema";
           let codigoCliente = "S/C";
 
           if (d.Cliente && d.Cliente.path) {
@@ -295,22 +285,9 @@
                 const clienteData = clienteSnap.data();
                 codigoCliente = clienteData.Consecutivo || "S/C";
                 nombreFinalTexto = codigoCliente;
-
-                if (clienteData.nombre && clienteData.nombre.path) {
-                  const nombreSnap = await getDoc(clienteData.nombre);
-                  if (nombreSnap.exists()) {
-                    const nombreData = nombreSnap.data();
-                    nombreFinalTexto = nombreData.nombre || nombreData.Nombre || nombreData.valor || codigoCliente;
-                  }
-                } else if (typeof clienteData.nombre === "string") {
-                  nombreFinalTexto = clienteData.nombre;
-                }
-              } else {
-                nombreFinalTexto = "Cliente no encontrado";
               }
             } catch (errorRef) {
               console.error(errorRef);
-              nombreFinalTexto = "Error de enlace";
             }
           }
 
@@ -320,8 +297,7 @@
               <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span> 
-                <span style="color: #94a3b8; font-size: 11px;">(${codigoCliente})</span>
+                <b>👤 Cliente de Referencia:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span>
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
@@ -333,7 +309,7 @@
         }
       } catch (err) {
         console.error(err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de consulta.</p>';
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error al cargar el historial.</p>';
       }
     });
   </script>
