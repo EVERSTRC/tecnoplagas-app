@@ -136,10 +136,10 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, orderBy, Timestamp 
+      getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // REEMPLAZA ESTO CON TUS CREDENCIALES REALES DE FIREBASE
+    // COLOCA AQUÍ TUS CREDENCIALES DE FIREBASE CONSOLA
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -151,9 +151,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const colRef = collection(db, "Ventas"); // Tu colección en la región nam5
+    const colRef = collection(db, "Ventas"); 
 
-    // PROCESAR GUARDADO CON CÁLCULOS MATEMÁTICOS AUTOMÁTICOS
+    // GUARDAR EN BASE DE DATOS
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -186,24 +186,25 @@
 
       try {
         await addDoc(colRef, nuevoDoc);
-        alert(`¡${nuevoDoc["Tipo de documento"]} guardada con éxito en Firestore!`);
+        alert(`¡${nuevoDoc["Tipo de documento"]} guardada con éxito!`);
         document.getElementById('formIngreso').reset();
       } catch (err) {
-        console.error(err);
-        alert("Error al procesar el guardado. Revisa la consola.");
+        console.error("Error al guardar:", err);
+        alert("Error al procesar el guardado. Revisa tus reglas de base de datos.");
       }
     });
 
-    // PROCESAR CONSULTA DINÁMICA CON RESOLUCIÓN MULTI-REFERENCIA
+    // CONSULTA CON DOBLE SALTO DE REFERENCIAS
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
       lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Buscando en registros nam5...</p>';
 
       try {
-        let q = query(colRef, orderBy("Fecha de Emision", "desc"));
+        // Consulta base sin orderBy dinámico para evitar la necesidad estricta de índices compuestos
+        let q = colRef;
         if (filtro !== "Todos") {
-          q = query(colRef, where("Tipo de documento", "==", filtro), orderBy("Fecha de Emision", "desc"));
+          q = query(colRef, where("Tipo de documento", "==", filtro));
         }
 
         const snapshot = await getDocs(q);
@@ -214,50 +215,59 @@
           return;
         }
 
-        for (const documento of snapshot.docs) {
+        // Convertimos a array y ordenamos localmente por fecha (descendente) de forma segura
+        const listaDocumentos = snapshot.docs.sort((a, b) => {
+          const fechaA = a.data()["Fecha de Emision"]?.toMillis() || 0;
+          const fechaB = b.data()["Fecha de Emision"]?.toMillis() || 0;
+          return fechaB - fechaA;
+        });
+
+        for (const documento of listaDocumentos) {
           const d = documento.data();
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          // --- LÓGICA DE DOBLE SALTO PARA RESOLVER EL NOMBRE ---
           let nombreFinalTexto = "Cargando...";
           let codigoCliente = "S/C";
 
+          // --- TRATAMIENTO CADENA DE REFERENCIAS ---
           if (d.Cliente && d.Cliente.path) {
             try {
-              // 1° Salto: Leer el documento del Cliente
+              // 1° Salto: Traer la ficha del cliente
               const clienteSnap = await getDoc(d.Cliente);
               if (clienteSnap.exists()) {
                 const clienteData = clienteSnap.data();
                 codigoCliente = clienteData.Consecutivo || "S/C";
                 
-                // 2° Salto: El campo 'nombre' es otra referencia (ej: /Clientes/sBIifj7...)
+                // 2° Salto: Validar si el campo 'nombre' es un puntero de referencia
                 if (clienteData.nombre && clienteData.nombre.path) {
                   const nombreSnap = await getDoc(clienteData.nombre);
                   if (nombreSnap.exists()) {
                     const nombreData = nombreSnap.data();
-                    // Extraemos el string final (asumiendo que ese documento final tiene un campo 'nombre' o 'valor')
+                    // Extrae el string del nombre final
                     nombreFinalTexto = nombreData.nombre || nombreData.Nombre || "Texto no encontrado";
                   } else {
-                    nombreFinalTexto = "Ref de nombre vacía";
+                    nombreFinalTexto = "Referencia rota";
                   }
                 } else {
-                  // Si no hay segunda referencia pero el campo tiene texto directo por si acaso
-                  nombreFinalTexto = clienteData.nombre || "Sin referencia de nombre";
+                  // Salvaguarda por si el campo 'nombre' tuviera texto plano directo
+                  nombreFinalTexto = clienteData.nombre || "Sin nombre asignado";
                 }
               } else {
-                nombreFinalTexto = "Ficha de cliente eliminada";
+                nombreFinalTexto = "Cliente no existe";
               }
             } catch (errorRef) {
-              console.error("Error en la cadena de referencias del cliente:", errorRef);
-              nombreFinalTexto = "Error al enlazar datos";
+              console.error("Error en cadena de referencias:", errorRef);
+              nombreFinalTexto = "Error de enlace";
             }
+          } else {
+            nombreFinalTexto = "Sin Cliente asignado";
           }
 
           lista.innerHTML += `
             <div class="doc-item">
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
-              <p class="doc-title">${d.Descripcion || 'Sin descripción de servicio'}</p>
+              <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
                 <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreFinalTexto}</span> 
@@ -265,15 +275,15 @@
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
-                <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || 0}</b></div>
+                <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || d["Total Impuesto"]?.toFixed(2) || 0}</b></div>
                 <div class="total-bold">Total General<br><b>$${d["Total Factura"]?.toFixed(2) || 0}</b></div>
               </div>
             </div>
           `;
         }
       } catch (err) {
-        console.error(err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error en la consulta. Recuerda crear los índices compuestos en tu consola de Firebase si filtras y ordenas a la vez.</p>';
+        console.error("Error general en consulta:", err);
+        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error al consultar. Abre la consola de tu navegador (F12) para ver los detalles técnicos del bloqueo.</p>';
       }
     });
   </script>
