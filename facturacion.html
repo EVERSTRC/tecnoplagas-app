@@ -14,7 +14,7 @@
     .btn-back:hover { background: #475569; }
     
     .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    <h2> { color: #1e293b; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 20px; }
+    h2 { color: #1e293b; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 20px; }
     
     /* Formularios */
     .form-group { margin-bottom: 15px; }
@@ -136,7 +136,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
-      getFirestore, collection, addDoc, doc, getDocs, query, where, orderBy, Timestamp 
+      getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, orderBy, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // REEMPLAZA ESTO CON TUS CREDENCIALES REALES DE FIREBASE
@@ -194,7 +194,7 @@
       }
     });
 
-    // PROCESAR CONSULTA DINÁMICA
+    // PROCESAR CONSULTA DINÁMICA CON RESOLUCIÓN DE NOMBRE DE CLIENTE
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -214,17 +214,36 @@
           return;
         }
 
-        snapshot.forEach(documento => {
+        // Usamos un bucle clásico for...of para poder usar "await" dentro al traer el cliente
+        for (const documento of snapshot.docs) {
           const d = documento.data();
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
+
+          // --- LÓGICA PARA LEER EL NOMBRE DEL CLIENTE DESDE SU REFERENCIA ---
+          let nombreCliente = "Cliente Desconocido o Eliminado";
+          
+          if (d.Cliente && d.Cliente.path) {
+            try {
+              // Hacemos una consulta rápida al documento apuntado por la referencia
+              const clienteSnap = await getDoc(d.Cliente);
+              if (clienteSnap.exists()) {
+                const clienteData = clienteSnap.data();
+                // NOTA: Si en tu tabla Clientes el campo se llama de otra forma (ej: 'nombreCompleto' o 'razonSocial'), cámbialo aquí abajo:
+                nombreCliente = clienteData.nombre || clienteData.Nombre || "Sin campo nombre asignado";
+              }
+            } catch (errorRef) {
+              console.error("Error obteniendo referencia del cliente:", errorRef);
+              nombreCliente = `Error al cargar (${d.Cliente.id})`;
+            }
+          }
 
           lista.innerHTML += `
             <div class="doc-item">
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
               <p class="doc-title">${d.Descripcion || 'Sin descripción de servicio'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
-              <p class="doc-meta"><b>Cliente ID:</b> ${d.Cliente?.id || 'N/A'}</p>
+              <p class="doc-meta" style="color: #1e293b; margin-top: 4px;"><b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreCliente}</span></p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
                 <div>Impuesto (IVA)<br><b>$${d.TotalImpuesto?.toFixed(2) || 0}</b></div>
@@ -232,7 +251,7 @@
               </div>
             </div>
           `;
-        });
+        }
       } catch (err) {
         console.error(err);
         lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error en la consulta. Recuerda crear los índices compuestos en tu consola de Firebase si filtras y ordenas a la vez.</p>';
