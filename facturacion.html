@@ -138,7 +138,7 @@
       getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // ⬇️ REEMPLAZA ESTO CON TUS CREDENCIALES REALES DE CLIENTES.HTML ⬇️
+    // ⬇️ REEMPLAZA CON TUS CREDENCIALES REALES DE FIREBASE ⬇️
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "TU_PROYECTO.firebaseapp.com",
@@ -151,13 +151,13 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    const colVentas = collection(db, "Ventas"); 
-    const colClientes = collection(db, "clientes");
+    // Nombres exactos de colecciones según tus capturas de pantalla
+    const colVentas = collection(db, "Facturacion"); 
+    const colClientes = collection(db, "Clientes"); 
 
-    // Caché en memoria para optimizar el rendimiento del historial
     const cacheClientes = {};
 
-    // CARGAR LISTA DE CLIENTES AL SELECT CON EL CAMPO NOMBRE EXACTO
+    // CARGAR LISTA DE CLIENTES AL SELECT (Mapeado exacto según tu captura 227)
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
 
@@ -171,7 +171,7 @@
         select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
         
         if (snapshot.empty) {
-          select.innerHTML = '<option value="">No hay clientes en la colección clientes</option>';
+          select.innerHTML = '<option value="">No hay clientes en la colección Clientes</option>';
           return;
         }
 
@@ -179,16 +179,19 @@
           const clienteData = documento.data();
           const idDocCliente = documento.id;
           
-          // Extracción limpia utilizando exclusivamente las propiedades de tu base de datos
-          const nombreCliente = clienteData.nombre || "Cliente sin nombre";
-          const consecutivo = clienteData.consecutivo || "Sin código";
-          const cedula = clienteData.cedula ? ` - Ced: ${clienteData.cedula}` : "";
+          // Extracción usando mayúsculas exactas de tu captura de pantalla 227
+          const consecutivo = clienteData.Consecutivo || "Sin código";
+          const cedula = clienteData.Cedula ? ` - Ced: ${clienteData.Cedula}` : "";
           
-          // Registramos en caché el valor estructurado para reutilizarlo velozmente
-          cacheClientes[idDocCliente] = nombreCliente;
+          // Como tu campo 'nombre' es un Reference object en Firestore, usamos Consecutivo como identificador de texto seguro
+          let nombreTexto = `Cliente ${consecutivo}`;
+          if (clienteData.nombre && typeof clienteData.nombre === 'string') {
+            nombreTexto = clienteData.nombre;
+          }
+          
+          cacheClientes[idDocCliente] = consecutivo;
 
-          // Construcción exacta de la visualización en la interfaz web
-          let nombreAMostrar = `${nombreCliente} [${consecutivo}]${cedula}`;
+          let nombreAMostrar = `${consecutivo}${cedula}`;
 
           const option = document.createElement('option');
           option.value = idDocCliente;
@@ -204,7 +207,7 @@
 
     cargarClientesEnFormulario();
 
-    // GUARDAR EN BASE DE DATOS
+    // GUARDAR EN BASE DE DATOS (Mapeado exacto según tu captura 228)
     document.getElementById('formIngreso').addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -222,9 +225,10 @@
         return;
       }
 
+      // Estructura exacta con mayúsculas de tu captura 228
       const nuevoDoc = {
         Cantidad: cantidad,
-        Cliente: doc(db, "clientes", idClienteSeleccionado),
+        Cliente: doc(db, "Clientes", idClienteSeleccionado), // Guarda el tipo (reference) exacto
         "Condición de venta": document.getElementById('condicionVenta').value,
         Consecutivo: document.getElementById('consecutivo').value,
         Descripcion: document.getElementById('descripcion').value,
@@ -253,7 +257,7 @@
       }
     });
 
-    // HISTORIAL FINANCIERO CON EXTRACCIÓN DE NOMBRE
+    // HISTORIAL FINANCIERO
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -286,34 +290,33 @@
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          let nombreClienteFactura = "Cliente no asignado";
+          let codigoCliente = "S/C";
 
           if (d.Cliente && d.Cliente.id) {
             const idCliente = d.Cliente.id;
             
             if (cacheClientes[idCliente]) {
-              nombreClienteFactura = cacheClientes[idCliente];
+              codigoCliente = cacheClientes[idCliente];
             } else {
               try {
                 const clienteSnap = await getDoc(d.Cliente);
                 if (clienteSnap.exists()) {
-                  const cData = clienteSnap.data();
-                  nombreClienteFactura = cData.nombre || "S/N";
-                  cacheClientes[idCliente] = nombreClienteFactura;
+                  codigoCliente = clienteSnap.data().Consecutivo || "S/C";
+                  cacheClientes[idCliente] = codigoCliente;
                 }
               } catch (e) {
-                console.error("Error al resolver referencia de cliente:", e);
+                console.error(e);
               }
             }
           }
 
           HTMLAcumulado += `
             <div class="doc-item">
-              <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
+              <span class="doc-badge ${claseBadge}">${d["Tipo de documento"] || "Documento"}</span>
               <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreClienteFactura}</span>
+                <b>👤 Código Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${codigoCliente}</span>
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
