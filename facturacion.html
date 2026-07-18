@@ -152,12 +152,12 @@
     const db = getFirestore(app);
     
     const colVentas = collection(db, "Ventas"); 
-    const colClientes = collection(db, "clientes"); // Corregido a minúsculas según tu captura
+    const colClientes = collection(db, "clientes");
 
-    // Objeto global de caché para evitar consultas redundantes y acelerar el historial
+    // Caché en memoria para optimizar el rendimiento del historial
     const cacheClientes = {};
 
-    // CARGAR LISTA DE CLIENTES AL SELECT
+    // CARGAR LISTA DE CLIENTES AL SELECT CON EL CAMPO NOMBRE EXACTO
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
 
@@ -179,15 +179,15 @@
           const clienteData = documento.data();
           const idDocCliente = documento.id;
           
-          // Mapeamos los campos exactamente como aparecen en tu captura (en minúsculas)
+          // Extracción limpia utilizando exclusivamente las propiedades de tu base de datos
           const nombreCliente = clienteData.nombre || "Cliente sin nombre";
           const consecutivo = clienteData.consecutivo || "Sin código";
           const cedula = clienteData.cedula ? ` - Ced: ${clienteData.cedula}` : "";
           
-          // Guardamos el nombre en caché para que el historial lo use eficientemente
+          // Registramos en caché el valor estructurado para reutilizarlo velozmente
           cacheClientes[idDocCliente] = nombreCliente;
 
-          // Lo que se despliega en el elemento Select
+          // Construcción exacta de la visualización en la interfaz web
           let nombreAMostrar = `${nombreCliente} [${consecutivo}]${cedula}`;
 
           const option = document.createElement('option');
@@ -224,7 +224,7 @@
 
       const nuevoDoc = {
         Cantidad: cantidad,
-        Cliente: doc(db, "clientes", idClienteSeleccionado), // Referencia corregida a "clientes"
+        Cliente: doc(db, "clientes", idClienteSeleccionado),
         "Condición de venta": document.getElementById('condicionVenta').value,
         Consecutivo: document.getElementById('consecutivo').value,
         Descripcion: document.getElementById('descripcion').value,
@@ -244,7 +244,6 @@
         alert(`¡${nuevoDoc["Tipo de documento"]} registrada exitosamente!`);
         document.getElementById('formIngreso').reset();
         
-        // Restablecemos los valores por defecto del formulario tras el reset
         document.getElementById('cantidad').value = "1";
         document.getElementById('precioUnitario').value = "0.00";
         document.getElementById('iva').value = "0.13";
@@ -254,7 +253,7 @@
       }
     });
 
-    // HISTORIAL FINANCIERO OPTIMIZADO
+    // HISTORIAL FINANCIERO CON EXTRACCIÓN DE NOMBRE
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -292,7 +291,6 @@
           if (d.Cliente && d.Cliente.id) {
             const idCliente = d.Cliente.id;
             
-            // Si ya está guardado en la caché en memoria evitamos hacer peticiones extra
             if (cacheClientes[idCliente]) {
               nombreClienteFactura = cacheClientes[idCliente];
             } else {
@@ -301,7 +299,7 @@
                 if (clienteSnap.exists()) {
                   const cData = clienteSnap.data();
                   nombreClienteFactura = cData.nombre || "S/N";
-                  cacheClientes[idCliente] = nombreClienteFactura; // Alimentamos caché
+                  cacheClientes[idCliente] = nombreClienteFactura;
                 }
               } catch (e) {
                 console.error("Error al resolver referencia de cliente:", e);
