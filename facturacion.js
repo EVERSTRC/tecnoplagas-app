@@ -12,21 +12,21 @@ import {
   Timestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// REEMPLAZA CON TUS CONFIGURACIONES REALES DE FIREBASE
+// Credenciales del proyecto vinculadas a Tecnoplagas
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "tu-sender-id",
-  appId: "tu-app-id"
+  apiKey: "TU_API_KEY", // <-- REEMPLAZAR CON TU API KEY DE LA CONSOLA
+  authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+  projectId: "fumigadora-tecnoplagas",
+  storageBucket: "fumigadora-tecnoplagas.firebasestorage.app",
+  messagingSenderId: "510795344519",
+  appId: "TU_APP_ID" // <-- REEMPLAZAR CON TU APP ID DE LA CONSOLA
 };
 
-// Inicializar Firebase y Firestore direccionado al nodo nam5
+// Inicialización de base de datos
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Selectores del DOM
+// Selectores de Elementos UI
 const form = document.getElementById('documento-form');
 const selectCliente = document.getElementById('clienteRef');
 const inputCantidad = document.getElementById('cantidad');
@@ -41,44 +41,42 @@ const filtroTipo = document.getElementById('filtroTipo');
 const btnFiltrar = document.getElementById('btn-filtrar');
 const historialListado = document.getElementById('historial-listado');
 
-// Almacén local en memoria de clientes mapeados
-let mapaClientes = {};
+// Memoria de mapeo para evitar lecturas recursivas innecesarias
+let cacheClientes = {};
 
-// 1. Cargar Clientes desde Firestore para el selector de referencias
-async function cargarClientes() {
+// Cargar listado de la colección "Clientes"
+async function obtenerClientes() {
   try {
-    const querySnapshot = await getDocs(collection(db, "Clientes"));
+    const snapshot = await getDocs(collection(db, "Clientes"));
     selectCliente.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
     
-    querySnapshot.forEach((docSnap) => {
-      const datos = docSnap.data();
-      const id = docSnap.id;
-      mapaClientes[id] = datos.nombre || 'Cliente sin nombre';
+    snapshot.forEach((snapshotDoc) => {
+      const data = snapshotDoc.data();
+      const id = snapshotDoc.id;
+      cacheClientes[id] = data.nombre || 'Cliente sin Identificar';
       
-      const option = document.createElement('option');
-      option.value = id;
-      // Muestra Consecutivo o Cédula si existen junto al nombre
-      option.textContent = `${datos.consecutivo || ''} - ${datos.nombre || id}`;
-      selectCliente.appendChild(option);
+      const itemOption = document.createElement('option');
+      itemOption.value = id;
+      itemOption.textContent = `${data.consecutivo || 'CLI-'} - ${data.nombre || id}`;
+      selectCliente.appendChild(itemOption);
     });
-  } catch (error) {
-    console.error("Error cargando clientes de Firestore:", error);
-    selectCliente.innerHTML = '<option value="">Error al cargar clientes</option>';
+  } catch (err) {
+    console.error("Error al obtener Clientes de Firestore: ", err);
+    selectCliente.innerHTML = '<option value="">Error al estructurar clientes</option>';
   }
 }
 
-// 2. Calcular montos financieros en vivo
-function calcularMontos() {
-  const cantidad = parseInt(inputCantidad.value) || 0;
-  const precioUnitario = parseFloat(inputPrecio.value) || 0;
+// Procesar matemática financiera en tiempo real
+function procesarCalculos() {
+  const q = parseInt(inputCantidad.value) || 0;
+  const precioU = parseFloat(inputPrecio.value) || 0;
   const tasaIva = parseFloat(inputIva.value) || 0;
 
-  const subTotal = cantidad * precioUnitario; // Subtotal bruto base
-  const subtotalNeto = subTotal;              // Equivalente en este flujo estructurado
+  const subTotal = q * precioU;
+  const subtotalNeto = subTotal; 
   const totalImpuesto = subtotalNeto * tasaIva;
   const totalFactura = subtotalNeto + totalImpuesto;
 
-  // Renderizar etiquetas en pantalla
   lblSubtotalNeto.textContent = `$${subtotalNeto.toFixed(2)}`;
   lblTotalImpuesto.textContent = `$${totalImpuesto.toFixed(2)}`;
   lblTotalFactura.textContent = `$${totalFactura.toFixed(2)}`;
@@ -86,28 +84,27 @@ function calcularMontos() {
   return { subTotal, subtotalNeto, totalImpuesto, totalFactura };
 }
 
-// Escuchadores de eventos para recalcular en tiempo real
-[inputCantidad, inputPrecio, inputIva].forEach(elem => {
-  elem.addEventListener('input', calcularMontos);
+// Vinculación de entradas reactivas
+[inputCantidad, inputPrecio, inputIva].forEach(inputNode => {
+  inputNode.addEventListener('input', procesarCalculos);
 });
 
-// 3. Guardar el Documento Comercial en Firestore conforme a tu estructura de datos exacta
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
+// Guardar en la base de datos nam5
+form.addEventListener('submit', async (event) => {
+  event.preventDefault();
 
-  const clienteId = selectCliente.value;
-  if (!clienteId) {
-    alert("Por favor selecciona un cliente válido.");
+  const idDelCliente = selectCliente.value;
+  if (!idDelCliente) {
+    alert("Por favor, elija un cliente válido del listado.");
     return;
   }
 
-  // Obtener cálculos financieros exactos
-  const calculos = calcularMontos();
+  const mat = procesarCalculos();
 
-  // Armar el documento mapeando fielmente tus tipos de datos de Firestore
-  const nuevoDocumento = {
+  // Mapeo exacto respetando mayúsculas, minúsculas y tipos de datos del esquema de tu Firestore
+  const documentoComercial = {
     "Cantidad": parseInt(inputCantidad.value),
-    "Cliente": doc(db, "Clientes", clienteId), // Tipo: Reference
+    "Cliente": doc(db, "Clientes", idDelCliente), // Tipo: Reference
     "Condición de venta": document.getElementById('condicionVenta').value,
     "Consecutivo": document.getElementById('consecutivo').value,
     "Descripcion": document.getElementById('descripcion').value,
@@ -115,92 +112,87 @@ form.addEventListener('submit', async (e) => {
     "IVA": parseFloat(inputIva.value),
     "Medio de Pago": document.getElementById('medioPago').value,
     "Precio Unitario": parseFloat(inputPrecio.value),
-    "SubTotal": calculos.subTotal,
-    "Subtotal Neto": calculos.subtotalNeto,
+    "SubTotal": mat.subTotal,
+    "Subtotal Neto": mat.subtotalNeto,
     "Tipo de documento": document.getElementById('tipoDocumento').value,
-    "Total Factura": calculos.totalFactura,
-    "Total Impuesto": calculos.totalImpuesto
+    "Total Factura": mat.totalFactura,
+    "Total Impuesto": mat.totalImpuesto
   };
 
   try {
-    // Almacena en la colección raíz de transacciones llamada 'Facturacion'
-    await addDoc(collection(db, "Facturacion"), nuevoDocumento);
-    alert("¡Registro guardado exitosamente en Firestore (nam5)!");
+    await addDoc(collection(db, "Facturacion"), documentoComercial);
+    alert("Documento comercial registrado de manera exitosa.");
     form.reset();
-    calcularMontos();
-    cargarHistorial(); // Refrescar visualización del panel derecho
-  } catch (error) {
-    console.error("Error al guardar el documento comercial: ", error);
-    alert("Hubo un error al guardar en la base de datos.");
+    procesarCalculos();
+    obtenerHistorial();
+  } catch (err) {
+    console.error("Error al persistir el registro en la colección: ", err);
+    alert("Error interno al escribir en Firestore.");
   }
 });
 
-// 4. Consultar Historial con filtros dinámicos
-async function cargarHistorial() {
-  historialListado.innerHTML = '<p style="text-align:center;">Consultando base de datos...</p>';
-  const tipoFiltrado = filtroTipo.value;
+// Obtener e imprimir el Historial Financiero
+async function obtenerHistorial() {
+  historialListado.innerHTML = '<p style="text-align:center; color:#64748b;">Actualizando lista...</p>';
+  const filtro = filtroTipo.value;
   
   try {
-    let q = collection(db, "Facturacion");
+    let baseQuery = collection(db, "Facturacion");
     
-    // Aplicar query condicional según lo seleccionado en la UI
-    if (tipoFiltrado !== "Todos") {
-      q = query(q, where("Tipo de documento", "==", tipoFiltrado));
+    if (filtro !== "Todos") {
+      baseQuery = query(baseQuery, where("Tipo de documento", "==", filtro));
     }
     
-    const querySnapshot = await getDocs(q);
+    const snap = await getDocs(baseQuery);
     
-    if (querySnapshot.empty) {
-      historialListado.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron registros comerciales.</p>';
+    if (snap.empty) {
+      historialListado.innerHTML = '<p style="text-align:center; color:#64748b;">No existen registros que coincidan.</p>';
       return;
     }
 
     historialListado.innerHTML = '';
     
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const badgeClase = data["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
+    snap.forEach((registroDoc) => {
+      const data = registroDoc.data();
+      const stiloBadge = data["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
       
-      // Conversión legible de Timestamp de Firestore
-      let fechaTexto = "Fecha no disponible";
-      if(data["Fecha de Emision"] && typeof data["Fecha de Emision"].toDate === 'function') {
-        fechaTexto = data["Fecha de Emision"].toDate().toLocaleDateString('es-CR', {
+      let formatoFecha = "Fecha no válida";
+      if (data["Fecha de Emision"] && typeof data["Fecha de Emision"].toDate === 'function') {
+        formatoFecha = data["Fecha de Emision"].toDate().toLocaleDateString('es-CR', {
           day: 'numeric', month: 'short', year: 'numeric'
         });
       }
 
-      // Obtener el ID del cliente desde la referencia interna de Firestore
-      const clienteIdRef = data["Cliente"] ? data["Cliente"].id : '';
-      const nombreCliente = mapaClientes[clienteIdRef] || `ID Cliente: ${clienteIdRef}`;
+      const refId = data["Cliente"] ? data["Cliente"].id : '';
+      const stringCliente = cacheClientes[refId] || `ID de referencia: ${refId}`;
 
-      const card = document.createElement('div');
-      card.className = 'documento-card';
-      card.innerHTML = `
+      const cardElement = document.createElement('div');
+      cardElement.className = 'documento-card';
+      cardElement.innerHTML = `
         <div class="doc-header">
-          <span class="doc-consecutivo">${data["Consecutivo"] || 'SIN-NUM'}</span>
-          <span class="badge-doc ${badgeClase}">${data["Tipo de documento"]}</span>
+          <span class="doc-consecutivo">${data["Consecutivo"] || 'S/N'}</span>
+          <span class="badge-doc ${stiloBadge}">${data["Tipo de documento"]}</span>
         </div>
-        <div class="doc-detalles"><strong>Cliente:</strong> ${nombreCliente}</div>
-        <div class="doc-detalles"><strong>Detalle:</strong> ${data["Descripcion"] || ''}</div>
-        <div class="doc-detalles"><strong>Emisión:</strong> ${fechaTexto} | <strong>Pago:</strong> ${data["Medio de Pago"] || ''}</div>
+        <div class="doc-detalles"><strong>Cliente:</strong> ${stringCliente}</div>
+        <div class="doc-detalles"><strong>Servicio:</strong> ${data["Descripcion"] || ''}</div>
+        <div class="doc-detalles"><strong>Emisión:</strong> ${formatoFecha} | <strong>Condición:</strong> ${data["Condición de venta"] || ''}</div>
         <div class="doc-total">Total: $${(data["Total Factura"] || 0).toFixed(2)}</div>
       `;
-      historialListado.appendChild(card);
+      historialListado.appendChild(cardElement);
     });
 
-  } catch (error) {
-    console.error("Error al consultar el historial financiero: ", error);
-    historialListado.innerHTML = '<p style="color:#ef4444; text-align:center;">Error al conectar con Firestore.</p>';
+  } catch (err) {
+    console.error("Fallo al obtener el Historial Financiero: ", err);
+    historialListado.innerHTML = '<p style="color:#ef4444; text-align:center;">Fallo en la comunicación con Firestore nam5.</p>';
   }
 }
 
-// Asignar eventos de consulta e inicialización
-btnFiltrar.addEventListener('click', cargarHistorial);
+btnFiltrar.addEventListener('click', obtenerHistorial);
 
-// Ciclo de carga inicial al abrir el sistema
-async function inicializarModulo() {
-  await cargarClientes(); // Obligatorio cargar primero para mapear referencias correctamente
-  await cargarHistorial();
+// Carga asíncrona inicial controlada
+async function arrancarModulo() {
+  await obtenerClientes();
+  await obtenerHistorial();
 }
 
-inicializarModulo();
+arrancarModulo();
