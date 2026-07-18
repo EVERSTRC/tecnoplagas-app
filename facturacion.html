@@ -4,336 +4,139 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Facturación y Cotizaciones</title>
+  <link rel="manifest" href="manifest.json">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f7fb; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-    .container { max-width: 1100px; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-top: 20px; }
-    @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f7fb; color: #333; }
+    .container { max-width: 1200px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     
-    .header-bar { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .btn-back { background: #64748b; color: white; padding: 10px 15px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; }
-    .btn-back:hover { background: #475569; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+    .btn-back { background: #64748b; color: white; padding: 10px 16px; border-radius: 6px; font-weight: bold; text-decoration: none; font-size: 14px; }
     
-    .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    h2 { color: #1e293b; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; font-size: 20px; }
+    .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
+    .panel { background: #fff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .panel h2 { margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px; font-size: 20px; }
     
-    .form-group { margin-bottom: 15px; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    label { display: block; font-size: 13px; color: #475569; font-weight: 600; margin-bottom: 5px; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-    input:focus, select:focus { outline: none; border-color: #2563eb; }
+    .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+    .full-width { grid-column: span 2; }
+    .triple-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; grid-column: span 2; }
     
-    .btn-submit { background: #2563eb; color: white; width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+    label { font-size: 14px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 15px; background: #f8fafc; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; background: #fff; }
+    
+    .btn-submit { width: 100%; padding: 14px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
     .btn-submit:hover { background: #1d4ed8; }
-    .btn-search { background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    .btn-search:hover { background: #059669; }
+    
+    .filter-container { display: flex; gap: 10px; margin-bottom: 20px; }
+    .btn-filter { background: #10b981; color: white; border: none; padding: 0 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    
+    .summary-box { background: #f1f5f9; padding: 12px; border-radius: 6px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 14px; }
+    .summary-box div span { font-weight: bold; color: #1e293b; }
 
-    .search-filter { display: flex; gap: 10px; margin-bottom: 20px; align-items: flex-end; }
-    .results-container { max-height: 450px; overflow-y: auto; padding-right: 5px; }
-    .doc-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin-bottom: 12px; position: relative; }
-    .doc-badge { position: absolute; top: 15px; right: 15px; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; }
-    .badge-factura { background: #fee2e2; color: #991b1b; }
-    .badge-cotizacion { background: #f3e8ff; color: #6b21a8; }
-    .doc-title { font-weight: bold; color: #1e293b; margin: 0 0 5px 0; font-size: 15px; }
-    .doc-meta { font-size: 12px; color: #64748b; margin: 0; }
-    .doc-totals { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e2e8f0; text-align: center; font-size: 12px; }
-    .total-bold { font-weight: bold; color: #2563eb; }
+    .documento-card { background: #fff; border: 1px solid #e2e8f0; padding: 15px; margin-bottom: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.01); }
+    .doc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .badge-doc { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-factura { background: #dcfce7; color: #15803d; }
+    .badge-cotizacion { background: #fef9c3; color: #a16207; }
+    .doc-consecutivo { font-family: monospace; font-weight: bold; color: #334155; }
+    .doc-detalles { font-size: 14px; color: #64748b; margin: 4px 0; }
+    .doc-total { text-align: right; font-weight: bold; font-size: 16px; color: #1e293b; margin-top: 5px; }
   </style>
 </head>
 <body>
 
-  <div class="header-bar">
-    <h1 style="margin:0; color:#1e293b; font-size: 24px;">💵 Ventas y Cotizaciones</h1>
-    <a href="index.html" class="btn-back">⬅️ Volver al Menú</a>
-  </div>
-
   <div class="container">
-    
-    <!-- ================= FORMULARIO DE INGRESO ================= -->
-    <div class="card">
-      <h2>➕ Generar Documento Comercial</h2>
-      <form id="formIngreso">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Tipo de Documento</label>
-            <select id="tipoDoc">
-              <option value="Factura">Factura</option>
-              <option value="Cotización">Cotización</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>N° Consecutivo</label>
-            <input type="text" id="consecutivo" placeholder="FAC-0001 o COT-0001" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Seleccionar Cliente</label>
-          <select id="clienteSelect" required>
-            <option value="">Cargando clientes desde Firestore...</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>Detalle del Servicio / Descripción</label>
-          <input type="text" id="descripcion" placeholder="Fumigación de control de plagas y termitas" required>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Condición de Venta</label>
-            <input type="text" id="condicionVenta" placeholder="Contado / Crédito 30 días">
-          </div>
-          <div class="form-group">
-            <label>Medio de Pago sugerido</label>
-            <input type="text" id="medioPago" placeholder="Efectivo / Transferencia Sinpe">
-          </div>
-        </div>
-
-        <div class="form-row-3">
-          <div class="form-group">
-            <label>Cantidad</label>
-            <input type="number" id="cantidad" value="1" min="1" required>
-          </div>
-          <div class="form-group">
-            <label>Precio Unitario ($)</label>
-            <input type="number" id="precioUnitario" step="0.01" value="0.00" required>
-          </div>
-          <div class="form-group">
-            <label>Tasa IVA (Ej: 0.13)</label>
-            <input type="number" id="iva" step="0.01" value="0.13" required>
-          </div>
-        </div>
-
-        <button type="submit" class="btn-submit">Registrar Venta / Propuesta</button>
-      </form>
+    <div class="top-bar">
+      <h1 style="margin:0; font-size:22px; color:#1e293b;">📊 Módulo Financiero - Tecnoplagas</h1>
+      <a href="index.html" class="btn-back">🏠 Menú Inicio</a>
     </div>
-
-    <!-- ================= SECCIÓN DE CONSULTA ================= -->
-    <div class="card" style="display: flex; flex-direction: column;">
-      <h2>🔍 Historial Financiero</h2>
-      
-      <div class="search-filter">
-        <div style="flex: 1;">
-          <label>Mostrar en el reporte</label>
-          <select id="filtroTipo">
-            <option value="Todos">Todos los registros comerciales</option>
-            <option value="Factura">Solo Facturas en firme</option>
-            <option value="Cotización">Solo Cotizaciones enviadas</option>
-          </select>
-        </div>
-        <button id="btnBuscar" class="btn-search">Filtrar</button>
-      </div>
-
-      <div class="results-container" id="resultados">
-        <p style="text-align: center; color: #94a3b8; font-style: italic; margin-top: 40px;">Usa los filtros superiores para consultar la base de datos nam5.</p>
-      </div>
-    </div>
-
-  </div>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-      getFirestore, collection, addDoc, doc, getDoc, getDocs, query, where, Timestamp 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // ⬇️ REEMPLAZA CON TUS CREDENCIALES REALES DE FIREBASE ⬇️
-    const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_PROYECTO.firebaseapp.com",
-      projectId: "TU_PROYECTO_ID",
-      storageBucket: "TU_PROYECTO.appspot.com",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
     
-    // Nombres exactos de colecciones según tus capturas de pantalla
-    const colVentas = collection(db, "Facturacion"); 
-    const colClientes = collection(db, "Clientes"); 
-
-    const cacheClientes = {};
-
-    // CARGAR LISTA DE CLIENTES AL SELECT (Mapeado exacto según tu captura 227)
-    async function cargarClientesEnFormulario() {
-      const select = document.getElementById('clienteSelect');
-
-      if(firebaseConfig.apiKey === "TU_API_KEY") {
-        select.innerHTML = '<option value="">⚠️ Error: Debes pegar tus credenciales reales de Firebase en el código</option>';
-        return;
-      }
-
-      try {
-        const snapshot = await getDocs(colClientes);
-        select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
-        
-        if (snapshot.empty) {
-          select.innerHTML = '<option value="">No hay clientes en la colección Clientes</option>';
-          return;
-        }
-
-        snapshot.forEach((documento) => {
-          const clienteData = documento.data();
-          const idDocCliente = documento.id;
-          
-          // Extracción usando mayúsculas exactas de tu captura de pantalla 227
-          const consecutivo = clienteData.Consecutivo || "Sin código";
-          const cedula = clienteData.Cedula ? ` - Ced: ${clienteData.Cedula}` : "";
-          
-          // Como tu campo 'nombre' es un Reference object en Firestore, usamos Consecutivo como identificador de texto seguro
-          let nombreTexto = `Cliente ${consecutivo}`;
-          if (clienteData.nombre && typeof clienteData.nombre === 'string') {
-            nombreTexto = clienteData.nombre;
-          }
-          
-          cacheClientes[idDocCliente] = consecutivo;
-
-          let nombreAMostrar = `${consecutivo}${cedula}`;
-
-          const option = document.createElement('option');
-          option.value = idDocCliente;
-          option.textContent = nombreAMostrar;
-          select.appendChild(option);
-        });
-
-      } catch (error) {
-        console.error("Error al leer Clientes:", error);
-        select.innerHTML = '<option value="">❌ Error al conectar. Verifica las reglas de Firestore</option>';
-      }
-    }
-
-    cargarClientesEnFormulario();
-
-    // GUARDAR EN BASE DE DATOS (Mapeado exacto según tu captura 228)
-    document.getElementById('formIngreso').addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const cantidad = parseInt(document.getElementById('cantidad').value, 10);
-      const precio = parseFloat(document.getElementById('precioUnitario').value);
-      const iva = parseFloat(document.getElementById('iva').value);
-
-      const subTotal = cantidad * precio;
-      const totalImpuesto = subTotal * iva;
-      const totalFactura = subTotal + totalImpuesto;
-
-      const idClienteSeleccionado = document.getElementById('clienteSelect').value;
-      if (!idClienteSeleccionado) {
-        alert("Por favor, elija un cliente de la lista.");
-        return;
-      }
-
-      // Estructura exacta con mayúsculas de tu captura 228
-      const nuevoDoc = {
-        Cantidad: cantidad,
-        Cliente: doc(db, "Clientes", idClienteSeleccionado), // Guarda el tipo (reference) exacto
-        "Condición de venta": document.getElementById('condicionVenta').value,
-        Consecutivo: document.getElementById('consecutivo').value,
-        Descripcion: document.getElementById('descripcion').value,
-        "Fecha de Emision": Timestamp.now(),
-        IVA: iva,
-        "Medio de Pago": document.getElementById('medioPago').value,
-        "Precio Unitario": precio,
-        SubTotal: subTotal,
-        "Subtotal Neto": subTotal,
-        "Tipo de documento": document.getElementById('tipoDoc').value,
-        "Total Factura": totalFactura,
-        "Total Impuesto": totalImpuesto
-      };
-
-      try {
-        await addDoc(colVentas, nuevoDoc);
-        alert(`¡${nuevoDoc["Tipo de documento"]} registrada exitosamente!`);
-        document.getElementById('formIngreso').reset();
-        
-        document.getElementById('cantidad').value = "1";
-        document.getElementById('precioUnitario').value = "0.00";
-        document.getElementById('iva').value = "0.13";
-      } catch (err) {
-        console.error(err);
-        alert("No se pudo guardar el registro.");
-      }
-    });
-
-    // HISTORIAL FINANCIERO
-    document.getElementById('btnBuscar').addEventListener('click', async () => {
-      const lista = document.getElementById('resultados');
-      const filtro = document.getElementById('filtroTipo').value;
-      lista.innerHTML = '<p style="text-align:center; color:#2563eb;">Consultando base de datos nam5...</p>';
-
-      try {
-        let q = colVentas;
-        if (filtro !== "Todos") {
-          q = query(colVentas, where("Tipo de documento", "==", filtro));
-        }
-
-        const snapshot = await getDocs(q);
-        lista.innerHTML = '';
-
-        if (snapshot.empty) {
-          lista.innerHTML = '<p style="text-align:center; color:#64748b;">No se encontraron registros.</p>';
-          return;
-        }
-
-        const listaDocumentos = snapshot.docs.sort((a, b) => {
-          const fechaA = a.data()["Fecha de Emision"]?.toMillis() || 0;
-          const fechaB = b.data()["Fecha de Emision"]?.toMillis() || 0;
-          return fechaB - fechaA;
-        });
-
-        let HTMLAcumulado = "";
-
-        for (const documento of listaDocumentos) {
-          const d = documento.data();
-          const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
-          const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
-
-          let codigoCliente = "S/C";
-
-          if (d.Cliente && d.Cliente.id) {
-            const idCliente = d.Cliente.id;
+    <div class="main-grid">
+      <!-- PANEL IZQUIERDO: GENERAR DOCUMENTO -->
+      <div class="panel">
+        <h2>➕ Generar Documento Comercial</h2>
+        <form id="documento-form">
+          <div class="grid-form">
+            <div>
+              <label for="tipoDocumento">Tipo de Documento</label>
+              <select id="tipoDocumento" required>
+                <option value="Factura">Factura</option>
+                <option value="Cotización">Cotización</option>
+              </select>
+            </div>
+            <div>
+              <label for="consecutivo">N° Consecutivo</label>
+              <input type="text" id="consecutivo" required placeholder="FAC-0001 o COT-0001">
+            </div>
+            <div class="full-width">
+              <label for="clienteRef">Seleccionar Cliente</label>
+              <select id="clienteRef" required>
+                <option value="">Cargando clientes de la base de datos...</option>
+              </select>
+            </div>
+            <div class="full-width">
+              <label for="descripcion">Detalle del Servicio / Descripción</label>
+              <input type="text" id="descripcion" required placeholder="Fumigación de control de plagas y termitas">
+            </div>
+            <div>
+              <label for="condicionVenta">Condición de Venta</label>
+              <input type="text" id="condicionVenta" required placeholder="Contado / Crédito 30 días">
+            </div>
+            <div>
+              <label for="medioPago">Medio de Pago sugerido</label>
+              <input type="text" id="medioPago" required placeholder="Efectivo / Transferencia Sinpe">
+            </div>
             
-            if (cacheClientes[idCliente]) {
-              codigoCliente = cacheClientes[idCliente];
-            } else {
-              try {
-                const clienteSnap = await getDoc(d.Cliente);
-                if (clienteSnap.exists()) {
-                  codigoCliente = clienteSnap.data().Consecutivo || "S/C";
-                  cacheClientes[idCliente] = codigoCliente;
-                }
-              } catch (e) {
-                console.error(e);
-              }
-            }
-          }
-
-          HTMLAcumulado += `
-            <div class="doc-item">
-              <span class="doc-badge ${claseBadge}">${d["Tipo de documento"] || "Documento"}</span>
-              <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
-              <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
-              <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Código Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${codigoCliente}</span>
-              </p>
-              <div class="doc-totals">
-                <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
-                <div>Impuesto<br><b>$${(d.TotalImpuesto || d["Total Impuesto"] || 0).toFixed(2)}</b></div>
-                <div class="total-bold">Total General<br><b>$${d["Total Factura"]?.toFixed(2) || 0}</b></div>
+            <div class="triple-grid">
+              <div>
+                <label for="cantidad">Cantidad</label>
+                <input type="number" id="cantidad" value="1" min="1" required>
+              </div>
+              <div>
+                <label for="precioUnitario">Precio Unitario ($)</label>
+                <input type="number" id="precioUnitario" value="0.00" step="0.01" min="0" required>
+              </div>
+              <div>
+                <label for="iva">Tasa IVA (Ej: 0.13)</label>
+                <input type="number" id="iva" value="0.13" step="0.01" min="0" required>
               </div>
             </div>
-          `;
-        }
+          </div>
 
-        lista.innerHTML = HTMLAcumulado;
+          <div class="summary-box">
+            <div>Subtotal Neto: <span id="lblSubtotalNeto">$0.00</span></div>
+            <div>Total Impuesto: <span id="lblTotalImpuesto">$0.00</span></div>
+            <div style="grid-column: span 2; font-size: 16px; margin-top: 5px; border-top: 1px dashed #cbd5e1; padding-top: 5px;">
+              Total General: <span id="lblTotalFactura">$0.00</span>
+            </div>
+          </div>
 
-      } catch (err) {
-        console.error(err);
-        lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de comunicación al generar el historial.</p>';
-      }
-    });
-  </script>
+          <button type="submit" class="btn-submit">Registrar Venta / Propuesta</button>
+        </form>
+      </div>
+
+      <!-- PANEL DERECHO: HISTORIAL FINANCIERO -->
+      <div class="panel">
+        <h2>🔍 Historial Financiero</h2>
+        <div class="filter-container">
+          <select id="filtroTipo">
+            <option value="Todos">Todos los registros comerciales</option>
+            <option value="Factura">Solo Facturas</option>
+            <option value="Cotización">Solo Cotizaciones</option>
+          </select>
+          <button type="button" id="btn-filtrar" class="btn-filter">Filtrar</button>
+        </div>
+        
+        <div id="historial-listado">
+          <p style="color:#64748b; text-align:center; font-style:italic; margin-top:40px;">
+            Consultando la base de datos nam5...
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="facturacion.js"></script>
 </body>
 </html>
