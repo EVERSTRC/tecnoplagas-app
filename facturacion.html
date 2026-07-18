@@ -152,13 +152,15 @@
     const db = getFirestore(app);
     
     const colVentas = collection(db, "Ventas"); 
-    const colClientes = collection(db, "Clientes"); 
+    const colClientes = collection(db, "clientes"); // Corregido a minúsculas según tu captura
 
-    // CARGAR LISTA DE CLIENTES AL SELECT (VERSIÓN ULTRA RÁPIDA SIN HANGS)
+    // Objeto global de caché para evitar consultas redundantes y acelerar el historial
+    const cacheClientes = {};
+
+    // CARGAR LISTA DE CLIENTES AL SELECT
     async function cargarClientesEnFormulario() {
       const select = document.getElementById('clienteSelect');
 
-      // Si olvidaste cambiar las llaves, el sistema te avisará de inmediato aquí
       if(firebaseConfig.apiKey === "TU_API_KEY") {
         select.innerHTML = '<option value="">⚠️ Error: Debes pegar tus credenciales reales de Firebase en el código</option>';
         return;
@@ -169,18 +171,24 @@
         select.innerHTML = '<option value="">-- Seleccione un cliente --</option>';
         
         if (snapshot.empty) {
-          select.innerHTML = '<option value="">No hay clientes en la colección Clientes</option>';
+          select.innerHTML = '<option value="">No hay clientes en la colección clientes</option>';
           return;
         }
 
         snapshot.forEach((documento) => {
           const clienteData = documento.data();
           const idDocCliente = documento.id;
-          const consecutivo = clienteData.Consecutivo || "Sin código";
-          const cedula = clienteData.Cedula ? ` - Ced: ${clienteData.Cedula}` : "";
           
-          // Usamos los datos directos del documento para evitar bucles asíncronos lentos
-          let nombreAMostrar = `Cliente: ${consecutivo}${cedula}`;
+          // Mapeamos los campos exactamente como aparecen en tu captura (en minúsculas)
+          const nombreCliente = clienteData.nombre || "Cliente sin nombre";
+          const consecutivo = clienteData.consecutivo || "Sin código";
+          const cedula = clienteData.cedula ? ` - Ced: ${clienteData.cedula}` : "";
+          
+          // Guardamos el nombre en caché para que el historial lo use eficientemente
+          cacheClientes[idDocCliente] = nombreCliente;
+
+          // Lo que se despliega en el elemento Select
+          let nombreAMostrar = `${nombreCliente} [${consecutivo}]${cedula}`;
 
           const option = document.createElement('option');
           option.value = idDocCliente;
@@ -216,7 +224,7 @@
 
       const nuevoDoc = {
         Cantidad: cantidad,
-        Cliente: doc(db, "Clientes", idClienteSeleccionado),
+        Cliente: doc(db, "clientes", idClienteSeleccionado), // Referencia corregida a "clientes"
         "Condición de venta": document.getElementById('condicionVenta').value,
         Consecutivo: document.getElementById('consecutivo').value,
         Descripcion: document.getElementById('descripcion').value,
@@ -225,7 +233,7 @@
         "Medio de Pago": document.getElementById('medioPago').value,
         "Precio Unitario": precio,
         SubTotal: subTotal,
-        Subtotal Neto: subTotal,
+        "Subtotal Neto": subTotal,
         "Tipo de documento": document.getElementById('tipoDoc').value,
         "Total Factura": totalFactura,
         "Total Impuesto": totalImpuesto
@@ -235,13 +243,18 @@
         await addDoc(colVentas, nuevoDoc);
         alert(`¡${nuevoDoc["Tipo de documento"]} registrada exitosamente!`);
         document.getElementById('formIngreso').reset();
+        
+        // Restablecemos los valores por defecto del formulario tras el reset
+        document.getElementById('cantidad').value = "1";
+        document.getElementById('precioUnitario').value = "0.00";
+        document.getElementById('iva').value = "0.13";
       } catch (err) {
         console.error(err);
         alert("No se pudo guardar el registro.");
       }
     });
 
-    // HISTORIAL FINANCIERO
+    // HISTORIAL FINANCIERO OPTIMIZADO
     document.getElementById('btnBuscar').addEventListener('click', async () => {
       const lista = document.getElementById('resultados');
       const filtro = document.getElementById('filtroTipo').value;
@@ -267,40 +280,54 @@
           return fechaB - fechaA;
         });
 
+        let HTMLAcumulado = "";
+
         for (const documento of listaDocumentos) {
           const d = documento.data();
           const f = d["Fecha de Emision"] ? d["Fecha de Emision"].toDate().toLocaleDateString() : 'N/A';
           const claseBadge = d["Tipo de documento"] === "Factura" ? "badge-factura" : "badge-cotizacion";
 
-          let codigoCliente = "S/C";
+          let nombreClienteFactura = "Cliente no asignado";
 
-          if (d.Cliente && d.Cliente.path) {
-            try {
-              const clienteSnap = await getDoc(d.Cliente);
-              if (clienteSnap.exists()) {
-                codigoCliente = clienteSnap.data().Consecutivo || "S/C";
+          if (d.Cliente && d.Cliente.id) {
+            const idCliente = d.Cliente.id;
+            
+            // Si ya está guardado en la caché en memoria evitamos hacer peticiones extra
+            if (cacheClientes[idCliente]) {
+              nombreClienteFactura = cacheClientes[idCliente];
+            } else {
+              try {
+                const clienteSnap = await getDoc(d.Cliente);
+                if (clienteSnap.exists()) {
+                  const cData = clienteSnap.data();
+                  nombreClienteFactura = cData.nombre || "S/N";
+                  cacheClientes[idCliente] = nombreClienteFactura; // Alimentamos caché
+                }
+              } catch (e) {
+                console.error("Error al resolver referencia de cliente:", e);
               }
-            } catch (e) {
-              console.error(e);
             }
           }
 
-          lista.innerHTML += `
+          HTMLAcumulado += `
             <div class="doc-item">
               <span class="doc-badge ${claseBadge}">${d["Tipo de documento"]}</span>
               <p class="doc-title">${d.Descripcion || 'Sin descripción'}</p>
               <p class="doc-meta"><b>Consecutivo:</b> ${d.Consecutivo || 'S/N'} | <b>Emisión:</b> ${f}</p>
               <p class="doc-meta" style="color: #1e293b; margin-top: 4px;">
-                <b>👤 Código Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${codigoCliente}</span>
+                <b>👤 Cliente:</b> <span style="color: #4f46e5; font-weight: bold;">${nombreClienteFactura}</span>
               </p>
               <div class="doc-totals">
                 <div>Subtotal<br><b>$${d.SubTotal?.toFixed(2) || 0}</b></div>
-                <div>Impuesto<br><b>$${d.TotalImpuesto?.toFixed(2) || d["Total Impuesto"]?.toFixed(2) || 0}</b></div>
+                <div>Impuesto<br><b>$${(d.TotalImpuesto || d["Total Impuesto"] || 0).toFixed(2)}</b></div>
                 <div class="total-bold">Total General<br><b>$${d["Total Factura"]?.toFixed(2) || 0}</b></div>
               </div>
             </div>
           `;
         }
+
+        lista.innerHTML = HTMLAcumulado;
+
       } catch (err) {
         console.error(err);
         lista.innerHTML = '<p style="text-align:center; color:#ef4444; font-size:13px;">Error de comunicación al generar el historial.</p>';
