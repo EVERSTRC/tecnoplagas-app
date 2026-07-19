@@ -264,33 +264,33 @@
           <div class="form-row">
             <div class="form-group">
               <label for="cliente-consecutivo">Consecutivo del Cliente</label>
-              <input type="text" id="cliente-consecutivo" readonly placeholder="Generando automáticamente...">
+              <input type="text" id="cliente-consecutivo" readonly placeholder="Generando...">
             </div>
             <div class="form-group">
-              <label for="cliente-nombre">Nombre / Razón Social</label>
-              <input type="text" id="cliente-nombre" required placeholder="Ej: Juan Pérez o Distribuidora S.A.">
+              <label for="cliente-nombre">Nombre Completo / Razón Social</label>
+              <input type="text" id="cliente-nombre" required placeholder="Ej: Everst Rojas Camacho">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="cliente-cedula">Cédula</label>
-              <input type="text" id="cliente-cedula" required placeholder="Ej: 1-1111-1111">
+              <input type="text" id="cliente-cedula" required placeholder="Ej: 0107610813">
             </div>
             <div class="form-group">
               <label for="cliente-sucursal">Sucursal</label>
-              <input type="text" id="cliente-sucursal" placeholder="Ej: Central, San José, N/A">
+              <input type="text" id="cliente-sucursal" placeholder="Ej: Cartago, La Unión, Tres Ríos">
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="cliente-telefono">Teléfono</label>
-              <input type="text" id="cliente-telefono" required placeholder="Ej: 8888-8888">
+              <input type="text" id="cliente-telefono" required placeholder="Ej: 89877776">
             </div>
             <div class="form-group">
               <label for="cliente-correo">Email</label>
-              <input type="email" id="cliente-correo" required placeholder="Ej: contacto@empresa.com">
+              <input type="email" id="cliente-correo" required placeholder="Ej: gtpcrc@gmail.com">
             </div>
             <div class="form-group">
               <label for="cliente-frecuencia">Frecuencia de Fumigación</label>
@@ -305,9 +305,18 @@
             </div>
           </div>
 
-          <div class="form-group full-width">
-            <label for="cliente-direccion">Dirección</label>
-            <textarea id="cliente-direccion" required placeholder="Detalle la localización física exacta..."></textarea>
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label for="cliente-direccion">Dirección</label>
+              <textarea id="cliente-direccion" required placeholder="Detalle la localización física exacta..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="cliente-gps">Coordenadas GPS (Texto)</label>
+              <input type="text" id="cliente-gps" placeholder="Ej: 9.9080975, -83.9921879" value="0, 0">
+            </div>
           </div>
         </fieldset>
 
@@ -351,7 +360,6 @@
   </div>
 
   <script>
-    // Función global para cambiar pestañas de la UI
     window.cambiarVista = function(vista) {
       const btnReg = document.getElementById('tab-registrar');
       const btnCon = document.getElementById('tab-consultar');
@@ -372,12 +380,11 @@
     }
   </script>
 
-  <!-- LÓGICA DIRECTA INTEGRADA PARA EVITAR ERRORES DE RUTAS EN GITHUB PAGES -->
+  <!-- LÓGICA DIRECTA REVISADA CON TUS LLAVES EXACTAS -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, GeoPoint, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Reemplaza con tus claves reales de Firebase Console
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -393,15 +400,15 @@
     let todosLosClientes = [];
 
     function generarSiguienteConsecutivo(lista) {
-      if (lista.length === 0) return "Cl000001";
+      if (lista.length === 0) return "CLI-000001";
       let maxNum = 0;
       lista.forEach(c => {
-        if (c.Consecutivo && c.Consecutivo.startsWith("Cl")) {
-          const num = parseInt(c.Consecutivo.replace("Cl", ""), 10);
+        if (c.consecutivo && c.consecutivo.startsWith("CLI-")) {
+          const num = parseInt(c.consecutivo.replace("CLI-", ""), 10);
           if (!isNaN(num) && num > maxNum) maxNum = num;
         }
       });
-      return "Cl" + String(maxNum + 1).padStart(6, '0');
+      return "CLI-" + String(maxNum + 1).padStart(6, '0');
     }
 
     async function cargarClientesDesdeFirestore() {
@@ -410,7 +417,8 @@
       if (!tbody) return;
 
       try {
-        const querySnapshot = await getDocs(collection(db, "Clientes"));
+        // CORREGIDO: Apunta a 'clientes' en minúscula tal como en tu Firebase
+        const querySnapshot = await getDocs(collection(db, "clientes"));
         todosLosClientes = [];
         tbody.innerHTML = "";
 
@@ -423,14 +431,14 @@
         }
 
         if (todosLosClientes.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay clientes registrados.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay clientes en la colección 'clientes'.</td></tr>`;
           return;
         }
 
         renderizarTabla(todosLosClientes);
       } catch (error) {
         console.error("Error en Firebase:", error);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error al conectar. Verifica tus credenciales de Firebase.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error al conectar. Verifica las claves.</td></tr>`;
       }
     }
 
@@ -442,12 +450,12 @@
       lista.forEach((cliente) => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="font-family: monospace; font-weight: bold; color: #2563eb;">${cliente.Consecutivo || "---"}</td>
+          <td style="font-family: monospace; font-weight: bold; color: #2563eb;">${cliente.consecutivo || "---"}</td>
           <td style="font-weight: bold;">${cliente.nombre || "---"}</td>
-          <td>${cliente.Cedula || "---"}</td>
+          <td>${cliente.cedula || "---"}</td>
           <td>${cliente.telefono || "---"}</td>
           <td style="font-size: 13px;">${cliente.email || "---"}</td>
-          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:12px;">${cliente["Frecuencia de Fumigacion"] || "No definida"}</span></td>
+          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:12px;">${cliente.frecuenciaFumigacion || "---"}</span></td>
           <td>
             <button class="btn-editar" data-id="${cliente.id}">✏️ Editar</button>
             <button class="btn-eliminar" data-id="${cliente.id}">🗑️ Borrar</button>
@@ -466,15 +474,17 @@
           const cliente = todosLosClientes.find(c => c.id === id);
 
           if (cliente) {
+            // Asignación con los campos exactos de tu documento Firestore
             document.getElementById('cliente-id-edicion').value = id;
-            document.getElementById('cliente-consecutivo').value = cliente.Consecutivo || "";
+            document.getElementById('cliente-consecutivo').value = cliente.consecutivo || "";
             document.getElementById('cliente-nombre').value = cliente.nombre || "";
-            document.getElementById('cliente-cedula').value = cliente.Cedula || "";
+            document.getElementById('cliente-cedula').value = cliente.cedula || "";
             document.getElementById('cliente-sucursal').value = cliente.sucursal || "";
             document.getElementById('cliente-telefono').value = cliente.telefono || "";
             document.getElementById('cliente-correo').value = cliente.email || "";
-            document.getElementById('cliente-frecuencia').value = cliente["Frecuencia de Fumigacion"] || "";
+            document.getElementById('cliente-frecuencia').value = cliente.frecuenciaFumigacion || "";
             document.getElementById('cliente-direccion').value = cliente.direccion || "";
+            document.getElementById('cliente-gps').value = cliente.gps || "0, 0";
 
             document.getElementById('form-titulo').textContent = "⚠️ Editando Datos del Cliente";
             document.getElementById('btn-submit-cliente').textContent = "💾 Actualizar Cambios en Base de Datos";
@@ -491,7 +501,8 @@
           const cliente = todosLosClientes.find(c => c.id === id);
           if (confirm(`¿Desea borrar permanentemente a ${cliente?.nombre || 'este registro'}?`)) {
             try {
-              await deleteDoc(doc(db, "Clientes", id));
+              // CORREGIDO: Apunta a 'clientes'
+              await deleteDoc(doc(db, "clientes", id));
               alert("🗑️ Eliminado correctamente.");
               cargarClientesDesdeFirestore();
             } catch (err) { console.error(err); }
@@ -500,7 +511,6 @@
       });
     }
 
-    // Inicialización de eventos al cargar
     cargarClientesDesdeFirestore();
 
     const formulario = document.getElementById('cliente-form');
@@ -511,8 +521,8 @@
         const query = this.value.toLowerCase().trim();
         const filtrados = todosLosClientes.filter(c => {
           return (c.nombre || "").toLowerCase().includes(query) || 
-                 (c.Cedula || "").toLowerCase().includes(query) || 
-                 (c.Consecutivo || "").toLowerCase().includes(query);
+                 (c.cedula || "").toLowerCase().includes(query) || 
+                 (c.consecutivo || "").toLowerCase().includes(query);
         });
         renderizarTabla(filtrados);
       });
@@ -523,29 +533,33 @@
         e.preventDefault();
         const idEdicion = document.getElementById('cliente-id-edicion').value;
         
+        // Mapeo idéntico al esquema de tu Firestore
         const payload = {
-          "Cedula": document.getElementById('cliente-cedula').value,
-          "Consecutivo": document.getElementById('cliente-consecutivo').value,
-          "Frecuencia de Fumigacion": document.getElementById('cliente-frecuencia').value,
+          "cedula": document.getElementById('cliente-cedula').value,
+          "consecutivo": document.getElementById('cliente-consecutivo').value,
+          "frecuenciaFumigacion": document.getElementById('cliente-frecuencia').value,
           "direccion": document.getElementById('cliente-direccion').value,
           "email": document.getElementById('cliente-correo').value,
           "nombre": document.getElementById('cliente-nombre').value,
           "sucursal": document.getElementById('cliente-sucursal').value,
-          "telefono": document.getElementById('cliente-telefono').value
+          "telefono": document.getElementById('cliente-telefono').value,
+          "gps": document.getElementById('cliente-gps').value
         };
 
         try {
           if (idEdicion) {
-            await updateDoc(doc(db, "Clientes", idEdicion), payload);
+            // CORREGIDO: Apunta a 'clientes'
+            await updateDoc(doc(db, "clientes", idEdicion), payload);
             alert("✅ ¡Datos actualizados correctamente!");
             document.getElementById('cliente-id-edicion').value = "";
             document.getElementById('form-titulo').textContent = "Fumigadora Tecnoplagas - Nuevo Cliente";
             document.getElementById('btn-submit-cliente').textContent = "💾 Guardar Cliente";
             document.getElementById('btn-submit-cliente').style.backgroundColor = "#00b074";
           } else {
-            payload["GPS"] = new GeoPoint(0, 0);
-            payload["fecharegistro"] = Timestamp.now();
-            await addDoc(collection(db, "Clientes"), payload);
+            // Campos de creación con la fecha en texto o formato ISO según desees
+            payload["fechaRegistro"] = new Date().toISOString();
+            // CORREGIDO: Apunta a 'clientes'
+            await addDoc(collection(db, "clientes"), payload);
             alert("✅ ¡Cliente guardado con éxito!");
           }
 
@@ -554,7 +568,7 @@
           if (typeof window.cambiarVista === 'function') window.cambiarVista('consultar');
         } catch (error) {
           console.error(error);
-          alert("Error de comunicación. Comprueba las claves de Firebase.");
+          alert("Error de comunicación con Firestore.");
         }
       });
     }
