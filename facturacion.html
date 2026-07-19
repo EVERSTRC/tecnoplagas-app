@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Facturación y Cotizaciones</title>
   
-  <!-- CDN oficiales corregidos y ordenados para compatibilidad global -->
+  <!-- CDNs Oficiales -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
@@ -372,7 +372,7 @@
     }
   </script>
 
-  <!-- CONTROLADORES FIRESTORE Y PROCESADOR DE PDF -->
+  <!-- LÓGICA MODULAR COMPLETA CON MOTOR DE PDF INDEPENDIENTE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -462,7 +462,7 @@
     }
 
     function inicializarEventosAcciones() {
-      // EVENTO ACCION EDITAR
+      // EVENTO ACCIÓN EDITAR
       document.querySelectorAll('.btn-tabla-editar').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
@@ -494,27 +494,34 @@
         });
       });
 
-      // CORREGIDO: EVENTO DESCARGA DE PDF CONFIGURADO UNIVERSALMENTE
+      // EVENTO IMPRIMIR PDF - VERSIÓN BLINDADA ANTI-ERRORES
       document.querySelectorAll('.btn-tabla-pdf').forEach(btn => {
         btn.addEventListener('click', function() {
-          const id = this.getAttribute('data-id');
-          const docItem = listaDocumentosEmitidos.find(d => d.id === id);
+          try {
+            const id = this.getAttribute('data-id');
+            const docItem = listaDocumentosEmitidos.find(d => d.id === id);
 
-          if (docItem) {
+            if (!docItem) return;
+
             let idCliente = "";
             if (docItem.Cliente && typeof docItem.Cliente === 'string') {
               idCliente = docItem.Cliente.replace("clientes/", "");
             }
             const cInfo = listaClientes.find(c => c.id === idCliente);
 
-            // Invocación explícita a la ventana del navegador para evitar bloqueos del script type=module
-            const pdf = new window.jspdf.jsPDF();
+            // IMPORTANTE: Forzamos la inicialización explícita de jsPDF y autotable
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // Forzar enganche de autotable manualmente para evitar caídas silenciosas
+            if (typeof pdf.autoTable !== 'function' && window.jspdf.jsPDF.API.autoTable) {
+               window.jspdf.jsPDF.API.autoTable = window.jspdf.plugin.autotable;
+            }
 
-            // Encabezado decorativo superior verde[span_0](start_span)[span_0](end_span)
+            // --- DISEÑO MEMBRETE PDF ---
             pdf.setFillColor(0, 176, 116);
             pdf.rect(0, 0, 220, 14, 'F');
 
-            // Logo de Empresa[span_1](start_span)[span_1](end_span)
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(22);
             pdf.textColor = "#1e293b";
@@ -526,7 +533,7 @@
             pdf.text("Teléfonos: 7232-5001 / 8987-7776", 14, 41);
             pdf.text("Email: info@tecoplagascrc.com", 14, 46);
 
-            // Caja de Control de Documento a la derecha[span_2](start_span)[span_2](end_span)
+            // Panel de Control derecho
             pdf.setFillColor(241, 245, 249);
             pdf.rect(125, 20, 71, 28, 'F');
             pdf.setFont("helvetica", "bold");
@@ -542,11 +549,10 @@
             }
             pdf.text(`Fecha Emisión: ${fechaTexto}`, 129, 41);
 
-            // Divisor de sección
             pdf.setDrawColor(226, 232, 240);
             pdf.line(14, 53, 196, 53);
 
-            // Bloque de información del Cliente[span_3](start_span)[span_3](end_span)
+            // Información del Cliente
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(10);
             pdf.text("DATOS DEL CLIENTE", 14, 61);
@@ -555,32 +561,38 @@
             pdf.text(`Cédula jurídica/física: ${cInfo ? cInfo.cedula : '---'}`, 14, 72);
             pdf.text(`Ubicación: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 77, { maxWidth: 100 });
 
-            // Bloque de condiciones comerciales derecho[span_4](start_span)[span_4](end_span)
+            // Condiciones
             pdf.setFont("helvetica", "bold");
             pdf.text("CONDICIONES DE VENTA", 125, 61);
             pdf.setFont("helvetica", "normal");
             pdf.text(`Término: ${docItem["Condición de venta"] || 'Contado'}`, 125, 67);
             pdf.text(`Medio de Pago: ${docItem["Medio de Pago"] || '---'}`, 125, 72);
 
-            // Tabla estructurada autotable[span_5](start_span)[span_5](end_span)
-            window.jspdf.plugin.autotable.default(pdf, {
-              startY: 90,
-              head: [['Descripción del Servicio', 'Cantidad', 'Precio Unitario', 'Monto Bruto']],
-              body: [[
-                docItem.Descripcion || '---',
-                docItem.Cantidad || 1,
-                `¢${(docItem["Precio Unitario"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`,
-                `¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`
-              ]],
+            // --- LLAMADO SEGURO DE AUTOTABLE ---
+            const headers = [['Descripción del Servicio', 'Cantidad', 'Precio Unitario', 'Monto Bruto']];
+            const rows = [[
+              docItem.Descripcion || '---',
+              docItem.Cantidad || 1,
+              `¢${(docItem["Precio Unitario"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`,
+              `¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`
+            ]];
+
+            pdf.autoTable({
+              startY: 92,
+              head: headers,
+              body: rows,
               headStyles: { fillColor: [0, 176, 116], fontStyle: 'bold' },
               theme: 'striped',
               styles: { fontSize: 9 }
             });
 
-            // Resumen de liquidación monetaria[span_6](start_span)[span_6](end_span)
-            const finalY = pdf.lastAutoTable.finalY + 8;
+            // Usamos un cálculo fijo seguro para la posición Y final si lastAutoTable falla
+            const finalY = (pdf.lastAutoTable && pdf.lastAutoTable.finalY) ? pdf.lastAutoTable.finalY + 10 : 120;
+            
+            // Totales finales
             pdf.setFont("helvetica", "normal");
             pdf.setFontSize(10);
+            pdf.textColor = "#1e293b";
             pdf.text("Subtotal:", 130, finalY);
             pdf.text(`¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY);
 
@@ -594,14 +606,17 @@
             pdf.text("Total Facturado:", 130, finalY + 14);
             pdf.text(`¢${(docItem["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY + 14);
 
-            // Leyenda informativa inferior[span_7](start_span)[span_7](end_span)
             pdf.setFont("helvetica", "italic");
             pdf.setFontSize(8.5);
             pdf.textColor = "#64748b";
             pdf.text("Este documento representa un comprobante digital emitido por el sistema Tecnoplagas.", 14, finalY + 28);
 
-            // Guardar archivo final
+            // Acción final de descarga de archivo
             pdf.save(`${docItem.Consecutivo || 'Doc'}_Tecnoplagas.pdf`);
+
+          } catch (pdfError) {
+             console.error("Error crítico procesando el motor PDF:", pdfError);
+             alert("No se pudo generar el PDF. Revisa la consola del navegador para ver el reporte de error.");
           }
         });
       });
