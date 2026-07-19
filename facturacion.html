@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Facturación y Cotizaciones</title>
   
-  <!-- CDNs Oficiales de jsPDF -->
+  <!-- CDNs Oficiales de jsPDF importados en el orden correcto -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
@@ -36,7 +36,6 @@
       padding: 10px;
     }
 
-    /* Contenedor responsivo */
     .container {
       width: 100%;
       max-width: 1100px;
@@ -47,7 +46,6 @@
       padding: 15px;
     }
 
-    /* Barra de Navegación adaptable */
     .nav-bar {
       display: flex;
       flex-direction: column;
@@ -73,7 +71,6 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      transition: all 0.2s;
     }
 
     .tab-btn.active-green { background-color: #00b074; color: white; }
@@ -93,7 +90,6 @@
       text-align: center;
     }
 
-    /* Grillas del Formulario Autoadaptables */
     .form-row {
       display: grid;
       grid-template-columns: 1fr;
@@ -119,9 +115,9 @@
     }
     legend { font-weight: bold; font-size: 14px; color: #1e293b; padding: 0 8px; }
 
-    /* --- TABLA DE ITEMS EN MÓVILES (VISTA TARJETA) --- */
+    /* --- DISEÑO RESPONSIVO DE LÍNEAS (ESTILO TARJETAS EN MÓVIL) --- */
     .tabla-items-form { width: 100%; border-collapse: collapse; }
-    .tabla-items-form ready, .tabla-items-form thead { display: none; } /* Ocultar tabla en móvil */
+    .tabla-items-form thead { display: none; } 
     
     .fila-item-dinamica {
       display: flex;
@@ -132,12 +128,9 @@
       padding: 15px;
       border-radius: 10px;
       margin-bottom: 15px;
-      position: relative;
     }
 
     .fila-item-dinamica td { display: block; width: 100%; padding: 0; }
-    
-    /* Agregar etiquetas simuladas en móvil */
     .fila-item-dinamica td::before {
       content: attr(data-label);
       font-size: 11px;
@@ -162,7 +155,6 @@
       padding: 16px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
     }
 
-    /* CONTENEDOR DE HISTORIAL RESPONSIVO */
     .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
     table.historial-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 600px; }
     table.historial-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; padding: 12px; border-bottom: 2px solid var(--border-color); }
@@ -176,30 +168,22 @@
     .seccion-modulo { display: none; }
     .seccion-modulo.active { display: block; }
 
-    /* =========================================================================
-       MEDIA QUERIES PARA TABLETS Y COMPUTADORAS (PANTALLAS > 768px)
-       ========================================================================= */
     @media (min-width: 768px) {
       body { padding: 20px; }
       .container { padding: 30px; }
-      
       .nav-bar { flex-direction: row; justify-content: space-between; }
       .tabs-left { width: auto; }
       .tab-btn { flex: initial; padding: 10px 20px; font-size: 14px; }
       .btn-inicio { width: auto; }
-      
       .titulo-modulo { font-size: 26px; text-align: left; }
-      
-      /* Distribución en grillas de varias columnas */
       .form-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 
-      /* Cambiar diseño de items de tarjetas a tabla tradicional en PC/Tablets */
+      /* Retornar a formato Tabla en pantallas grandes */
       .tabla-items-form thead { display: table-header-group; }
-      .contenedor-lineas-items { display: table-row-group; }
-      .fila-item-dinamica { display: table-row; background: transparent; border: none; }
+      .fila-item-dinamica { display: table-row; background: transparent; }
       .fila-item-dinamica td { display: table-cell; padding: 8px; }
-      .fila-item-dinamica td::before { display: none; } /* Quitar etiquetas móviles */
-      .btn-eliminar-linea { padding: 10px; margin-top: 0; }
+      .fila-item-dinamica td::before { display: none; }
+      .btn-eliminar-linea { padding: 10px; margin-top: 0; width: auto; }
       .btn-agregar-linea { width: auto; }
     }
   </style>
@@ -215,7 +199,7 @@
       <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
     </div>
 
-    <!-- PESTAÑA 1: FORMULARIO MULTI-ÍTEMS RESPONSIVO -->
+    <!-- VISTA FORMULARIO -->
     <div id="vista-emision" class="seccion-modulo active">
       <div class="titulo-modulo" id="form-titulo">Módulo de Facturación y Cotizaciones</div>
       
@@ -277,8 +261,8 @@
                 <th style="width: 15%; padding: 8px; text-align: center;">Acción</th>
               </tr>
             </thead>
-            <tbody id="contenedor-lineas-items" class="contenedor-lineas-items">
-              <!-- Las líneas se inyectan como Tarjetas en Móvil o Filas en PC -->
+            <tbody id="contenedor-lineas-items">
+              <!-- Inyección de líneas dinámicas -->
             </tbody>
           </table>
           <button type="button" class="btn-agregar-linea" id="btn-nueva-linea">➕ Agregar Línea</button>
@@ -320,7 +304,7 @@
       </form>
     </div>
 
-    <!-- PESTAÑA 2: HISTORIAL -->
+    <!-- VISTA HISTORIAL -->
     <div id="vista-historial" class="seccion-modulo">
       <div class="titulo-modulo">Historial de Transacciones (Facturacion)</div>
       <div class="table-container">
@@ -347,28 +331,6 @@
     </div>
   </div>
 
-  <script>
-    window.cambiarVista = function(vista) {
-      const btnEmitir = document.getElementById('tab-emitir');
-      const btnHistorial = document.getElementById('tab-historial');
-      const vistaEmision = document.getElementById('vista-emision');
-      const vistaHistorial = document.getElementById('vista-historial');
-
-      if (vista === 'emitir') {
-        btnEmitir.className = 'tab-btn active-green';
-        btnHistorial.className = 'tab-btn inactive-gray';
-        vistaEmision.classList.add('active');
-        vistaHistorial.classList.remove('active');
-      } else {
-        btnEmitir.className = 'tab-btn inactive-gray';
-        btnHistorial.className = 'tab-btn active-green';
-        vistaEmision.classList.remove('active');
-        vistaHistorial.classList.add('active');
-      }
-    }
-  </script>
-
-  <!-- CONTROLADORES MULTI-DISPOSITIVO FIRESTORE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -389,7 +351,6 @@
     let listaDocumentosEmitidos = [];
     const contenedorLineas = document.getElementById('contenedor-lineas-items');
     
-    // Generar Filas/Tarjetas Adaptables con atributos 'data-label' para Responsive CSS
     function crearFilaItem(descripcion = "", cantidad = 1, precio = "") {
       const tr = document.createElement('tr');
       tr.className = 'fila-item-dinamica';
@@ -402,13 +363,12 @@
       
       tr.querySelector('.item-cant').addEventListener('input', ejecutarCalculosFactura);
       tr.querySelector('.item-precio').addEventListener('input', ejecutarCalculosFactura);
-      
       tr.querySelector('.btn-eliminar-linea').addEventListener('click', function() {
         if(document.querySelectorAll('.fila-item-dinamica').length > 1) {
           tr.remove();
           ejecutarCalculosFactura();
         } else {
-          alert("Debes mantener al menos una línea de detalle.");
+          alert("Debes mantener al menos una línea.");
         }
       });
 
@@ -525,6 +485,7 @@
         });
       });
 
+      // --- GENERADOR DE PDF BLINDADO Y SEGURO (LEE DESDE LA BASE DE DATOS) ---
       document.querySelectorAll('.btn-tabla-pdf').forEach(btn => {
         btn.addEventListener('click', function() {
           try {
@@ -533,19 +494,18 @@
             if (!docItem) return;
 
             const cInfo = listaClientes.find(c => c.id === docItem.Cliente?.replace("clientes/", ""));
+            
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
-            
-            if (typeof pdf.autoTable !== 'function' && window.jspdf.jsPDF.API.autoTable) {
-               window.jspdf.jsPDF.API.autoTable = window.jspdf.plugin.autotable;
-            }
 
+            // Membrete e info institucional
             pdf.setFillColor(0, 176, 116); pdf.rect(0, 0, 220, 14, 'F');
             pdf.setFont("helvetica", "bold"); pdf.setFontSize(22); pdf.textColor = "#1e293b";
             pdf.text("TECNOPLAGAS", 14, 30);
             pdf.setFontSize(10); pdf.setFont("helvetica", "normal");
             pdf.text("Fumigadora TecnoPlagas C.R. | Tel: 7232-5001", 14, 37);
 
+            // Caja derecha
             pdf.setFillColor(241, 245, 249); pdf.rect(125, 20, 71, 25, 'F');
             pdf.setFont("helvetica", "bold"); pdf.text(String(docItem["Tipo de documento"] || 'Presupuesto').toUpperCase(), 129, 26);
             pdf.setFontSize(9); pdf.setFont("helvetica", "normal");
@@ -558,8 +518,25 @@
             pdf.text(`Cliente: ${cInfo ? cInfo.nombre : '---'}`, 14, 59);
             pdf.text(`Ubicación: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 64, { maxWidth: 100 });
 
-            let tablaCuerpo = docItem.items ? docItem.items.map(i => [i.descripcion, i.cantidad, `¢${i.precioUnitario.toFixed(2)}`, `¢${(i.cantidad * i.precioUnitario).toFixed(2)}`]) : [[docItem.Descripcion, docItem.Cantidad, `¢${docItem["Precio Unitario"]}`, `¢${docItem.SubTotal}`]];
+            // CONSTRUIR EL CUERPO DEL PDF DESDE EL OBJETO, NO DESDE EL HTML DE LA PANTALLA
+            let tablaCuerpo = [];
+            if (docItem.items && Array.isArray(docItem.items)) {
+              tablaCuerpo = docItem.items.map(i => [
+                i.descripcion, 
+                i.cantidad, 
+                `¢${i.precioUnitario.toFixed(2)}`, 
+                `¢${(i.cantidad * i.precioUnitario).toFixed(2)}`
+              ]);
+            } else {
+              tablaCuerpo = [[
+                docItem.Descripcion || '---', 
+                docItem.Cantidad || 1, 
+                `¢${(docItem["Precio Unitario"] || 0).toFixed(2)}`, 
+                `¢${(docItem.SubTotal || 0).toFixed(2)}`
+              ]];
+            }
 
+            // Invocación segura de autoTable
             pdf.autoTable({
               startY: 78,
               head: [['Descripción del Servicio', 'Cant', 'Precio U.', 'Monto Bruto']],
@@ -569,13 +546,17 @@
             });
 
             const finalY = pdf.lastAutoTable?.finalY ? pdf.lastAutoTable.finalY + 10 : 120;
+            pdf.setFont("helvetica", "normal");
             pdf.text("Subtotal:", 130, finalY); pdf.text(`¢${(docItem.SubTotal || 0).toFixed(2)}`, 168, finalY);
             pdf.text(`IVA (${(docItem.IVA * 100) || 0}%):`, 130, finalY + 6); pdf.text(`¢${(docItem["Total Impuesto"] || 0).toFixed(2)}`, 168, finalY + 6);
             pdf.line(130, finalY + 8, 196, finalY + 8);
             pdf.setFont("helvetica", "bold"); pdf.text("Total Facturado:", 130, finalY + 13); pdf.text(`¢${(docItem["Total Factura"] || 0).toFixed(2)}`, 168, finalY + 13);
 
             pdf.save(`${docItem.Consecutivo || 'Doc'}_Tecnoplagas.pdf`);
-          } catch (err) { console.error(err); }
+          } catch (err) { 
+            console.error("Error al generar PDF:", err); 
+            alert("Error procesando el archivo PDF.");
+          }
         });
       });
     }
@@ -585,6 +566,7 @@
       const idEdicion = document.getElementById('factura-id-edicion').value;
       const itemsGuardar = [];
       
+      // Leer valores de la pantalla de forma segura para cargarlos a memoria
       document.querySelectorAll('.fila-item-dinamica').forEach(fila => {
         itemsGuardar.push({
           descripcion: fila.querySelector('.item-desc').value,
@@ -627,7 +609,10 @@
         ejecutarCalculosFactura();
         await sincronizarHistorialYConsecutivo();
         window.cambiarVista('historial');
-      } catch (err) { console.error(err); }
+      } catch (err) { 
+        console.error("Error guardando:", err); 
+        alert("Error de comunicación al guardar.");
+      }
     });
 
     async function inicializarModulo() {
