@@ -1,278 +1,204 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Módulo de Clientes - Firebase</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --success: #16a34a;
-            --dark: #1e293b;
-            --light: #f8fafc;
-        }
-        body { font-family: system-ui, sans-serif; background: var(--light); color: var(--dark); margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        h2 { margin-top: 0; border-bottom: 2px solid var(--light); padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
-        input, select { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 4px; }
-        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { width: 100%; padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; margin-bottom: 10px; }
-        .btn-primary { background: var(--primary); }
-        .btn-success { background: var(--success); }
-        .btn-secondary { background: #64748b; }
-        
-        /* Tabla */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 0.9em; }
-        th { background: #f1f5f9; }
-        .actions-btn { padding: 4px 8px; font-size: 0.8em; margin: 0 2px; width: auto; display: inline-block; }
-    </style>
-</head>
-<body>
+// =========================================================================
+// IMPORTACIONES DE FIREBASE - MÓDULO DE CLIENTES
+// =========================================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<div class="container">
-    <!-- FORMULARIO DE INGRESO / EDICIÓN -->
-    <div class="card">
-        <h2 id="form-title">Nuevo Cliente</h2>
-        <form id="cliente-form">
-            <input type="hidden" id="id-documento"> <!-- ID interno de Firestore -->
-            
-            <div class="form-group">
-                <label>Consecutivo</label>
-                <input type="text" id="consecutivo" placeholder="Ej: Cl000001" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Cédula / Identificación</label>
-                <input type="text" id="cedula" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Nombre Completo</label>
-                <input type="text" id="nombre" required>
-            </div>
+// CONFIGURACIÓN DE TU PROYECTO (Asegúrate de que coincida con tus credenciales actuales)
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+  projectId: "fumigadora-tecnoplagas",
+  storageBucket: "fumigadora-tecnoplagas.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId: "TU_APP_ID"
+};
 
-            <div class="form-group">
-                <label>Sucursal</label>
-                <input type="text" id="sucursal">
-            </div>
+// Inicialización de Firebase y base de datos Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-            <div class="row-2">
-                <div class="form-group">
-                    <label>Teléfono</label>
-                    <input type="tel" id="telefono">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email">
-                </div>
-            </div>
+// Almacenamiento local temporal de los clientes descargados
+let clientesFirestore = {};
 
-            <div class="form-group">
-                <label>Frecuencia de Fumigación</label>
-                <input type="text" id="frecuencia" placeholder="Ej: Mensual, Trimestral">
-            </div>
+// =========================================================================
+// 1. CARGA AUTOMÁTICA DE CLIENTES DESDE FIRESTORE EN LA TABLA O SELECT
+// =========================================================================
+async function cargarClientes() {
+  const selectCliente = document.getElementById('select-cliente');
+  const tablaClientesBody = document.getElementById('tabla-clientes-body');
+  
+  try {
+    console.log("⏳ Consultando la colección 'Clientes' en Firestore...");
+    const querySnapshot = await getDocs(collection(db, "Clientes"));
+    
+    // Si existe el select de clientes (ej: en la pantalla de emisión de certificados)
+    if (selectCliente) {
+      selectCliente.innerHTML = '<option value="">Seleccione el cliente...</option>';
+    }
+    
+    // Si existe la tabla (ej: en la pantalla de administración/catálogo de clientes)
+    if (tablaClientesBody) {
+      tablaClientesBody.innerHTML = '';
+    }
 
-            <div class="form-group">
-                <label>Dirección</label>
-                <input type="text" id="direccion">
-            </div>
+    clientesFirestore = {};
 
-            <div class="row-2">
-                <div class="form-group">
-                    <label>GPS Latitud</label>
-                    <input type="number" step="any" id="lat" placeholder="0.0">
-                </div>
-                <div class="form-group">
-                    <label>GPS Longitud</label>
-                    <input type="number" step="any" id="lng" placeholder="0.0">
-                </div>
-            </div>
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const idDocumento = doc.id;
+      clientesFirestore[idDocumento] = data;
 
-            <button type="submit" id="btn-submit" class="btn-primary">Guardar Cliente</button>
-            <button type="button" id="btn-cancelar" class="btn-secondary" style="display:none;">Cancelar Edición</button>
-        </form>
-    </div>
+      // Opción A: Llenar el menú desplegable (Select)
+      if (selectCliente) {
+        const option = document.createElement('option');
+        option.value = idDocumento;
+        // Soporta variaciones de campos en la DB ("Nombre Completo", "Nombre" o "Razón Social")
+        option.textContent = data["Nombre Completo"] || data["Nombre"] || data["Razón Social"] || idDocumento;
+        selectCliente.appendChild(option);
+      }
 
-    <!-- LISTADO EN TIEMPO REAL -->
-    <div class="card">
-        <h2>Listado de Clientes</h2>
-        <div style="overflow-x:auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Consecutivo</th>
-                        <th>Cédula</th>
-                        <th>Nombre</th>
-                        <th>Sucursal</th>
-                        <th>Frecuencia</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tabla-clientes">
-                    <!-- Se carga dinámicamente -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+      // Opción B: Llenar la tabla de administración
+      if (tablaClientesBody) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${data["Nombre Completo"] || data["Nombre"] || "---"}</td>
+          <td>${data["Cédula"] || data["Cedula"] || data["RUC"] || "---"}</td>
+          <td>${data["Teléfono"] || data["Telefono"] || "---"}</td>
+          <td>${data["Correo"] || data["Email"] || "---"}</td>
+          <td>${data["Dirección"] || data["Direccion"] || "---"}</td>
+          <td>
+            <button class="btn-editar" data-id="${idDocumento}">✏️ Editar</button>
+            <button class="btn-eliminar" data-id="${idDocumento}">🗑️ Eliminar</button>
+          </td>
+        `;
+        tablaClientesBody.appendChild(tr);
+      }
+    });
 
-<!-- Configuración de Firebase -->
-<script type="module">
-    // Importar SDKs necesarios de la CDN de Firebase v10
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-        getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, GeoPoint, Timestamp 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    console.log("✅ Datos de la colección 'Clientes' cargados correctamente.");
+    
+    // Asignar eventos de editar/eliminar si estamos en la vista de administración
+    if (tablaClientesBody) {
+      asignarEventosAcciones();
+    }
 
-    // 1. Reemplaza esto con las credenciales de tu proyecto de Firebase
-    const firebaseConfig = {
-        apiKey: "TU_API_KEY",
-        authDomain: "TU_AUTH_DOMAIN",
-        projectId: "TU_PROJECT_ID",
-        storageBucket: "TU_STORAGE_BUCKET",
-        messagingSenderId: "TU_MESSAGING_SENDER_ID",
-        appId: "TU_APP_ID"
+  } catch (error) {
+    console.error("❌ Error al cargar los clientes desde Firestore: ", error);
+  }
+}
+
+// =========================================================================
+// 2. REGISTRAR UN NUEVO CLIENTE / ACTUALIZAR EXISTENTE
+// =========================================================================
+const formularioCliente = document.getElementById('cliente-form');
+if (formularioCliente) {
+  formularioCliente.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Captura de datos de los inputs del formulario
+    const nombreCompleto = document.getElementById('cliente-nombre').value;
+    const cedula = document.getElementById('cliente-cedula').value;
+    const telefono = document.getElementById('cliente-telefono').value;
+    const correo = document.getElementById('cliente-correo').value;
+    const direccion = document.getElementById('cliente-direccion').value;
+    const idEdicion = document.getElementById('cliente-id-edicion') ? document.getElementById('cliente-id-edicion').value : "";
+
+    // Objeto estructurado para Firebase con campos estándar limpios
+    const datosCliente = {
+      "Nombre Completo": nombreCompleto,
+      "Cédula": cedula,
+      "Teléfono": telefono,
+      "Correo": correo,
+      "Dirección": direccion,
+      "fechaModificacion": new Date().toISOString()
     };
 
-    // Inicializar Firebase e Instancia de la Base de Datos
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    
-    // Referencia a la colección apuntada según tu tabla (/Clientes)
-    const clientesRef = collection(db, "Clientes");
-
-    // Elementos del DOM
-    const form = document.getElementById('cliente-form');
-    const tablaClientes = document.getElementById('tabla-clientes');
-    const formTitle = document.getElementById('form-title');
-    const btnSubmit = document.getElementById('btn-submit');
-    const btnCancelar = document.getElementById('btn-cancelar');
-    const idDocInput = document.getElementById('id-documento');
-
-    // Estado local para cuando editamos un cliente
-    let editMode = false;
-
-    // 2. LEER DATOS EN TIEMPO REAL (onSnapshot actualiza el HTML automáticamente al cambiar Firebase)
-    onSnapshot(clientesRef, (snapshot) => {
-        tablaClientes.innerHTML = ""; // Limpiar tabla
+    try {
+      if (idEdicion) {
+        // MODO EDICIÓN: Actualizar cliente existente
+        console.log(`💾 Actualizando cliente con ID: ${idEdicion}`);
+        const clienteRef = doc(db, "Clientes", idEdicion);
+        await updateDoc(clienteRef, datosCliente);
+        alert("✅ Cliente actualizado con éxito.");
         
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            const id = doc.id;
+        document.getElementById('cliente-id-edicion').value = ""; // Reset de bandera
+        if (document.getElementById('btn-submit-cliente')) {
+          document.getElementById('btn-submit-cliente').textContent = "Guardar Cliente";
+        }
+      } else {
+        // MODO CREACIÓN: Crear nuevo cliente de cero
+        console.log("💾 Registrando nuevo cliente en Firestore...");
+        await addDoc(collection(db, "Clientes"), datosCliente);
+        alert("✅ Cliente registrado con éxito.");
+      }
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><strong>${data.Consecutivo || ''}</strong></td>
-                <td>${data.Cedula || ''}</td>
-                <td>${data.nombre || 'Sin nombre'}</td>
-                <td>${data.sucursal || ''}</td>
-                <td>${data["Frecuencia de Fumigacion"] || ''}</td>
-                <td>
-                    <button class="actions-btn btn-primary btn-editar" data-id="${id}">Editar</button>
-                </td>
-            `;
-            tablaClientes.appendChild(tr);
-        });
+      formularioCliente.reset();
+      cargarClientes(); // Sincroniza la UI de inmediato
 
-        // Asignar eventos a los nuevos botones de editar creados
-        document.querySelectorAll('.btn-editar').forEach(btn => {
-            btn.addEventListener('click', (e) => cargarClienteParaEditar(e.target.dataset.id, snapshot));
-        });
+    } catch (error) {
+      console.error("❌ Error al procesar el cliente en Firebase: ", error);
+      alert("Hubo un error al guardar los datos del cliente.");
+    }
+  });
+}
+
+// =========================================================================
+// 3. ACCIONES DE LA TABLA (EDITAR / ELIMINAR)
+// =========================================================================
+function asignarEventosAcciones() {
+  // Eventos para Editar
+  document.querySelectorAll('.btn-editar').forEach(boton => {
+    boton.addEventListener('click', function() {
+      const idDoc = this.getAttribute('data-id');
+      const cliente = clientesFirestore[idDoc];
+
+      if (cliente) {
+        // Llenar los campos para edición interactiva
+        if (document.getElementById('cliente-nombre')) document.getElementById('cliente-nombre').value = cliente["Nombre Completo"] || "";
+        if (document.getElementById('cliente-cedula')) document.getElementById('cliente-cedula').value = cliente["Cédula"] || "";
+        if (document.getElementById('cliente-telefono')) document.getElementById('cliente-telefono').value = cliente["Teléfono"] || "";
+        if (document.getElementById('cliente-correo')) document.getElementById('cliente-correo').value = cliente["Correo"] || "";
+        if (document.getElementById('cliente-direccion')) document.getElementById('cliente-direccion').value = cliente["Dirección"] || "";
+        
+        // Colocamos el ID en el input oculto de edición para rastrearlo en el 'submit'
+        if (document.getElementById('cliente-id-edicion')) {
+          document.getElementById('cliente-id-edicion').value = idDoc;
+        }
+        
+        if (document.getElementById('btn-submit-cliente')) {
+          document.getElementById('btn-submit-cliente').textContent = "Actualizar Datos";
+        }
+        
+        // Animación suave hacia el formulario de edición
+        formularioCliente.scrollIntoView({ behavior: 'smooth' });
+      }
     });
+  });
 
-    // 3. GUARDAR O EDITAR DATOS
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+  // Eventos para Eliminar
+  document.querySelectorAll('.btn-eliminar').forEach(boton => {
+    boton.addEventListener('click', async function() {
+      const idDoc = this.getAttribute('data-id');
+      const nombre = clientesFirestore[idDoc] ? clientesFirestore[idDoc]["Nombre Completo"] : "este cliente";
 
-        // Extraer y estructurar los datos respetando los tipos de Firebase
-        const lat = parseFloat(document.getElementById('lat').value) || 0;
-        const lng = parseFloat(document.getElementById('lng').value) || 0;
-
-        const clienteData = {
-            "Cedula": document.getElementById('cedula').value,
-            "Consecutivo": document.getElementById('consecutivo').value,
-            "Frecuencia de Fumigacion": document.getElementById('frecuencia').value,
-            "GPS": new GeoPoint(lat, lng), // Tipo Geopoint requerido
-            "direccion": document.getElementById('direccion').value,
-            "email": document.getElementById('email').value,
-            "sucursal": document.getElementById('sucursal').value,
-            "telefono": document.getElementById('telefono').value,
-            "nombre": document.getElementById('nombre').value
-        };
-
+      if (confirm(`¿Estás completamente seguro de que deseas eliminar permanentemente a: ${nombre}?`)) {
         try {
-            if (!editMode) {
-                // Agregar campo de fecha de registro solo en nuevas creaciones
-                clienteData.fecharegistro = Timestamp.now(); 
-                
-                await addDoc(clientesRef, clienteData);
-                alert("Cliente registrado exitosamente.");
-            } else {
-                // Actualizar documento existente
-                const docRef = doc(db, "Clientes", idDocInput.value);
-                await updateDoc(docRef, clienteData);
-                alert("Cliente actualizado exitosamente.");
-                resetForm();
-            }
-            form.reset();
+          console.log(`🗑️ Eliminando documento cliente de Firestore: ${idDoc}`);
+          await deleteDoc(doc(db, "Clientes", idDoc));
+          alert("🗑️ Cliente eliminado de la base de datos de forma exitosa.");
+          cargarClientes(); // Sincronizar UI
         } catch (error) {
-            console.error("Error al procesar la solicitud: ", error);
-            alert("Ocurrió un error al guardar.");
+          console.error("❌ Error al eliminar el cliente de la base de datos: ", error);
         }
+      }
     });
+  });
+}
 
-    // 4. PASAR DATOS AL FORMULARIO PARA EDITAR
-    function cargarClienteParaEditar(id, snapshot) {
-        let cliente = null;
-        snapshot.forEach(doc => { if(doc.id === id) cliente = doc.data(); });
-
-        if(!cliente) return;
-
-        // Cambiar interfaz visual a modo edición
-        editMode = true;
-        idDocInput.value = id;
-        formTitle.textContent = "Editar Cliente";
-        btnSubmit.textContent = "Actualizar Cambios";
-        btnSubmit.className = "btn-success";
-        btnCancelar.style.display = "block";
-
-        // Rellenar campos del formulario
-        document.getElementById('cedula').value = cliente.Cedula || '';
-        document.getElementById('consecutivo').value = cliente.Consecutivo || '';
-        document.getElementById('frecuencia').value = cliente["Frecuencia de Fumigacion"] || '';
-        document.getElementById('direccion').value = cliente.direccion || '';
-        document.getElementById('email').value = cliente.email || '';
-        document.getElementById('nombre').value = cliente.nombre || '';
-        document.getElementById('sucursal').value = cliente.sucursal || '';
-        document.getElementById('telefono').value = cliente.telefono || '';
-        
-        // Manejo del campo GeoPoint
-        if(cliente.GPS) {
-            document.getElementById('lat').value = cliente.GPS.latitude;
-            document.getElementById('lng').value = cliente.GPS.longitude;
-        } else {
-            document.getElementById('lat').value = '';
-            document.getElementById('lng').value = '';
-        }
-    }
-
-    // Cancelar la edición y limpiar
-    btnCancelar.addEventListener('click', resetForm);
-
-    function resetForm() {
-        editMode = false;
-        form.reset();
-        idDocInput.value = "";
-        formTitle.textContent = "Nuevo Cliente";
-        btnSubmit.textContent = "Guardar Cliente";
-        btnSubmit.className = "btn-primary";
-        btnCancelar.style.display = "none";
-    }
-</script>
-
-</body>
-</html>
+// =========================================================================
+// 4. INICIALIZACIÓN DE LA VISTA AL COMPLETAR CARGA
+// =========================================================================
+document.addEventListener("DOMContentLoaded", () => {
+  cargarClientes();
+});
