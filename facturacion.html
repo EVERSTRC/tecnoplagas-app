@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Facturación y Cotizaciones</title>
   
-  <!-- Librerías para generación de PDFs Limpios y Tuanis -->
+  <!-- CDN oficiales corregidos y ordenados para compatibilidad global -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
@@ -219,12 +219,11 @@
       <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
     </div>
 
-    <!-- PESTAÑA 1: FORMULARIO DE EMISIÓN / EDICIÓN -->
+    <!-- PESTAÑA 1: FORMULARIO -->
     <div id="vista-emision" class="seccion-modulo active">
       <div class="titulo-modulo" id="form-titulo">Módulo de Facturación y Cotizaciones</div>
       
       <form id="factura-form">
-        <!-- Input oculto para guardar ID cuando editamos -->
         <input type="hidden" id="factura-id-edicion">
 
         <div class="form-row">
@@ -325,7 +324,7 @@
       </form>
     </div>
 
-    <!-- PESTAÑA 2: HISTORIAL DE REGISTROS -->
+    <!-- PESTAÑA 2: HISTORIAL -->
     <div id="vista-historial" class="seccion-modulo">
       <div class="titulo-modulo">Historial de Transacciones (Facturacion)</div>
       <div class="table-container">
@@ -373,7 +372,7 @@
     }
   </script>
 
-  <!-- LOGICA COMPLETA DE NEGOCIO Y MANEJO DE INTEGRACIÓN -->
+  <!-- CONTROLADORES FIRESTORE Y PROCESADOR DE PDF -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -393,31 +392,24 @@
     let listaClientes = [];
     let listaDocumentosEmitidos = [];
 
-    // 1. CARGA AUTOMÁTICA DE CLIENTES DESDE LA COLECCIÓN 'clientes'
     async function sincronizarSelectClientes() {
       const selectCliente = document.getElementById('select-cliente');
       if (!selectCliente) return;
-
       try {
         const querySnapshot = await getDocs(collection(db, "clientes"));
         selectCliente.innerHTML = '<option value="">Seleccione el cliente destino...</option>';
         listaClientes = [];
-
         querySnapshot.forEach((docSnap) => {
           const data = docSnap.data();
           listaClientes.push({ id: docSnap.id, ...data });
-
           const option = document.createElement('option');
           option.value = docSnap.id; 
           option.textContent = `${data.nombre || 'Sin Nombre'} (${data.consecutivo || docSnap.id})`;
           selectCliente.appendChild(option);
         });
-      } catch (err) {
-        console.error("Error cargando clientes:", err);
-      }
+      } catch (err) { console.error(err); }
     }
 
-    // 2. RECUPERAR COMPROBANTES Y GENERAR TABLA E HISTORIAL
     async function sincronizarHistorialYConsecutivo() {
       const tbody = document.getElementById('tabla-historial-body');
       const inputConsecutivo = document.getElementById('consecutivo-doc');
@@ -431,7 +423,6 @@
           listaDocumentosEmitidos.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // Consecutivo Inteligente si no se está editando
         if(inputConsecutivo && !document.getElementById('factura-id-edicion').value) {
           const sgteNum = listaDocumentosEmitidos.length + 1;
           inputConsecutivo.value = "DOC-" + String(sgteNum).padStart(6, '0');
@@ -445,12 +436,9 @@
         if(tbody) {
           listaDocumentosEmitidos.forEach((docEmitido) => {
             let idCliente = "";
-            let rawCliente = docEmitido.Cliente;
-            
-            if (rawCliente && typeof rawCliente === 'string') {
-              idCliente = rawCliente.replace("clientes/", "");
+            if (docEmitido.Cliente && typeof docEmitido.Cliente === 'string') {
+              idCliente = docEmitido.Cliente.replace("clientes/", "");
             }
-            
             const objCliente = listaClientes.find(c => c.id === idCliente);
             const nombreMostrar = objCliente ? objCliente.nombre : `ID: ${idCliente}`;
 
@@ -468,22 +456,17 @@
             `;
             tbody.appendChild(tr);
           });
-          
           inicializarEventosAcciones();
         }
-      } catch (err) {
-        console.error("Error cargando historial:", err);
-      }
+      } catch (err) { console.error(err); }
     }
 
-    // 3. EVENTOS DINÁMICOS: ACCIÓN EDITAR Y DESCARGA DE PDF
     function inicializarEventosAcciones() {
-      // EVENTO EDITAR
+      // EVENTO ACCION EDITAR
       document.querySelectorAll('.btn-tabla-editar').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
           const docItem = listaDocumentosEmitidos.find(d => d.id === id);
-
           if (docItem) {
             document.getElementById('factura-id-edicion').value = id;
             document.getElementById('consecutivo-doc').value = docItem.Consecutivo || "";
@@ -493,10 +476,7 @@
             document.getElementById('descripcion-linea').value = docItem.Descripcion || "";
             document.getElementById('cantidad-linea').value = docItem.Cantidad || 1;
             document.getElementById('precio-unitario').value = docItem["Precio Unitario"] || 0;
-            
-            // Re-convertir el ratio del iva a porcentaje (ej: 0.13 -> 13)
-            const porcIva = (docItem.IVA || 0) * 100;
-            document.getElementById('porcentaje-iva').value = porcIva;
+            document.getElementById('porcentaje-iva').value = (docItem.IVA || 0) * 100;
 
             let cleanIdCliente = "";
             if (docItem.Cliente && typeof docItem.Cliente === 'string') {
@@ -504,7 +484,6 @@
             }
             document.getElementById('select-cliente').value = cleanIdCliente;
 
-            // Ajuste visual
             document.getElementById('form-titulo').textContent = "⚠️ Editando Documento Guardado";
             document.getElementById('btn-submit-factura').textContent = "💾 Actualizar Cambios en Base de Datos";
             document.getElementById('btn-submit-factura').style.backgroundColor = "#2563eb";
@@ -515,7 +494,7 @@
         });
       });
 
-      // EVENTO IMPRIMIR PDF PERSONALIZADO (BIEN TUANIS)
+      // CORREGIDO: EVENTO DESCARGA DE PDF CONFIGURADO UNIVERSALMENTE
       document.querySelectorAll('.btn-tabla-pdf').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
@@ -528,64 +507,65 @@
             }
             const cInfo = listaClientes.find(c => c.id === idCliente);
 
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+            // Invocación explícita a la ventana del navegador para evitar bloqueos del script type=module
+            const pdf = new window.jspdf.jsPDF();
 
-            // --- Encabezado Estilizado Estilo Presupuesto ---
-            pdf.setFillColor(0, 176, 116); // Verde Tecnoplagas
-            pdf.rect(0, 0, 220, 15, 'F');
+            // Encabezado decorativo superior verde[span_0](start_span)[span_0](end_span)
+            pdf.setFillColor(0, 176, 116);
+            pdf.rect(0, 0, 220, 14, 'F');
 
-            // Título de la Empresa
+            // Logo de Empresa[span_1](start_span)[span_1](end_span)
             pdf.setFont("helvetica", "bold");
             pdf.setFontSize(22);
             pdf.textColor = "#1e293b";
-            pdf.text("TECNOPLAGAS", 14, 32);
+            pdf.text("TECNOPLAGAS", 14, 30);
 
             pdf.setFontSize(10);
             pdf.setFont("helvetica", "normal");
-            pdf.text("Fumigadora TecnoPlagas C.R.", 14, 38);
-            pdf.text("Teléfonos: 7232-5001 / 8987-7776", 14, 43);
-            pdf.text("Email: info@tecoplagascrc.com", 14, 48);
+            pdf.text("Fumigadora TecnoPlagas C.R.", 14, 36);
+            pdf.text("Teléfonos: 7232-5001 / 8987-7776", 14, 41);
+            pdf.text("Email: info@tecoplagascrc.com", 14, 46);
 
-            // Bloque de Tipo de Documento e Info General derecho
+            // Caja de Control de Documento a la derecha[span_2](start_span)[span_2](end_span)
             pdf.setFillColor(241, 245, 249);
-            pdf.rect(130, 22, 66, 26, 'F');
+            pdf.rect(125, 20, 71, 28, 'F');
             pdf.setFont("helvetica", "bold");
-            pdf.setFontSize(12);
-            pdf.text(String(docItem["Tipo de documento"]).toUpperCase(), 134, 29);
-            pdf.setFontSize(10);
+            pdf.setFontSize(11);
+            pdf.text(String(docItem["Tipo de documento"] || 'Presupuesto').toUpperCase(), 129, 27);
+            pdf.setFontSize(9);
             pdf.setFont("helvetica", "normal");
-            pdf.text(`Consecutivo: ${docItem.Consecutivo || '---'}`, 134, 36);
+            pdf.text(`Consecutivo: ${docItem.Consecutivo || '---'}`, 129, 34);
             
             let fechaTexto = "---";
             if(docItem["Fecha de Emision"] && docItem["Fecha de Emision"].seconds) {
               fechaTexto = new Date(docItem["Fecha de Emision"].seconds * 1000).toLocaleDateString('es-CR');
             }
-            pdf.text(`Fecha: ${fechaTexto}`, 134, 42);
+            pdf.text(`Fecha Emisión: ${fechaTexto}`, 129, 41);
 
-            // Separador
+            // Divisor de sección
             pdf.setDrawColor(226, 232, 240);
-            pdf.line(14, 55, 196, 55);
+            pdf.line(14, 53, 196, 53);
 
-            // --- Información del Cliente ---
+            // Bloque de información del Cliente[span_3](start_span)[span_3](end_span)
             pdf.setFont("helvetica", "bold");
-            pdf.text("CLIENTE", 14, 63);
+            pdf.setFontSize(10);
+            pdf.text("DATOS DEL CLIENTE", 14, 61);
             pdf.setFont("helvetica", "normal");
-            pdf.text(`Nombre: ${cInfo ? cInfo.nombre : '---'}`, 14, 69);
-            pdf.text(`Cédula: ${cInfo ? cInfo.cedula : '---'}`, 14, 74);
-            pdf.text(`Dirección: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 79, { maxWidth: 100 });
+            pdf.text(`Nombre/Razón Social: ${cInfo ? cInfo.nombre : '---'}`, 14, 67);
+            pdf.text(`Cédula jurídica/física: ${cInfo ? cInfo.cedula : '---'}`, 14, 72);
+            pdf.text(`Ubicación: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 77, { maxWidth: 100 });
 
-            // Condiciones Derecho
+            // Bloque de condiciones comerciales derecho[span_4](start_span)[span_4](end_span)
             pdf.setFont("helvetica", "bold");
-            pdf.text("CONDICIONES", 130, 63);
+            pdf.text("CONDICIONES DE VENTA", 125, 61);
             pdf.setFont("helvetica", "normal");
-            pdf.text(`Condición: ${docItem["Condición de venta"] || 'Contado'}`, 130, 69);
-            pdf.text(`Medio de Pago: ${docItem["Medio de Pago"] || '---'}`, 130, 74);
+            pdf.text(`Término: ${docItem["Condición de venta"] || 'Contado'}`, 125, 67);
+            pdf.text(`Medio de Pago: ${docItem["Medio de Pago"] || '---'}`, 125, 72);
 
-            // --- Tabla de Detalles del Servicio ---
+            // Tabla estructurada autotable[span_5](start_span)[span_5](end_span)
             window.jspdf.plugin.autotable.default(pdf, {
               startY: 90,
-              head: [['Descripción', 'Cantidad', 'Precio Unitario', 'Precio Total']],
+              head: [['Descripción del Servicio', 'Cantidad', 'Precio Unitario', 'Monto Bruto']],
               body: [[
                 docItem.Descripcion || '---',
                 docItem.Cantidad || 1,
@@ -593,39 +573,40 @@
                 `¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`
               ]],
               headStyles: { fillColor: [0, 176, 116], fontStyle: 'bold' },
-              theme: 'striped'
+              theme: 'striped',
+              styles: { fontSize: 9 }
             });
 
-            // --- Cuadro de Totales ---
-            const finalY = pdf.lastAutoTable.finalY + 10;
+            // Resumen de liquidación monetaria[span_6](start_span)[span_6](end_span)
+            const finalY = pdf.lastAutoTable.finalY + 8;
             pdf.setFont("helvetica", "normal");
-            pdf.text("Subtotal:", 135, finalY);
-            pdf.text(`¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY);
+            pdf.setFontSize(10);
+            pdf.text("Subtotal:", 130, finalY);
+            pdf.text(`¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY);
 
-            pdf.text(`IVA (${(docItem.IVA * 100) || 0}%):`, 135, finalY + 6);
-            pdf.text(`¢${(docItem["Total Impuesto"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY + 6);
+            pdf.text(`Impuesto IVA (${(docItem.IVA * 100) || 0}%):`, 130, finalY + 6);
+            pdf.text(`¢${(docItem["Total Impuesto"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY + 6);
 
-            pdf.setDrawColor(30, 41, 59);
-            pdf.line(135, finalY + 9, 196, finalY + 9);
+            pdf.setDrawColor(71, 85, 105);
+            pdf.line(130, finalY + 9, 196, finalY + 9);
 
             pdf.setFont("helvetica", "bold");
-            pdf.text("Total Comprobante:", 135, finalY + 14);
-            pdf.text(`¢${(docItem["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY + 14);
+            pdf.text("Total Facturado:", 130, finalY + 14);
+            pdf.text(`¢${(docItem["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY + 14);
 
-            // Pie de página comercial
+            // Leyenda informativa inferior[span_7](start_span)[span_7](end_span)
             pdf.setFont("helvetica", "italic");
-            pdf.setFontSize(9);
+            pdf.setFontSize(8.5);
             pdf.textColor = "#64748b";
-            pdf.text("¡Gracias por confiar en Tecnoplagas! Especialistas en control integral de plagas.", 14, finalY + 30);
+            pdf.text("Este documento representa un comprobante digital emitido por el sistema Tecnoplagas.", 14, finalY + 28);
 
-            // Descarga automática
-            pdf.save(`${docItem.Consecutivo || 'Documento'}_Tecnoplagas.pdf`);
+            // Guardar archivo final
+            pdf.save(`${docItem.Consecutivo || 'Doc'}_Tecnoplagas.pdf`);
           }
         });
       });
     }
 
-    // 4. CALCULO MATEMÁTICO DE MONTOS
     function ejecutarCalculosFactura() {
       const cantidad = parseInt(document.getElementById('cantidad-linea').value, 10) || 0;
       const precioUnitario = parseFloat(document.getElementById('precio-unitario').value) || 0;
@@ -646,10 +627,8 @@
     document.getElementById('precio-unitario').addEventListener('input', ejecutarCalculosFactura);
     document.getElementById('porcentaje-iva').addEventListener('change', ejecutarCalculosFactura);
 
-    // 5. REGISTRO Y ACTUALIZACIÓN EN FIRESTORE
     document.getElementById('factura-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const idEdicion = document.getElementById('factura-id-edicion').value;
       const idClienteSeleccionado = document.getElementById('select-cliente').value;
       const stringReferenciaCliente = `clientes/${idClienteSeleccionado}`;
@@ -672,39 +651,29 @@
 
       try {
         if (idEdicion) {
-          // Actualización de registro existente
           await updateDoc(doc(db, "Facturacion", idEdicion), payloadFactura);
-          alert("✅ ¡Documento de Facturación actualizado correctamente!");
-          
-          // Revertir estados visuales
+          alert("✅ ¡Documento actualizado correctamente!");
           document.getElementById('factura-id-edicion').value = "";
           document.getElementById('form-titulo').textContent = "Módulo de Facturación y Cotizaciones";
           document.getElementById('btn-submit-factura').textContent = "💾 Registrar Documento en Firestore";
           document.getElementById('btn-submit-factura').style.backgroundColor = "#2563eb";
         } else {
-          // Creación de registro nuevo
           payloadFactura["Fecha de Emision"] = Timestamp.now();
           await addDoc(collection(db, "Facturacion"), payloadFactura);
-          alert("🎉 ¡Documento de Facturación registrado exitosamente!");
+          alert("🎉 ¡Documento registrado exitosamente!");
         }
 
         document.getElementById('factura-form').reset();
         ejecutarCalculosFactura();
-        
         await sincronizarHistorialYConsecutivo();
         window.cambiarVista('historial');
-      } catch (err) {
-        console.error("Error guardando documento:", err);
-        alert("Ocurrió un error al procesar el guardado.");
-      }
+      } catch (err) { console.error(err); }
     });
 
-    // Carga e inicialización al iniciar
     async function inicializarModulo() {
       await sincronizarSelectClientes();
       await sincronizarHistorialYConsecutivo();
     }
-    
     inicializarModulo();
   </script>
 </body>
