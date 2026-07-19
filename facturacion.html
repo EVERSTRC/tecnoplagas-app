@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tecnoplagas - Facturación y Cotizaciones</title>
   
+  <!-- Librerías para generación de PDFs Limpios y Tuanis -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
   <style>
     :root {
       --primary-color: #00b074; 
@@ -16,6 +20,8 @@
       --border-color: #e2e8f0;
       --text-main: #334155;
       --text-muted: #64748b;
+      --purple-pdf: #7c3aed;
+      --purple-hover: #6d28d9;
     }
 
     body {
@@ -173,6 +179,31 @@
       border-bottom: 1px solid var(--border-color);
     }
 
+    .btn-tabla-editar {
+      background-color: var(--blue-btn);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      margin-right: 5px;
+    }
+    .btn-tabla-editar:hover { background-color: var(--blue-hover); }
+
+    .btn-tabla-pdf {
+      background-color: var(--purple-pdf);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .btn-tabla-pdf:hover { background-color: var(--purple-hover); }
+
     .seccion-modulo { display: none; }
     .seccion-modulo.active { display: block; }
   </style>
@@ -188,18 +219,21 @@
       <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
     </div>
 
-    <!-- PESTAÑA 1: FORMULARIO DE EMISIÓN -->
+    <!-- PESTAÑA 1: FORMULARIO DE EMISIÓN / EDICIÓN -->
     <div id="vista-emision" class="seccion-modulo active">
-      <div class="titulo-modulo">Módulo de Facturación y Cotizaciones</div>
+      <div class="titulo-modulo" id="form-titulo">Módulo de Facturación y Cotizaciones</div>
       
       <form id="factura-form">
+        <!-- Input oculto para guardar ID cuando editamos -->
+        <input type="hidden" id="factura-id-edicion">
+
         <div class="form-row">
           <div class="form-group">
             <label for="tipo-documento">Tipo de documento</label>
             <select id="tipo-documento" required>
               <option value="">Seleccione tipo...</option>
               <option value="Factura Electronica">Factura Electrónica</option>
-              <option value="Cotizacion">Cotización</option>
+              <option value="Cotizacion">Cotización / Presupuesto</option>
             </select>
           </div>
           <div class="form-group">
@@ -242,7 +276,7 @@
           <div class="form-row">
             <div class="form-group" style="grid-column: span 2;">
               <label for="descripcion-linea">Descripción</label>
-              <input type="text" id="descripcion-linea" required placeholder="Ej: Servicio de Control de Plagas Comercial e Industrial">
+              <input type="text" id="descripcion-linea" required placeholder="Ej: Control de Cucaracha Alemana Vehiculo">
             </div>
             <div class="form-group">
               <label for="cantidad-linea">Cantidad</label>
@@ -285,7 +319,7 @@
           </div>
         </fieldset>
 
-        <button type="submit" class="btn-submit">
+        <button type="submit" id="btn-submit-factura" class="btn-submit">
           💾 Registrar Documento en Firestore
         </button>
       </form>
@@ -300,14 +334,15 @@
             <tr>
               <th>Consecutivo</th>
               <th>Tipo</th>
-              <th>Cliente (ID)</th>
+              <th>Cliente</th>
               <th>Descripción</th>
               <th>Total Factura</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-historial-body">
             <tr>
-              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">
                 Cargando historial de transacciones...
               </td>
             </tr>
@@ -338,12 +373,11 @@
     }
   </script>
 
-  <!-- CONTROL DE LOGICA MULTI-COLECCIÓN FIRESTORE -->
+  <!-- LOGICA COMPLETA DE NEGOCIO Y MANEJO DE INTEGRACIÓN -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, addDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configuración Base
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -356,19 +390,15 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Mapeo local de datos descargados
     let listaClientes = [];
     let listaDocumentosEmitidos = [];
 
-    // =========================================================================
-    // 1. CARGA AUTOMÁTICA DE CLIENTES DE LA TABLA 'clientes'
-    // =========================================================================
+    // 1. CARGA AUTOMÁTICA DE CLIENTES DESDE LA COLECCIÓN 'clientes'
     async function sincronizarSelectClientes() {
       const selectCliente = document.getElementById('select-cliente');
       if (!selectCliente) return;
 
       try {
-        // Consultamos a tu colección en minúscula de clientes
         const querySnapshot = await getDocs(collection(db, "clientes"));
         selectCliente.innerHTML = '<option value="">Seleccione el cliente destino...</option>';
         listaClientes = [];
@@ -378,22 +408,16 @@
           listaClientes.push({ id: docSnap.id, ...data });
 
           const option = document.createElement('option');
-          // El value guarda la Referencia o ID del documento para asociarlo
           option.value = docSnap.id; 
           option.textContent = `${data.nombre || 'Sin Nombre'} (${data.consecutivo || docSnap.id})`;
           selectCliente.appendChild(option);
         });
-        
-        console.log("✅ Selector de clientes alimentado exitosamente.");
       } catch (err) {
-        console.error("Error cargando la lista de clientes:", err);
-        selectCliente.innerHTML = '<option value="">Error al cargar base de datos.</option>';
+        console.error("Error cargando clientes:", err);
       }
     }
 
-    // =========================================================================
-    // 2. CONSECUTIVOS DE CONTROL & HISTORIAL
-    // =========================================================================
+    // 2. RECUPERAR COMPROBANTES Y GENERAR TABLA E HISTORIAL
     async function sincronizarHistorialYConsecutivo() {
       const tbody = document.getElementById('tabla-historial-body');
       const inputConsecutivo = document.getElementById('consecutivo-doc');
@@ -407,88 +431,236 @@
           listaDocumentosEmitidos.push({ id: docSnap.id, ...docSnap.data() });
         });
 
-        // Generación de consecutivo dinámico basado en lo que hay en Facturacion
-        if(inputConsecutivo) {
+        // Consecutivo Inteligente si no se está editando
+        if(inputConsecutivo && !document.getElementById('factura-id-edicion').value) {
           const sgteNum = listaDocumentosEmitidos.length + 1;
           inputConsecutivo.value = "DOC-" + String(sgteNum).padStart(6, '0');
         }
 
         if (listaDocumentosEmitidos.length === 0 && tbody) {
-          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay comprobantes emitidos aún.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay comprobantes emitidos aún.</td></tr>`;
           return;
         }
 
         if(tbody) {
           listaDocumentosEmitidos.forEach((docEmitido) => {
-            // Manejo del campo referencia del cliente para mostrar en pantalla de manera limpia
-            let pathCliente = docEmitido.Cliente;
-            if (pathCliente && typeof pathCliente === 'object' && pathCliente.path) {
-                pathCliente = pathCliente.path.split('/').pop();
-            } else if (typeof pathCliente === 'string') {
-                pathCliente = pathCliente.split('/').pop();
+            let idCliente = "";
+            let rawCliente = docEmitido.Cliente;
+            
+            if (rawCliente && typeof rawCliente === 'string') {
+              idCliente = rawCliente.replace("clientes/", "");
             }
+            
+            const objCliente = listaClientes.find(c => c.id === idCliente);
+            const nombreMostrar = objCliente ? objCliente.nombre : `ID: ${idCliente}`;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td style="font-family:monospace; font-weight:bold;">${docEmitido.Consecutivo || '---'}</td>
               <td>${docEmitido["Tipo de documento"] || '---'}</td>
-              <td style="font-size:12px; color:var(--text-muted);">${pathCliente || '---'}</td>
+              <td>${nombreMostrar}</td>
               <td>${docEmitido.Descripcion || '---'}</td>
-              <td style="font-weight:bold; color:#00b074;">¢${(docEmitido["Total Factura"] || 0).toFixed(2)}</td>
+              <td style="font-weight:bold; color:#00b074;">¢${(docEmitido["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
+              <td>
+                <button class="btn-tabla-editar" data-id="${docEmitido.id}">✏️ Editar</button>
+                <button class="btn-tabla-pdf" data-id="${docEmitido.id}">📄 PDF</button>
+              </td>
             `;
             tbody.appendChild(tr);
           });
+          
+          inicializarEventosAcciones();
         }
       } catch (err) {
-        console.error("Error sincronizando historial:", err);
+        console.error("Error cargando historial:", err);
       }
     }
 
-    // =========================================================================
-    // 3. CALCULO MATEMÁTICO DE MONTOS EN TIEMPO REAL
-    // =========================================================================
+    // 3. EVENTOS DINÁMICOS: ACCIÓN EDITAR Y DESCARGA DE PDF
+    function inicializarEventosAcciones() {
+      // EVENTO EDITAR
+      document.querySelectorAll('.btn-tabla-editar').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const docItem = listaDocumentosEmitidos.find(d => d.id === id);
+
+          if (docItem) {
+            document.getElementById('factura-id-edicion').value = id;
+            document.getElementById('consecutivo-doc').value = docItem.Consecutivo || "";
+            document.getElementById('tipo-documento').value = docItem["Tipo de documento"] || "";
+            document.getElementById('condicion-venta').value = docItem["Condición de venta"] || "";
+            document.getElementById('medio-pago').value = docItem["Medio de Pago"] || "";
+            document.getElementById('descripcion-linea').value = docItem.Descripcion || "";
+            document.getElementById('cantidad-linea').value = docItem.Cantidad || 1;
+            document.getElementById('precio-unitario').value = docItem["Precio Unitario"] || 0;
+            
+            // Re-convertir el ratio del iva a porcentaje (ej: 0.13 -> 13)
+            const porcIva = (docItem.IVA || 0) * 100;
+            document.getElementById('porcentaje-iva').value = porcIva;
+
+            let cleanIdCliente = "";
+            if (docItem.Cliente && typeof docItem.Cliente === 'string') {
+              cleanIdCliente = docItem.Cliente.replace("clientes/", "");
+            }
+            document.getElementById('select-cliente').value = cleanIdCliente;
+
+            // Ajuste visual
+            document.getElementById('form-titulo').textContent = "⚠️ Editando Documento Guardado";
+            document.getElementById('btn-submit-factura').textContent = "💾 Actualizar Cambios en Base de Datos";
+            document.getElementById('btn-submit-factura').style.backgroundColor = "#2563eb";
+
+            window.cambiarVista('emitir');
+            ejecutarCalculosFactura();
+          }
+        });
+      });
+
+      // EVENTO IMPRIMIR PDF PERSONALIZADO (BIEN TUANIS)
+      document.querySelectorAll('.btn-tabla-pdf').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const docItem = listaDocumentosEmitidos.find(d => d.id === id);
+
+          if (docItem) {
+            let idCliente = "";
+            if (docItem.Cliente && typeof docItem.Cliente === 'string') {
+              idCliente = docItem.Cliente.replace("clientes/", "");
+            }
+            const cInfo = listaClientes.find(c => c.id === idCliente);
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+
+            // --- Encabezado Estilizado Estilo Presupuesto ---
+            pdf.setFillColor(0, 176, 116); // Verde Tecnoplagas
+            pdf.rect(0, 0, 220, 15, 'F');
+
+            // Título de la Empresa
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(22);
+            pdf.textColor = "#1e293b";
+            pdf.text("TECNOPLAGAS", 14, 32);
+
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "normal");
+            pdf.text("Fumigadora TecnoPlagas C.R.", 14, 38);
+            pdf.text("Teléfonos: 7232-5001 / 8987-7776", 14, 43);
+            pdf.text("Email: info@tecoplagascrc.com", 14, 48);
+
+            // Bloque de Tipo de Documento e Info General derecho
+            pdf.setFillColor(241, 245, 249);
+            pdf.rect(130, 22, 66, 26, 'F');
+            pdf.setFont("helvetica", "bold");
+            pdf.setFontSize(12);
+            pdf.text(String(docItem["Tipo de documento"]).toUpperCase(), 134, 29);
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(`Consecutivo: ${docItem.Consecutivo || '---'}`, 134, 36);
+            
+            let fechaTexto = "---";
+            if(docItem["Fecha de Emision"] && docItem["Fecha de Emision"].seconds) {
+              fechaTexto = new Date(docItem["Fecha de Emision"].seconds * 1000).toLocaleDateString('es-CR');
+            }
+            pdf.text(`Fecha: ${fechaTexto}`, 134, 42);
+
+            // Separador
+            pdf.setDrawColor(226, 232, 240);
+            pdf.line(14, 55, 196, 55);
+
+            // --- Información del Cliente ---
+            pdf.setFont("helvetica", "bold");
+            pdf.text("CLIENTE", 14, 63);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(`Nombre: ${cInfo ? cInfo.nombre : '---'}`, 14, 69);
+            pdf.text(`Cédula: ${cInfo ? cInfo.cedula : '---'}`, 14, 74);
+            pdf.text(`Dirección: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 79, { maxWidth: 100 });
+
+            // Condiciones Derecho
+            pdf.setFont("helvetica", "bold");
+            pdf.text("CONDICIONES", 130, 63);
+            pdf.setFont("helvetica", "normal");
+            pdf.text(`Condición: ${docItem["Condición de venta"] || 'Contado'}`, 130, 69);
+            pdf.text(`Medio de Pago: ${docItem["Medio de Pago"] || '---'}`, 130, 74);
+
+            // --- Tabla de Detalles del Servicio ---
+            window.jspdf.plugin.autotable.default(pdf, {
+              startY: 90,
+              head: [['Descripción', 'Cantidad', 'Precio Unitario', 'Precio Total']],
+              body: [[
+                docItem.Descripcion || '---',
+                docItem.Cantidad || 1,
+                `¢${(docItem["Precio Unitario"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`,
+                `¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`
+              ]],
+              headStyles: { fillColor: [0, 176, 116], fontStyle: 'bold' },
+              theme: 'striped'
+            });
+
+            // --- Cuadro de Totales ---
+            const finalY = pdf.lastAutoTable.finalY + 10;
+            pdf.setFont("helvetica", "normal");
+            pdf.text("Subtotal:", 135, finalY);
+            pdf.text(`¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY);
+
+            pdf.text(`IVA (${(docItem.IVA * 100) || 0}%):`, 135, finalY + 6);
+            pdf.text(`¢${(docItem["Total Impuesto"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY + 6);
+
+            pdf.setDrawColor(30, 41, 59);
+            pdf.line(135, finalY + 9, 196, finalY + 9);
+
+            pdf.setFont("helvetica", "bold");
+            pdf.text("Total Comprobante:", 135, finalY + 14);
+            pdf.text(`¢${(docItem["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 170, finalY + 14);
+
+            // Pie de página comercial
+            pdf.setFont("helvetica", "italic");
+            pdf.setFontSize(9);
+            pdf.textColor = "#64748b";
+            pdf.text("¡Gracias por confiar en Tecnoplagas! Especialistas en control integral de plagas.", 14, finalY + 30);
+
+            // Descarga automática
+            pdf.save(`${docItem.Consecutivo || 'Documento'}_Tecnoplagas.pdf`);
+          }
+        });
+      });
+    }
+
+    // 4. CALCULO MATEMÁTICO DE MONTOS
     function ejecutarCalculosFactura() {
       const cantidad = parseInt(document.getElementById('cantidad-linea').value, 10) || 0;
       const precioUnitario = parseFloat(document.getElementById('precio-unitario').value) || 0;
       const porcentajeIva = parseFloat(document.getElementById('porcentaje-iva').value) || 0;
 
       const subtotal = cantidad * precioUnitario;
-      const subtotalNeto = subtotal; // Al no haber descuentos aplicados
+      const subtotalNeto = subtotal;
       const totalImpuesto = subtotalNeto * (porcentajeIva / 100);
       const totalFactura = subtotalNeto + totalImpuesto;
 
-      // Inyección visual en campos de lectura
       document.getElementById('total-subtotal').value = subtotal.toFixed(2);
       document.getElementById('total-subtotal-neto').value = subtotalNeto.toFixed(2);
       document.getElementById('total-impuesto').value = totalImpuesto.toFixed(2);
       document.getElementById('total-factura').value = totalFactura.toFixed(2);
     }
 
-    //Listeners matemáticos del formulario
     document.getElementById('cantidad-linea').addEventListener('input', ejecutarCalculosFactura);
     document.getElementById('precio-unitario').addEventListener('input', ejecutarCalculosFactura);
     document.getElementById('porcentaje-iva').addEventListener('change', ejecutarCalculosFactura);
 
-    // =========================================================================
-    // 4. ENVÍO DEL FORMULARIO HACIA LA COLECCIÓN 'Facturacion'
-    // =========================================================================
+    // 5. REGISTRO Y ACTUALIZACIÓN EN FIRESTORE
     document.getElementById('factura-form').addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const idEdicion = document.getElementById('factura-id-edicion').value;
       const idClienteSeleccionado = document.getElementById('select-cliente').value;
-      
-      // Creamos la referencia del tipo 'Cliente/clientes/ID' requerida nativamente por tu base
-      // Si prefieres guardarlo como string directo puedes usar: `clientes/${idClienteSeleccionado}`
       const stringReferenciaCliente = `clientes/${idClienteSeleccionado}`;
 
       const payloadFactura = {
         "Cantidad": parseInt(document.getElementById('cantidad-linea').value, 10),
-        "Cliente": stringReferenciaCliente, // Formato /clientes/idDocumento
+        "Cliente": stringReferenciaCliente,
         "Condición de venta": document.getElementById('condicion-venta').value,
         "Consecutivo": document.getElementById('consecutivo-doc').value,
         "Descripcion": document.getElementById('descripcion-linea').value,
-        "Fecha de Emision": Timestamp.now(), // Formato nativo Firestore timestamp
-        "IVA": parseFloat(document.getElementById('porcentaje-iva').value) / 100, // Guarda el ratio (ej: 0.13)
+        "IVA": parseFloat(document.getElementById('porcentaje-iva').value) / 100,
         "Medio de Pago": document.getElementById('medio-pago').value,
         "Precio Unitario": parseFloat(document.getElementById('precio-unitario').value),
         "SubTotal": parseFloat(document.getElementById('total-subtotal').value),
@@ -499,28 +671,41 @@
       };
 
       try {
-        // Inserción en la colección 'Facturacion' indicada en tus variables
-        await addDoc(collection(db, "Facturacion"), payloadFactura);
-        alert("🎉 ¡Documento de Facturación / Cotización registrado exitosamente!");
-        
+        if (idEdicion) {
+          // Actualización de registro existente
+          await updateDoc(doc(db, "Facturacion", idEdicion), payloadFactura);
+          alert("✅ ¡Documento de Facturación actualizado correctamente!");
+          
+          // Revertir estados visuales
+          document.getElementById('factura-id-edicion').value = "";
+          document.getElementById('form-titulo').textContent = "Módulo de Facturación y Cotizaciones";
+          document.getElementById('btn-submit-factura').textContent = "💾 Registrar Documento en Firestore";
+          document.getElementById('btn-submit-factura').style.backgroundColor = "#2563eb";
+        } else {
+          // Creación de registro nuevo
+          payloadFactura["Fecha de Emision"] = Timestamp.now();
+          await addDoc(collection(db, "Facturacion"), payloadFactura);
+          alert("🎉 ¡Documento de Facturación registrado exitosamente!");
+        }
+
         document.getElementById('factura-form').reset();
         ejecutarCalculosFactura();
         
-        // Recargamos e invertimos pestañas
         await sincronizarHistorialYConsecutivo();
-        if(typeof window.cambiarVista === 'function') window.cambiarVista('historial');
+        window.cambiarVista('historial');
       } catch (err) {
-        console.error("Error al registrar en Facturacion:", err);
-        alert("Ocurrió un inconveniente al procesar la inserción en la base de datos.");
+        console.error("Error guardando documento:", err);
+        alert("Ocurrió un error al procesar el guardado.");
       }
     });
 
-    // Carga inicial al inicializar el Script
-    document.addEventListener("DOMContentLoaded", () => {
-      sincronizarSelectClientes();
-      sincronizarHistorialYConsecutivo();
-    });
+    // Carga e inicialización al iniciar
+    async function inicializarModulo() {
+      await sincronizarSelectClientes();
+      await sincronizarHistorialYConsecutivo();
+    }
+    
+    inicializarModulo();
   </script>
 </body>
 </html>
-
