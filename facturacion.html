@@ -1,1 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnoplagas - Facturación y Cotizaciones</title>
+  
+  <style>
+    :root {
+      --primary-color: #00b074; 
+      --primary-hover: #009662;
+      --blue-btn: #2563eb;
+      --blue-hover: #1d4ed8;
+      --bg-body: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #334155;
+      --text-muted: #64748b;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      padding: 30px;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .tabs-left {
+      display: flex;
+      gap: 10px;
+    }
+
+    .tab-btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active-green {
+      background-color: #00b074;
+      color: white;
+    }
+    
+    .tab-btn.inactive-gray {
+      background-color: #e2e8f0;
+      color: #475569;
+    }
+
+    .btn-inicio {
+      background-color: #64748b;
+      color: white;
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .titulo-modulo {
+      font-size: 26px;
+      font-weight: bold;
+      color: #1e293b;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #475569;
+    }
+
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 14px;
+      color: var(--text-main);
+      background-color: #fff;
+    }
+
+    input[readonly] {
+      background-color: #f1f5f9;
+      font-weight: bold;
+    }
+
+    .btn-submit {
+      width: 100%;
+      background-color: var(--blue-btn); 
+      color: white;
+      border: none;
+      padding: 15px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-submit:hover {
+      background-color: var(--blue-hover);
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table.historial-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    table.historial-table th {
+      background-color: #f1f5f9;
+      color: #475569;
+      font-weight: bold;
+      padding: 14px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    table.historial-table td {
+      padding: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .seccion-modulo { display: none; }
+    .seccion-modulo.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="nav-bar">
+      <div class="tabs-left">
+        <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Generar Documento</button>
+        <button id="tab-historial" class="tab-btn inactive-gray" onclick="cambiarVista('historial')">📋 Ver Historial</button>
+      </div>
+      <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
+    </div>
+
+    <!-- PESTAÑA 1: FORMULARIO DE EMISIÓN -->
+    <div id="vista-emision" class="seccion-modulo active">
+      <div class="titulo-modulo">Módulo de Facturación y Cotizaciones</div>
+      
+      <form id="factura-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tipo-documento">Tipo de documento</label>
+            <select id="tipo-documento" required>
+              <option value="">Seleccione tipo...</option>
+              <option value="Factura Electronica">Factura Electrónica</option>
+              <option value="Cotizacion">Cotización</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="consecutivo-doc">Consecutivo</label>
+            <input type="text" id="consecutivo-doc" readonly placeholder="Generando...">
+          </div>
+          <div class="form-group">
+            <label for="select-cliente">Cliente Destino (Desde Base de Datos)</label>
+            <select id="select-cliente" required>
+              <option value="">Cargando clientes de Firestore...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="condicion-venta">Condición de venta</label>
+            <select id="condicion-venta" required>
+              <option value="">Seleccione condición...</option>
+              <option value="Contado">Contado</option>
+              <option value="Credito 8 dias">Crédito 8 días</option>
+              <option value="Credito 15 dias">Crédito 15 días</option>
+              <option value="Credito 30 dias">Crédito 30 días</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="medio-pago">Medio de Pago</label>
+            <select id="medio-pago" required>
+              <option value="">Seleccione pago...</option>
+              <option value="Transferencia">Transferencia Bancaria</option>
+              <option value="Sinpe Movil">SINPE Móvil</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Tarjeta">Tarjeta de Crédito/Débito</option>
+            </select>
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Línea de Detalle del Servicio</legend>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="descripcion-linea">Descripción</label>
+              <input type="text" id="descripcion-linea" required placeholder="Ej: Servicio de Control de Plagas Comercial e Industrial">
+            </div>
+            <div class="form-group">
+              <label for="cantidad-linea">Cantidad</label>
+              <input type="number" id="cantidad-linea" required min="1" value="1">
+            </div>
+            <div class="form-group">
+              <label for="precio-unitario">Precio Unitario</label>
+              <input type="number" id="precio-unitario" required min="0" placeholder="0.00" step="0.01">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset style="background-color: #f1f5f9;">
+          <legend>Totales Calculados Automáticamente</legend>
+          <div class="form-row">
+            <div class="form-group">
+              <label>SubTotal</label>
+              <input type="number" id="total-subtotal" readonly value="0.00">
+            </div>
+            <div class="form-group">
+              <label>Subtotal Neto</label>
+              <input type="number" id="total-subtotal-neto" readonly value="0.00">
+            </div>
+            <div class="form-group">
+              <label>Porcentaje IVA (%)</label>
+              <select id="porcentaje-iva">
+                <option value="13">13% (General)</option>
+                <option value="1">1% (Reducido)</option>
+                <option value="0">0% (Exento)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Total Impuesto</label>
+              <input type="number" id="total-impuesto" readonly value="0.00">
+            </div>
+            <div class="form-group">
+              <label>Total Factura</label>
+              <input type="number" id="total-factura" readonly value="0.00" style="color: #00b074; font-size: 16px;">
+            </div>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="btn-submit">
+          💾 Registrar Documento en Firestore
+        </button>
+      </form>
+    </div>
+
+    <!-- PESTAÑA 2: HISTORIAL DE REGISTROS -->
+    <div id="vista-historial" class="seccion-modulo">
+      <div class="titulo-modulo">Historial de Transacciones (Facturacion)</div>
+      <div class="table-container">
+        <table class="historial-table">
+          <thead>
+            <tr>
+              <th>Consecutivo</th>
+              <th>Tipo</th>
+              <th>Cliente (ID)</th>
+              <th>Descripción</th>
+              <th>Total Factura</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-historial-body">
+            <tr>
+              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
+                Cargando historial de transacciones...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.cambiarVista = function(vista) {
+      const btnEmitir = document.getElementById('tab-emitir');
+      const btnHistorial = document.getElementById('tab-historial');
+      const vistaEmision = document.getElementById('vista-emision');
+      const vistaHistorial = document.getElementById('vista-historial');
+
+      if (vista === 'emitir') {
+        btnEmitir.className = 'tab-btn active-green';
+        btnHistorial.className = 'tab-btn inactive-gray';
+        vistaEmision.classList.add('active');
+        vistaHistorial.classList.remove('active');
+      } else {
+        btnEmitir.className = 'tab-btn inactive-gray';
+        btnHistorial.className = 'tab-btn active-green';
+        vistaEmision.classList.remove('active');
+        vistaHistorial.classList.add('active');
+      }
+    }
+  </script>
+
+  <!-- CONTROL DE LOGICA MULTI-COLECCIÓN FIRESTORE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Configuración Base
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+      projectId: "fumigadora-tecnoplagas",
+      storageBucket: "fumigadora-tecnoplagas.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Mapeo local de datos descargados
+    let listaClientes = [];
+    let listaDocumentosEmitidos = [];
+
+    // =========================================================================
+    // 1. CARGA AUTOMÁTICA DE CLIENTES DE LA TABLA 'clientes'
+    // =========================================================================
+    async function sincronizarSelectClientes() {
+      const selectCliente = document.getElementById('select-cliente');
+      if (!selectCliente) return;
+
+      try {
+        // Consultamos a tu colección en minúscula de clientes
+        const querySnapshot = await getDocs(collection(db, "clientes"));
+        selectCliente.innerHTML = '<option value="">Seleccione el cliente destino...</option>';
+        listaClientes = [];
+
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          listaClientes.push({ id: docSnap.id, ...data });
+
+          const option = document.createElement('option');
+          // El value guarda la Referencia o ID del documento para asociarlo
+          option.value = docSnap.id; 
+          option.textContent = `${data.nombre || 'Sin Nombre'} (${data.consecutivo || docSnap.id})`;
+          selectCliente.appendChild(option);
+        });
+        
+        console.log("✅ Selector de clientes alimentado exitosamente.");
+      } catch (err) {
+        console.error("Error cargando la lista de clientes:", err);
+        selectCliente.innerHTML = '<option value="">Error al cargar base de datos.</option>';
+      }
+    }
+
+    // =========================================================================
+    // 2. CONSECUTIVOS DE CONTROL & HISTORIAL
+    // =========================================================================
+    async function sincronizarHistorialYConsecutivo() {
+      const tbody = document.getElementById('tabla-historial-body');
+      const inputConsecutivo = document.getElementById('consecutivo-doc');
+      
+      try {
+        const querySnapshot = await getDocs(collection(db, "Facturacion"));
+        listaDocumentosEmitidos = [];
+        if(tbody) tbody.innerHTML = "";
+
+        querySnapshot.forEach((docSnap) => {
+          listaDocumentosEmitidos.push({ id: docSnap.id, ...docSnap.data() });
+        });
+
+        // Generación de consecutivo dinámico basado en lo que hay en Facturacion
+        if(inputConsecutivo) {
+          const sgteNum = listaDocumentosEmitidos.length + 1;
+          inputConsecutivo.value = "DOC-" + String(sgteNum).padStart(6, '0');
+        }
+
+        if (listaDocumentosEmitidos.length === 0 && tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay comprobantes emitidos aún.</td></tr>`;
+          return;
+        }
+
+        if(tbody) {
+          listaDocumentosEmitidos.forEach((docEmitido) => {
+            // Manejo del campo referencia del cliente para mostrar en pantalla de manera limpia
+            let pathCliente = docEmitido.Cliente;
+            if (pathCliente && typeof pathCliente === 'object' && pathCliente.path) {
+                pathCliente = pathCliente.path.split('/').pop();
+            } else if (typeof pathCliente === 'string') {
+                pathCliente = pathCliente.split('/').pop();
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td style="font-family:monospace; font-weight:bold;">${docEmitido.Consecutivo || '---'}</td>
+              <td>${docEmitido["Tipo de documento"] || '---'}</td>
+              <td style="font-size:12px; color:var(--text-muted);">${pathCliente || '---'}</td>
+              <td>${docEmitido.Descripcion || '---'}</td>
+              <td style="font-weight:bold; color:#00b074;">¢${(docEmitido["Total Factura"] || 0).toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (err) {
+        console.error("Error sincronizando historial:", err);
+      }
+    }
+
+    // =========================================================================
+    // 3. CALCULO MATEMÁTICO DE MONTOS EN TIEMPO REAL
+    // =========================================================================
+    function ejecutarCalculosFactura() {
+      const cantidad = parseInt(document.getElementById('cantidad-linea').value, 10) || 0;
+      const precioUnitario = parseFloat(document.getElementById('precio-unitario').value) || 0;
+      const porcentajeIva = parseFloat(document.getElementById('porcentaje-iva').value) || 0;
+
+      const subtotal = cantidad * precioUnitario;
+      const subtotalNeto = subtotal; // Al no haber descuentos aplicados
+      const totalImpuesto = subtotalNeto * (porcentajeIva / 100);
+      const totalFactura = subtotalNeto + totalImpuesto;
+
+      // Inyección visual en campos de lectura
+      document.getElementById('total-subtotal').value = subtotal.toFixed(2);
+      document.getElementById('total-subtotal-neto').value = subtotalNeto.toFixed(2);
+      document.getElementById('total-impuesto').value = totalImpuesto.toFixed(2);
+      document.getElementById('total-factura').value = totalFactura.toFixed(2);
+    }
+
+    //Listeners matemáticos del formulario
+    document.getElementById('cantidad-linea').addEventListener('input', ejecutarCalculosFactura);
+    document.getElementById('precio-unitario').addEventListener('input', ejecutarCalculosFactura);
+    document.getElementById('porcentaje-iva').addEventListener('change', ejecutarCalculosFactura);
+
+    // =========================================================================
+    // 4. ENVÍO DEL FORMULARIO HACIA LA COLECCIÓN 'Facturacion'
+    // =========================================================================
+    document.getElementById('factura-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const idClienteSeleccionado = document.getElementById('select-cliente').value;
+      
+      // Creamos la referencia del tipo 'Cliente/clientes/ID' requerida nativamente por tu base
+      // Si prefieres guardarlo como string directo puedes usar: `clientes/${idClienteSeleccionado}`
+      const stringReferenciaCliente = `clientes/${idClienteSeleccionado}`;
+
+      const payloadFactura = {
+        "Cantidad": parseInt(document.getElementById('cantidad-linea').value, 10),
+        "Cliente": stringReferenciaCliente, // Formato /clientes/idDocumento
+        "Condición de venta": document.getElementById('condicion-venta').value,
+        "Consecutivo": document.getElementById('consecutivo-doc').value,
+        "Descripcion": document.getElementById('descripcion-linea').value,
+        "Fecha de Emision": Timestamp.now(), // Formato nativo Firestore timestamp
+        "IVA": parseFloat(document.getElementById('porcentaje-iva').value) / 100, // Guarda el ratio (ej: 0.13)
+        "Medio de Pago": document.getElementById('medio-pago').value,
+        "Precio Unitario": parseFloat(document.getElementById('precio-unitario').value),
+        "SubTotal": parseFloat(document.getElementById('total-subtotal').value),
+        "Subtotal Neto": parseFloat(document.getElementById('total-subtotal-neto').value),
+        "Tipo de documento": document.getElementById('tipo-documento').value,
+        "Total Factura": parseFloat(document.getElementById('total-factura').value),
+        "Total Impuesto": parseFloat(document.getElementById('total-impuesto').value)
+      };
+
+      try {
+        // Inserción en la colección 'Facturacion' indicada en tus variables
+        await addDoc(collection(db, "Facturacion"), payloadFactura);
+        alert("🎉 ¡Documento de Facturación / Cotización registrado exitosamente!");
+        
+        document.getElementById('factura-form').reset();
+        ejecutarCalculosFactura();
+        
+        // Recargamos e invertimos pestañas
+        await sincronizarHistorialYConsecutivo();
+        if(typeof window.cambiarVista === 'function') window.cambiarVista('historial');
+      } catch (err) {
+        console.error("Error al registrar en Facturacion:", err);
+        alert("Ocurrió un inconveniente al procesar la inserción en la base de datos.");
+      }
+    });
+
+    // Carga inicial al inicializar el Script
+    document.addEventListener("DOMContentLoaded", () => {
+      sincronizarSelectClientes();
+      sincronizarHistorialYConsecutivo();
+    });
+  </script>
+</body>
+</html>
 
