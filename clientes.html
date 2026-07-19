@@ -351,7 +351,8 @@
   </div>
 
   <script>
-    function cambiarVista(vista) {
+    // Función global para cambiar pestañas de la UI
+    window.cambiarVista = function(vista) {
       const btnReg = document.getElementById('tab-registrar');
       const btnCon = document.getElementById('tab-consultar');
       const vistaReg = document.getElementById('vista-registro');
@@ -371,6 +372,192 @@
     }
   </script>
 
-  <script type="module" src="clientes.js"></script>
+  <!-- LÓGICA DIRECTA INTEGRADA PARA EVITAR ERRORES DE RUTAS EN GITHUB PAGES -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, GeoPoint, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Reemplaza con tus claves reales de Firebase Console
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+      projectId: "fumigadora-tecnoplagas",
+      storageBucket: "fumigadora-tecnoplagas.appspot.com",
+      messagingSenderId: "TU_SENDER_ID",
+      appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let todosLosClientes = [];
+
+    function generarSiguienteConsecutivo(lista) {
+      if (lista.length === 0) return "Cl000001";
+      let maxNum = 0;
+      lista.forEach(c => {
+        if (c.Consecutivo && c.Consecutivo.startsWith("Cl")) {
+          const num = parseInt(c.Consecutivo.replace("Cl", ""), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      });
+      return "Cl" + String(maxNum + 1).padStart(6, '0');
+    }
+
+    async function cargarClientesDesdeFirestore() {
+      const tbody = document.getElementById('tabla-clientes-body');
+      const inputConsecutivo = document.getElementById('cliente-consecutivo');
+      if (!tbody) return;
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "Clientes"));
+        todosLosClientes = [];
+        tbody.innerHTML = "";
+
+        querySnapshot.forEach((doc) => {
+          todosLosClientes.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (inputConsecutivo && !document.getElementById('cliente-id-edicion').value) {
+          inputConsecutivo.value = generarSiguienteConsecutivo(todosLosClientes);
+        }
+
+        if (todosLosClientes.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">No hay clientes registrados.</td></tr>`;
+          return;
+        }
+
+        renderizarTabla(todosLosClientes);
+      } catch (error) {
+        console.error("Error en Firebase:", error);
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Error al conectar. Verifica tus credenciales de Firebase.</td></tr>`;
+      }
+    }
+
+    function renderizarTabla(lista) {
+      const tbody = document.getElementById('tabla-clientes-body');
+      if (!tbody) return;
+      tbody.innerHTML = "";
+
+      lista.forEach((cliente) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-family: monospace; font-weight: bold; color: #2563eb;">${cliente.Consecutivo || "---"}</td>
+          <td style="font-weight: bold;">${cliente.nombre || "---"}</td>
+          <td>${cliente.Cedula || "---"}</td>
+          <td>${cliente.telefono || "---"}</td>
+          <td style="font-size: 13px;">${cliente.email || "---"}</td>
+          <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:12px;">${cliente["Frecuencia de Fumigacion"] || "No definida"}</span></td>
+          <td>
+            <button class="btn-editar" data-id="${cliente.id}">✏️ Editar</button>
+            <button class="btn-eliminar" data-id="${cliente.id}">🗑️ Borrar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      inicializarAcciones();
+    }
+
+    function inicializarAcciones() {
+      document.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const cliente = todosLosClientes.find(c => c.id === id);
+
+          if (cliente) {
+            document.getElementById('cliente-id-edicion').value = id;
+            document.getElementById('cliente-consecutivo').value = cliente.Consecutivo || "";
+            document.getElementById('cliente-nombre').value = cliente.nombre || "";
+            document.getElementById('cliente-cedula').value = cliente.Cedula || "";
+            document.getElementById('cliente-sucursal').value = cliente.sucursal || "";
+            document.getElementById('cliente-telefono').value = cliente.telefono || "";
+            document.getElementById('cliente-correo').value = cliente.email || "";
+            document.getElementById('cliente-frecuencia').value = cliente["Frecuencia de Fumigacion"] || "";
+            document.getElementById('cliente-direccion').value = cliente.direccion || "";
+
+            document.getElementById('form-titulo').textContent = "⚠️ Editando Datos del Cliente";
+            document.getElementById('btn-submit-cliente').textContent = "💾 Actualizar Cambios en Base de Datos";
+            document.getElementById('btn-submit-cliente').style.backgroundColor = "#2563eb";
+
+            if (typeof window.cambiarVista === 'function') window.cambiarVista('registrar');
+          }
+        });
+      });
+
+      document.querySelectorAll('.btn-eliminar').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          const id = this.getAttribute('data-id');
+          const cliente = todosLosClientes.find(c => c.id === id);
+          if (confirm(`¿Desea borrar permanentemente a ${cliente?.nombre || 'este registro'}?`)) {
+            try {
+              await deleteDoc(doc(db, "Clientes", id));
+              alert("🗑️ Eliminado correctamente.");
+              cargarClientesDesdeFirestore();
+            } catch (err) { console.error(err); }
+          }
+        });
+      });
+    }
+
+    // Inicialización de eventos al cargar
+    cargarClientesDesdeFirestore();
+
+    const formulario = document.getElementById('cliente-form');
+    const buscador = document.getElementById('input-buscar-cliente');
+
+    if (buscador) {
+      buscador.addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const filtrados = todosLosClientes.filter(c => {
+          return (c.nombre || "").toLowerCase().includes(query) || 
+                 (c.Cedula || "").toLowerCase().includes(query) || 
+                 (c.Consecutivo || "").toLowerCase().includes(query);
+        });
+        renderizarTabla(filtrados);
+      });
+    }
+
+    if (formulario) {
+      formulario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const idEdicion = document.getElementById('cliente-id-edicion').value;
+        
+        const payload = {
+          "Cedula": document.getElementById('cliente-cedula').value,
+          "Consecutivo": document.getElementById('cliente-consecutivo').value,
+          "Frecuencia de Fumigacion": document.getElementById('cliente-frecuencia').value,
+          "direccion": document.getElementById('cliente-direccion').value,
+          "email": document.getElementById('cliente-correo').value,
+          "nombre": document.getElementById('cliente-nombre').value,
+          "sucursal": document.getElementById('cliente-sucursal').value,
+          "telefono": document.getElementById('cliente-telefono').value
+        };
+
+        try {
+          if (idEdicion) {
+            await updateDoc(doc(db, "Clientes", idEdicion), payload);
+            alert("✅ ¡Datos actualizados correctamente!");
+            document.getElementById('cliente-id-edicion').value = "";
+            document.getElementById('form-titulo').textContent = "Fumigadora Tecnoplagas - Nuevo Cliente";
+            document.getElementById('btn-submit-cliente').textContent = "💾 Guardar Cliente";
+            document.getElementById('btn-submit-cliente').style.backgroundColor = "#00b074";
+          } else {
+            payload["GPS"] = new GeoPoint(0, 0);
+            payload["fecharegistro"] = Timestamp.now();
+            await addDoc(collection(db, "Clientes"), payload);
+            alert("✅ ¡Cliente guardado con éxito!");
+          }
+
+          formulario.reset();
+          cargarClientesDesdeFirestore();
+          if (typeof window.cambiarVista === 'function') window.cambiarVista('consultar');
+        } catch (error) {
+          console.error(error);
+          alert("Error de comunicación. Comprueba las claves de Firebase.");
+        }
+      });
+    }
+  </script>
 </body>
 </html>
