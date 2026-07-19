@@ -26,44 +26,52 @@
       --red-hover: #dc2626;
     }
 
+    * { box-sizing: border-box; }
+
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background-color: var(--bg-body);
       color: var(--text-main);
       margin: 0;
-      padding: 20px;
+      padding: 10px;
     }
 
+    /* Contenedor responsivo */
     .container {
+      width: 100%;
       max-width: 1100px;
       margin: 0 auto;
       background: var(--bg-card);
       border-radius: 12px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-      padding: 30px;
+      padding: 15px;
     }
 
+    /* Barra de Navegación adaptable */
     .nav-bar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 25px;
     }
 
     .tabs-left {
       display: flex;
-      gap: 10px;
+      width: 100%;
+      gap: 8px;
     }
 
     .tab-btn {
-      padding: 10px 20px;
-      border-radius: 6px;
+      flex: 1;
+      padding: 12px 8px;
+      border-radius: 8px;
       font-weight: bold;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       border: none;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       transition: all 0.2s;
     }
@@ -73,61 +81,127 @@
 
     .btn-inicio {
       background-color: #64748b; color: white; text-decoration: none;
-      padding: 10px 16px; border-radius: 6px; font-size: 14px; font-weight: bold;
+      padding: 12px; border-radius: 8px; font-size: 14px; font-weight: bold;
+      text-align: center; width: 100%;
     }
 
-    .titulo-modulo { font-size: 26px; font-weight: bold; color: #1e293b; margin: 0 0 25px 0; }
+    .titulo-modulo { 
+      font-size: 20px; 
+      font-weight: bold; 
+      color: #1e293b; 
+      margin: 0 0 20px 0; 
+      text-align: center;
+    }
 
+    /* Grillas del Formulario Autoadaptables */
     .form-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 20px;
+      grid-template-columns: 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
     }
 
     .form-group { display: flex; flex-direction: column; gap: 6px; }
     label { font-size: 13px; font-weight: bold; color: #475569; }
 
     input, select, textarea {
-      width: 100%; box-sizing: border-box; padding: 12px;
-      border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;
+      width: 100%; padding: 12px;
+      border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;
+      background-color: #fff;
     }
     input[readonly] { background-color: #f1f5f9; font-weight: bold; }
 
-    /* Estilos dinámicos para la tabla de ítems del formulario */
-    .tabla-items-form {
-      width: 100%; border-collapse: collapse; margin-top: 10px;
+    fieldset {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
     }
-    .tabla-items-form th { text-align: left; padding: 8px; font-size: 13px; color: #475569; }
-    .tabla-items-form td { padding: 6px; }
+    legend { font-weight: bold; font-size: 14px; color: #1e293b; padding: 0 8px; }
+
+    /* --- TABLA DE ITEMS EN MÓVILES (VISTA TARJETA) --- */
+    .tabla-items-form { width: 100%; border-collapse: collapse; }
+    .tabla-items-form ready, .tabla-items-form thead { display: none; } /* Ocultar tabla en móvil */
+    
+    .fila-item-dinamica {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .fila-item-dinamica td { display: block; width: 100%; padding: 0; }
+    
+    /* Agregar etiquetas simuladas en móvil */
+    .fila-item-dinamica td::before {
+      content: attr(data-label);
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
 
     .btn-agregar-linea {
-      background-color: #4b5563; color: white; border: none; padding: 10px 16px;
-      font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 13px; margin-bottom: 20px;
+      width: 100%; background-color: #4b5563; color: white; border: none; padding: 14px;
+      font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 14px; margin-bottom: 10px;
     }
-    .btn-agregar-linea:hover { background-color: #374151; }
 
     .btn-eliminar-linea {
-      background-color: var(--red-btn); color: white; border: none;
-      padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;
+      width: 100%; background-color: var(--red-btn); color: white; border: none;
+      padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 5px;
     }
 
     .btn-submit {
       width: 100%; background-color: var(--blue-btn); color: white; border: none;
-      padding: 15px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer;
+      padding: 16px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer;
     }
-    .btn-submit:hover { background-color: var(--blue-hover); }
 
+    /* CONTENEDOR DE HISTORIAL RESPONSIVO */
     .table-container { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; }
-    table.historial-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-    table.historial-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; padding: 14px; border-bottom: 2px solid var(--border-color); }
-    table.historial-table td { padding: 14px; border-bottom: 1px solid var(--border-color); }
+    table.historial-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; min-width: 600px; }
+    table.historial-table th { background-color: #f1f5f9; color: #475569; font-weight: bold; padding: 12px; border-bottom: 2px solid var(--border-color); }
+    table.historial-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
 
-    .btn-tabla-editar { background-color: var(--blue-btn); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; margin-right: 5px; }
-    .btn-tabla-pdf { background-color: var(--purple-pdf); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-acciones-flex { display: flex; gap: 6px; }
+    .btn-tabla-editar, .btn-tabla-pdf { border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+    .btn-tabla-editar { background-color: var(--blue-btn); color: white; }
+    .btn-tabla-pdf { background-color: var(--purple-pdf); color: white; }
 
     .seccion-modulo { display: none; }
     .seccion-modulo.active { display: block; }
+
+    /* =========================================================================
+       MEDIA QUERIES PARA TABLETS Y COMPUTADORAS (PANTALLAS > 768px)
+       ========================================================================= */
+    @media (min-width: 768px) {
+      body { padding: 20px; }
+      .container { padding: 30px; }
+      
+      .nav-bar { flex-direction: row; justify-content: space-between; }
+      .tabs-left { width: auto; }
+      .tab-btn { flex: initial; padding: 10px 20px; font-size: 14px; }
+      .btn-inicio { width: auto; }
+      
+      .titulo-modulo { font-size: 26px; text-align: left; }
+      
+      /* Distribución en grillas de varias columnas */
+      .form-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+      /* Cambiar diseño de items de tarjetas a tabla tradicional en PC/Tablets */
+      .tabla-items-form thead { display: table-header-group; }
+      .contenedor-lineas-items { display: table-row-group; }
+      .fila-item-dinamica { display: table-row; background: transparent; border: none; }
+      .fila-item-dinamica td { display: table-cell; padding: 8px; }
+      .fila-item-dinamica td::before { display: none; } /* Quitar etiquetas móviles */
+      .btn-eliminar-linea { padding: 10px; margin-top: 0; }
+      .btn-agregar-linea { width: auto; }
+    }
   </style>
 </head>
 <body>
@@ -135,13 +209,13 @@
   <div class="container">
     <div class="nav-bar">
       <div class="tabs-left">
-        <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Generar Documento</button>
+        <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Generar Doc</button>
         <button id="tab-historial" class="tab-btn inactive-gray" onclick="cambiarVista('historial')">📋 Ver Historial</button>
       </div>
       <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
     </div>
 
-    <!-- PESTAÑA 1: FORMULARIO MULTI-ÍTEMS -->
+    <!-- PESTAÑA 1: FORMULARIO MULTI-ÍTEMS RESPONSIVO -->
     <div id="vista-emision" class="seccion-modulo active">
       <div class="titulo-modulo" id="form-titulo">Módulo de Facturación y Cotizaciones</div>
       
@@ -192,19 +266,19 @@
           </div>
         </div>
 
-        <fieldset style="margin-bottom: 20px;">
+        <fieldset>
           <legend>Líneas de Detalle de Venta</legend>
           <table class="tabla-items-form">
             <thead>
               <tr>
-                <th style="width: 55%;">Descripción</th>
-                <th style="width: 15%;">Cantidad</th>
-                <th style="width: 20%;">Precio Unitario</th>
-                <th style="width: 10%;">Acción</th>
+                <th style="width: 50%; padding: 8px;">Descripción del Servicio</th>
+                <th style="width: 15%; padding: 8px;">Cantidad</th>
+                <th style="width: 20%; padding: 8px;">Precio Unitario</th>
+                <th style="width: 15%; padding: 8px; text-align: center;">Acción</th>
               </tr>
             </thead>
-            <tbody id="contenedor-lineas-items">
-              <!-- Aquí se inyectan las líneas dinámicamente -->
+            <tbody id="contenedor-lineas-items" class="contenedor-lineas-items">
+              <!-- Las líneas se inyectan como Tarjetas en Móvil o Filas en PC -->
             </tbody>
           </table>
           <button type="button" class="btn-agregar-linea" id="btn-nueva-linea">➕ Agregar Línea</button>
@@ -294,7 +368,7 @@
     }
   </script>
 
-  <!-- CONTROLADORES MODULARES -->
+  <!-- CONTROLADORES MULTI-DISPOSITIVO FIRESTORE -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, addDoc, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -313,31 +387,28 @@
 
     let listaClientes = [];
     let listaDocumentosEmitidos = [];
-
-    // --- AGREGAR LÍNEAS DE ITEMS DINÁMICAMENTE ---
     const contenedorLineas = document.getElementById('contenedor-lineas-items');
     
+    // Generar Filas/Tarjetas Adaptables con atributos 'data-label' para Responsive CSS
     function crearFilaItem(descripcion = "", cantidad = 1, precio = "") {
       const tr = document.createElement('tr');
       tr.className = 'fila-item-dinamica';
       tr.innerHTML = `
-        <td><input type="text" class="item-desc" required placeholder="Ej: Control de Plagas" value="${descripcion}"></td>
-        <td><input type="number" class="item-cant" required min="1" value="${cantidad}"></td>
-        <td><input type="number" class="item-precio" required min="0" placeholder="0.00" step="0.01" value="${precio}"></td>
-        <td style="text-align: center;"><button type="button" class="btn-eliminar-linea">🗑️</button></td>
+        <td data-label="Descripción del Servicio"><input type="text" class="item-desc" required placeholder="Ej: Control de Plagas" value="${descripcion}"></td>
+        <td data-label="Cantidad"><input type="number" class="item-cant" required min="1" value="${cantidad}"></td>
+        <td data-label="Precio Unitario"><input type="number" class="item-precio" required min="0" placeholder="0.00" step="0.01" value="${precio}"></td>
+        <td data-label="Acción" style="text-align: center;"><button type="button" class="btn-eliminar-linea">🗑️ Eliminar</button></td>
       `;
       
-      // Listeners matemáticos para recalculas totales al escribir
       tr.querySelector('.item-cant').addEventListener('input', ejecutarCalculosFactura);
       tr.querySelector('.item-precio').addEventListener('input', ejecutarCalculosFactura);
       
-      // Eliminar línea
       tr.querySelector('.btn-eliminar-linea').addEventListener('click', function() {
         if(document.querySelectorAll('.fila-item-dinamica').length > 1) {
           tr.remove();
           ejecutarCalculosFactura();
         } else {
-          alert("Debes tener al menos un ítem en el detalle.");
+          alert("Debes mantener al menos una línea de detalle.");
         }
       });
 
@@ -346,12 +417,9 @@
 
     document.getElementById('btn-nueva-linea').addEventListener('click', () => crearFilaItem());
 
-    // CALCULO MATEMÁTICO GENERAL DE TODAS LAS LÍNEAS
     function ejecutarCalculosFactura() {
       let subtotalGeneral = 0;
-      const filas = document.querySelectorAll('.fila-item-dinamica');
-      
-      filas.forEach(fila => {
+      document.querySelectorAll('.fila-item-dinamica').forEach(fila => {
         const cant = parseInt(fila.querySelector('.item-cant').value, 10) || 0;
         const precio = parseFloat(fila.querySelector('.item-precio').value) || 0;
         subtotalGeneral += (cant * precio);
@@ -368,7 +436,6 @@
     }
     document.getElementById('porcentaje-iva').addEventListener('change', ejecutarCalculosFactura);
 
-    // CONTROL DE CLIENTES
     async function sincronizarSelectClientes() {
       try {
         const querySnapshot = await getDocs(collection(db, "clientes"));
@@ -385,56 +452,41 @@
       } catch (err) { console.error(err); }
     }
 
-    // SINCRONIZAR HISTORIAL
     async function sincronizarHistorialYConsecutivo() {
       const tbody = document.getElementById('tabla-historial-body');
       const inputConsecutivo = document.getElementById('consecutivo-doc');
-      
       try {
         const querySnapshot = await getDocs(collection(db, "Facturacion"));
         listaDocumentosEmitidos = [];
         if(tbody) tbody.innerHTML = "";
-
-        querySnapshot.forEach((docSnap) => {
-          listaDocumentosEmitidos.push({ id: docSnap.id, ...docSnap.data() });
-        });
+        querySnapshot.forEach((docSnap) => { listaDocumentosEmitidos.push({ id: docSnap.id, ...docSnap.data() }); });
 
         if(inputConsecutivo && !document.getElementById('factura-id-edicion').value) {
           inputConsecutivo.value = "DOC-" + String(listaDocumentosEmitidos.length + 1).padStart(6, '0');
         }
 
-        if (listaDocumentosEmitidos.length === 0 && tbody) {
-          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay comprobantes emitidos.</td></tr>`;
-          return;
-        }
-
         if(tbody) {
+          if (listaDocumentosEmitidos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay comprobantes emitidos.</td></tr>`;
+            return;
+          }
           listaDocumentosEmitidos.forEach((docEmitido) => {
-            let idCliente = "";
-            if (docEmitido.Cliente && typeof docEmitido.Cliente === 'string') {
-              idCliente = docEmitido.Cliente.replace("clientes/", "");
-            }
+            let idCliente = docEmitido.Cliente?.replace("clientes/", "") || "";
             const objCliente = listaClientes.find(c => c.id === idCliente);
-            const nombreMostrar = objCliente ? objCliente.nombre : `ID: ${idCliente}`;
-
-            // Determinar texto para resumir ítems en la tabla
-            let resumenItems = "";
-            if (docEmitido.items && Array.isArray(docEmitido.items)) {
-              resumenItems = docEmitido.items.map(i => `${i.cantidad}x ${i.descripcion}`).join(', ');
-            } else {
-              resumenItems = docEmitido.Descripcion || "---"; // Retrocompatibilidad
-            }
+            let resumenItems = docEmitido.items ? docEmitido.items.map(i => `${i.cantidad}x ${i.descripcion}`).join(', ') : (docEmitido.Descripcion || "---");
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-              <td style="font-family:monospace; font-weight:bold;">${docEmitido.Consecutivo || '---'}</td>
+              <td style="font-family:monospace; font-weight:bold; color:#2563eb;">${docEmitido.Consecutivo || '---'}</td>
               <td>${docEmitido["Tipo de documento"] || '---'}</td>
-              <td>${nombreMostrar}</td>
-              <td style="font-size: 12px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${resumenItems}</td>
+              <td style="font-weight:600;">${objCliente ? objCliente.nombre : '---'}</td>
+              <td style="font-size:12px; max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${resumenItems}</td>
               <td style="font-weight:bold; color:#00b074;">¢${(docEmitido["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
               <td>
-                <button class="btn-tabla-editar" data-id="${docEmitido.id}">✏️ Editar</button>
-                <button class="btn-tabla-pdf" data-id="${docEmitido.id}">📄 PDF</button>
+                <div class="btn-acciones-flex">
+                  <button class="btn-tabla-editar" data-id="${docEmitido.id}">✏️</button>
+                  <button class="btn-tabla-pdf" data-id="${docEmitido.id}">📄 PDF</button>
+                </div>
               </td>
             `;
             tbody.appendChild(tr);
@@ -445,7 +497,6 @@
     }
 
     function inicializarEventosAcciones() {
-      // EVENTO EDITAR (Carga múltiples líneas si existen)
       document.querySelectorAll('.btn-tabla-editar').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
@@ -457,19 +508,12 @@
             document.getElementById('condicion-venta').value = docItem["Condición de venta"] || "";
             document.getElementById('medio-pago').value = docItem["Medio de Pago"] || "";
             document.getElementById('porcentaje-iva').value = (docItem.IVA || 0) * 100;
+            document.getElementById('select-cliente').value = docItem.Cliente?.replace("clientes/", "") || "";
 
-            let cleanIdCliente = "";
-            if (docItem.Cliente && typeof docItem.Cliente === 'string') {
-              cleanIdCliente = docItem.Cliente.replace("clientes/", "");
-            }
-            document.getElementById('select-cliente').value = cleanIdCliente;
-
-            // Limpiar y re-inyectar ítems
             contenedorLineas.innerHTML = "";
             if (docItem.items && Array.isArray(docItem.items)) {
               docItem.items.forEach(i => crearFilaItem(i.descripcion, i.cantidad, i.precioUnitario));
             } else {
-              // Soporte para facturas viejas de una sola línea
               crearFilaItem(docItem.Descripcion, docItem.Cantidad, docItem["Precio Unitario"]);
             }
 
@@ -481,7 +525,6 @@
         });
       });
 
-      // EVENTO IMPRIMIR PDF AUTOTABLE MULTI-LINEA
       document.querySelectorAll('.btn-tabla-pdf').forEach(btn => {
         btn.addEventListener('click', function() {
           try {
@@ -489,84 +532,47 @@
             const docItem = listaDocumentosEmitidos.find(d => d.id === id);
             if (!docItem) return;
 
-            let idCliente = "";
-            if (docItem.Cliente && typeof docItem.Cliente === 'string') {
-              idCliente = docItem.Cliente.replace("clientes/", "");
-            }
-            const cInfo = listaClientes.find(c => c.id === idCliente);
-
+            const cInfo = listaClientes.find(c => c.id === docItem.Cliente?.replace("clientes/", ""));
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF();
+            
+            if (typeof pdf.autoTable !== 'function' && window.jspdf.jsPDF.API.autoTable) {
+               window.jspdf.jsPDF.API.autoTable = window.jspdf.plugin.autotable;
+            }
 
-            // Membrete
             pdf.setFillColor(0, 176, 116); pdf.rect(0, 0, 220, 14, 'F');
             pdf.setFont("helvetica", "bold"); pdf.setFontSize(22); pdf.textColor = "#1e293b";
             pdf.text("TECNOPLAGAS", 14, 30);
-
             pdf.setFontSize(10); pdf.setFont("helvetica", "normal");
-            pdf.text("Fumigadora TecnoPlagas C.R.", 14, 36);
-            pdf.text("Teléfonos: 7232-5001 / 8987-7776", 14, 41);
-            pdf.text("Email: info@tecoplagascrc.com", 14, 46);
+            pdf.text("Fumigadora TecnoPlagas C.R. | Tel: 7232-5001", 14, 37);
 
-            // Caja Derecha
-            pdf.setFillColor(241, 245, 249); pdf.rect(125, 20, 71, 28, 'F');
-            pdf.setFont("helvetica", "bold"); pdf.setFontSize(11);
-            pdf.text(String(docItem["Tipo de documento"] || 'Presupuesto').toUpperCase(), 129, 27);
+            pdf.setFillColor(241, 245, 249); pdf.rect(125, 20, 71, 25, 'F');
+            pdf.setFont("helvetica", "bold"); pdf.text(String(docItem["Tipo de documento"] || 'Presupuesto').toUpperCase(), 129, 26);
             pdf.setFontSize(9); pdf.setFont("helvetica", "normal");
-            pdf.text(`Consecutivo: ${docItem.Consecutivo || '---'}`, 129, 34);
+            pdf.text(`Consecutivo: ${docItem.Consecutivo || '---'}`, 129, 33);
             let fTxt = docItem["Fecha de Emision"]?.seconds ? new Date(docItem["Fecha de Emision"].seconds * 1000).toLocaleDateString('es-CR') : "---";
-            pdf.text(`Fecha Emisión: ${fTxt}`, 129, 41);
+            pdf.text(`Fecha: ${fTxt}`, 129, 39);
 
-            pdf.line(14, 53, 196, 53);
-
-            // Cliente y Condiciones
-            pdf.setFont("helvetica", "bold"); pdf.text("DATOS DEL CLIENTE", 14, 61);
+            pdf.setFont("helvetica", "bold"); pdf.text("DATOS DEL CLIENTE", 14, 53);
             pdf.setFont("helvetica", "normal");
-            pdf.text(`Nombre/Razón Social: ${cInfo ? cInfo.nombre : '---'}`, 14, 67);
-            pdf.text(`Cédula: ${cInfo ? cInfo.cedula : '---'}`, 14, 72);
-            pdf.text(`Ubicación: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 77, { maxWidth: 100 });
+            pdf.text(`Cliente: ${cInfo ? cInfo.nombre : '---'}`, 14, 59);
+            pdf.text(`Ubicación: ${cInfo ? (cInfo.direccion || '---') : '---'}`, 14, 64, { maxWidth: 100 });
 
-            pdf.setFont("helvetica", "bold"); pdf.text("CONDICIONES DE VENTA", 125, 61);
-            pdf.setFont("helvetica", "normal");
-            pdf.text(`Término: ${docItem["Condición de venta"] || 'Contado'}`, 125, 67);
-            pdf.text(`Medio de Pago: ${docItem["Medio de Pago"] || '---'}`, 125, 72);
-
-            // CONSTRUCCIÓN DE FILAS DE LA TABLA DEL PDF
-            let tablaCuerpo = [];
-            if (docItem.items && Array.isArray(docItem.items)) {
-              tablaCuerpo = docItem.items.map(i => [
-                i.descripcion,
-                i.cantidad,
-                `¢${i.precioUnitario.toLocaleString('es-CR', {minimumFractionDigits:2})}`,
-                `¢${(i.cantidad * i.precioUnitario).toLocaleString('es-CR', {minimumFractionDigits:2})}`
-              ]);
-            } else {
-              // Mapeo viejo
-              tablaCuerpo = [[
-                docItem.Descripcion || '---', docItem.Cantidad || 1,
-                `¢${(docItem["Precio Unitario"] || 0).toLocaleString('es-CR', {minimumFractionDigits:2})}`,
-                `¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits:2})}`
-              ]];
-            }
+            let tablaCuerpo = docItem.items ? docItem.items.map(i => [i.descripcion, i.cantidad, `¢${i.precioUnitario.toFixed(2)}`, `¢${(i.cantidad * i.precioUnitario).toFixed(2)}`]) : [[docItem.Descripcion, docItem.Cantidad, `¢${docItem["Precio Unitario"]}`, `¢${docItem.SubTotal}`]];
 
             pdf.autoTable({
-              startY: 92,
-              head: [['Descripción del Servicio', 'Cantidad', 'Precio Unitario', 'Monto Bruto']],
+              startY: 78,
+              head: [['Descripción del Servicio', 'Cant', 'Precio U.', 'Monto Bruto']],
               body: tablaCuerpo,
               headStyles: { fillColor: [0, 176, 116], fontStyle: 'bold' },
               theme: 'striped', styles: { fontSize: 9 }
             });
 
-            const finalY = pdf.lastAutoTable?.finalY ? pdf.lastAutoTable.finalY + 10 : 130;
-            
-            // Totales
-            pdf.setFont("helvetica", "normal"); pdf.text("Subtotal:", 130, finalY);
-            pdf.text(`¢${(docItem.SubTotal || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY);
-            pdf.text(`Impuesto IVA (${(docItem.IVA * 100) || 0}%):`, 130, finalY + 6);
-            pdf.text(`¢${(docItem["Total Impuesto"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY + 6);
-            pdf.line(130, finalY + 9, 196, finalY + 9);
-            pdf.setFont("helvetica", "bold"); pdf.text("Total Facturado:", 130, finalY + 14);
-            pdf.text(`¢${(docItem["Total Factura"] || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}`, 168, finalY + 14);
+            const finalY = pdf.lastAutoTable?.finalY ? pdf.lastAutoTable.finalY + 10 : 120;
+            pdf.text("Subtotal:", 130, finalY); pdf.text(`¢${(docItem.SubTotal || 0).toFixed(2)}`, 168, finalY);
+            pdf.text(`IVA (${(docItem.IVA * 100) || 0}%):`, 130, finalY + 6); pdf.text(`¢${(docItem["Total Impuesto"] || 0).toFixed(2)}`, 168, finalY + 6);
+            pdf.line(130, finalY + 8, 196, finalY + 8);
+            pdf.setFont("helvetica", "bold"); pdf.text("Total Facturado:", 130, finalY + 13); pdf.text(`¢${(docItem["Total Factura"] || 0).toFixed(2)}`, 168, finalY + 13);
 
             pdf.save(`${docItem.Consecutivo || 'Doc'}_Tecnoplagas.pdf`);
           } catch (err) { console.error(err); }
@@ -574,14 +580,11 @@
       });
     }
 
-    // ENVIAR O ACTUALIZAR DOCUMENTO COMPLETO
     document.getElementById('factura-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const idEdicion = document.getElementById('factura-id-edicion').value;
-      const idClienteSeleccionado = document.getElementById('select-cliente').value;
-
-      // Estructuramos el arreglo de ítems leyendo la UI
       const itemsGuardar = [];
+      
       document.querySelectorAll('.fila-item-dinamica').forEach(fila => {
         itemsGuardar.push({
           descripcion: fila.querySelector('.item-desc').value,
@@ -591,8 +594,8 @@
       });
 
       const payloadFactura = {
-        "items": itemsGuardar, // Nueva estructura limpia para multi-ítems
-        "Cliente": `clientes/${idClienteSeleccionado}`,
+        "items": itemsGuardar,
+        "Cliente": `clientes/${document.getElementById('select-cliente').value}`,
         "Condición de venta": document.getElementById('condicion-venta').value,
         "Consecutivo": document.getElementById('consecutivo-doc').value,
         "IVA": parseFloat(document.getElementById('porcentaje-iva').value) / 100,
@@ -602,8 +605,6 @@
         "Tipo de documento": document.getElementById('tipo-documento').value,
         "Total Factura": parseFloat(document.getElementById('total-factura').value),
         "Total Impuesto": parseFloat(document.getElementById('total-impuesto').value),
-        
-        // Mantener estos dos para soporte de búsquedas globales viejas en base si se requiere
         "Descripcion": itemsGuardar[0]?.descripcion || "",
         "Cantidad": itemsGuardar[0]?.cantidad || 1,
         "Precio Unitario": itemsGuardar[0]?.precioUnitario || 0
@@ -612,18 +613,17 @@
       try {
         if (idEdicion) {
           await updateDoc(doc(db, "Facturacion", idEdicion), payloadFactura);
-          alert("✅ Documento multi-línea actualizado con éxito!");
+          alert("✅ ¡Documento actualizado con éxito!");
           document.getElementById('factura-id-edicion').value = "";
           document.getElementById('form-titulo').textContent = "Módulo de Facturación y Cotizaciones";
         } else {
           payloadFactura["Fecha de Emision"] = Timestamp.now();
           await addDoc(collection(db, "Facturacion"), payloadFactura);
-          alert("🎉 ¡Documento multi-línea registrado con éxito!");
+          alert("🎉 ¡Documento registrado con éxito!");
         }
-
         document.getElementById('factura-form').reset();
         contenedorLineas.innerHTML = "";
-        crearFilaItem(); // Dejar una fila vacía base
+        crearFilaItem();
         ejecutarCalculosFactura();
         await sincronizarHistorialYConsecutivo();
         window.cambiarVista('historial');
@@ -632,7 +632,7 @@
 
     async function inicializarModulo() {
       await sincronizarSelectClientes();
-      crearFilaItem(); // Generar primera línea inicial por defecto
+      crearFilaItem();
       await sincronizarHistorialYConsecutivo();
     }
     inicializarModulo();
