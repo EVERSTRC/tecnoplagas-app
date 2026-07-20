@@ -183,9 +183,12 @@
         .status-new { background: #d4efdf; color: #196f3d; }
         .status-edit { background: #fcedc9; color: #b7950b; }
 
-        /* VISTA PREVIA OCULTA EXCLUSIVA PARA EL PDF */
+        /* SOLUCIÓN AL PDF BLANCO: Fuera del viewport en vez de display:none */
         #pdfTemplate {
-            display: none;
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 210mm; /* Ancho estándar A4/Carta aproximado */
             padding: 30px;
             background: white;
             color: #333;
@@ -209,10 +212,10 @@
     <!-- BÚSQUEDA / CARGA DE DOCUMENTO EXISTENTE -->
     <section class="search-section">
         <div class="form-group" style="flex: 2;">
-            <label for="searchConsecutivo">Buscar por Consecutivo de Documento (Cotización / Factura)</label>
+            <label for="searchConsecutivo">Buscar Visita por Consecutivo Documento</label>
             <input type="text" id="searchConsecutivo" placeholder="Ej: DOC-000002">
         </div>
-        <button type="button" class="btn-primary" id="btnBuscar">Buscar y Cargar</button>
+        <button type="button" class="btn-primary" id="btnBuscar">Buscar y Editar</button>
         <button type="button" class="btn-secondary" id="btnNuevo">Limpiar / Nuevo</button>
         <span id="formMode" class="status-badge status-new">Modo: Nuevo Registro</span>
     </section>
@@ -234,7 +237,7 @@
             </div>
             <div class="form-group">
                 <label for="consecutivo">Consecutivo Documento</label>
-                <input type="text" id="consecutivo" placeholder="Ej: DOC-000002">
+                <input type="text" id="consecutivo" placeholder="Ej: DOC-000002" required>
             </div>
             <div class="form-group">
                 <label for="fechaInspeccion">Fecha de Inspección</label>
@@ -300,14 +303,13 @@
         <!-- ACCIONES -->
         <div class="actions-footer">
             <button type="button" class="btn-secondary" id="btnResetForm">Cancelar</button>
-            <!-- NUEVO BOTÓN PDF -->
             <button type="button" class="btn-pdf" id="btnGenerarPDF">📄 Generar Reporte PDF</button>
             <button type="submit" class="btn-primary" id="btnGuardar">Guardar en Firebase (nam5)</button>
         </div>
     </form>
 </div>
 
-<!-- CONTAINER OCULTO EN LA WEB - PERO ESTRUCTURADO PARA IMPRESIÓN PDF -->
+<!-- CONTAINER OCULTO EN OTRA COORDENADA - TOTALMENTE VISIBLE PARA EL MOTOR DE PDF -->
 <div id="pdfTemplate">
     <div class="pdf-header">
         <div>
@@ -350,7 +352,7 @@
             </tr>
         </thead>
         <tbody id="pdfTbodyEstaciones">
-            <!-- Se llena por JavaScript antes de imprimir -->
+            <!-- Dinámico -->
         </tbody>
     </table>
     
@@ -400,6 +402,9 @@
     const lblVencimiento = document.getElementById('lblVencimiento');
 
     let cacheProductos = {};
+    let currentMode = 'NUEVO';
+    let docIdVisitaExistente = null; // Guardará el ID interno del documento al editar
+    
     fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
 
     // CARGAR CLIENTES
@@ -411,12 +416,9 @@
             querySnapshot.forEach((docSnap) => {
                 const datos = docSnap.data();
                 const idCliente = datos.consecutivo || docSnap.id;
-                const nombreCliente = datos.nombre || "Cliente sin Nombre";
-                
                 const option = document.createElement('option');
                 option.value = `clientes/${idCliente}`; 
-                option.text = `${idCliente} - ${nombreCliente}`;
-                option.setAttribute('data-nombre', nombreCliente); // Guardamos el texto plano
+                option.text = `${idCliente} - ${(datos.nombre || "Sin Nombre")}`;
                 clienteSelect.appendChild(option);
             });
         } catch (error) { console.error(error); }
@@ -435,7 +437,7 @@
 
                 const option = document.createElement('option');
                 option.value = idProducto; 
-                option.textContent = datosProducto["Nombre Comercial"] || "Producto sin Nombre"; 
+                option.textContent = datosProducto["Nombre Comercial"] || "Sin Nombre"; 
                 productoSelect.appendChild(option);
             });
         } catch (error) { console.error(error); }
@@ -453,7 +455,70 @@
         productInfoCard.style.display = "block";
     });
 
-    // MÓDULO DE RECOLECCIÓN DE FILAS COMÚN
+    // --- NUEVO: MÓDULO BUSCAR VISITA REAL EN FIRESTORE Y SETEAR EN MODO EDICIÓN ---
+    btnBuscar.addEventListener('click', async () => {
+        const busqueda = searchConsecutivo.value.trim();
+        if (!busqueda) return alert("Por favor ingresa un Consecutivo para realizar la consulta.");
+
+        try {
+            // Buscamos en la colección donde se guardan los reportes de cebado
+            const q = query(collection(db, "Cebaderos"), where("consecutivo_origen", "==", busqueda));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                alert(`No se encontró ningún reporte de visita asociado al consecutivo: ${busqueda}`);
+                return;
+            }
+
+            // Cambiar la interfaz a Modo Edición
+            currentMode = 'EDICION';
+            formModeBadge.textContent = "Modo: Edición de Registro";
+            formModeBadge.className = "status-badge status-edit";
+            tbodyEstaciones.innerHTML = ""; // Limpiar tabla de captura
+
+            // Extraer el primer documento que coincida
+            const docVisita = querySnapshot.docs[0];
+            docIdVisitaExistente = docVisita.id; // Guardamos la referencia para el sobreescrito posterior
+            const datosVisita = docVisita.data();
+
+            // Seteamos el encabezado
+            clienteSelect.value = datosVisita.cliente_ref || "";
+            consecutivoInput.value = datosVisita.consecutivo_origen || "";
+            
+            if (datosVisita.fecha_inspeccion) {
+                const fechaDate = datosVisita.fecha_inspeccion.toDate();
+                fechaInspeccionInput.value = fechaDate.toISOString().split('T')[0];
+            }
+
+            // Setear el producto utilizado
+            if (datosVisita.producto_utilizado && datosVisita.producto_utilizado.id_producto) {
+                productoSelect.value = datosVisita.producto_utilizado.id_producto;
+                // Gatillamos manualmente el cuadro de ficha técnica en pantalla
+                productoSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Seteamos las estaciones encontradas en la BD en filas editables
+            if (datosVisita.estaciones && datosVisita.estaciones.length > 0) {
+                datosVisita.estaciones.forEach((est) => {
+                    agregarFilaEstacion(est.numero_estacion, {
+                        ubicacion: est.ubicacion,
+                        estado_cebo: est.estado_cebo,
+                        actividad: est.actividad,
+                        mantenimiento: est.mantenimiento_realizado,
+                        observaciones: est.observaciones
+                    });
+                });
+            }
+
+            alert("¡Visita cargada con éxito! Puedes editar los datos o imprimir el PDF.");
+
+        } catch (error) {
+            console.error(error);
+            alert("Error al intentar consultar la visita: " + error.message);
+        }
+    });
+
+    // ARMAR RECOLECCIÓN DE LAS FILAS DE LA TABLA
     function obtenerEstacionesDeTabla() {
         const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
         const lista = [];
@@ -470,13 +535,13 @@
         return lista;
     }
 
-    // --- NUEVO FUNCIÓN: INYECTAR DATOS AL TEMPLATE Y DISPARAR GENERACIÓN PDF ---
+    // GENERAR REPORTE PDF (CORREGIDO PARA EVITAR HOJA EN BLANCO)
     document.getElementById('btnGenerarPDF').addEventListener('click', () => {
         const estaciones = obtenerEstacionesDeTabla();
         if (!estaciones.length) return alert("Por favor inyecta al menos una estación para armar el PDF.");
         if (!clienteSelect.value || !productoSelect.value) return alert("Completa el cliente y producto antes de exportar.");
 
-        // 1. Mapear metadatos al área del PDF
+        // Mapear metadatos al área del PDF
         const opcionCliente = clienteSelect.options[clienteSelect.selectedIndex];
         document.getElementById('pdfCliente').textContent = opcionCliente.text;
         document.getElementById('pdfDoc').textContent = consecutivoInput.value || "S/N Consecutivo";
@@ -487,9 +552,9 @@
         document.getElementById('pdfProdActivo').textContent = prodSel["Ingrediente Activo"] || "-";
         document.getElementById('pdfProdLote').textContent = prodSel["Lote"] || "-";
 
-        // 2. Mapear filas a la tabla limpia del PDF
+        // Mapear filas a la tabla limpia del PDF
         const pdfTbody = document.getElementById('pdfTbodyEstaciones');
-        pdfTbody.innerHTML = ""; // Resetear
+        pdfTbody.innerHTML = ""; 
 
         estaciones.forEach((est) => {
             const tr = document.createElement('tr');
@@ -504,24 +569,79 @@
             pdfTbody.appendChild(tr);
         });
 
-        // 3. Configuración de guardado de html2pdf
+        // Configuración y ejecución de html2pdf
         const elementoPDF = document.getElementById('pdfTemplate');
         const opcionesConfig = {
             margin:       15,
             filename:     `Reporte_Cebaderos_${consecutivoInput.value || 'Fumigacion'}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
+            html2canvas:  { scale: 2, logging: false, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
         };
 
-        // Cambiar temporalmente el display para renderizarlo correctamente, luego volverlo a ocultar
-        elementoPDF.style.display = "block";
-        html2pdf().set(opcionesConfig).from(elementoPDF).save().then(() => {
-            elementoPDF.style.display = "none";
-        });
+        // Al usar desplazamientos fuera del viewport en vez de display:none, la librería lo procesa al instante sin fallos de blanco.
+        html2pdf().set(opcionesConfig).from(elementoPDF).save();
     });
 
-    // INICIADORES Y COMPLEMENTOS DE FILAS
+    // REINICIAR TODO A NUEVO
+    btnNuevo.addEventListener('click', () => {
+        formControlCebaderos.reset();
+        tbodyEstaciones.innerHTML = '';
+        productInfoCard.style.display = "none";
+        currentMode = 'NUEVO';
+        docIdVisitaExistente = null;
+        formModeBadge.textContent = "Modo: Nuevo Registro";
+        formModeBadge.className = "status-badge status-new";
+    });
+
+    document.getElementById('btnResetForm').addEventListener('click', () => { btnNuevo.click(); });
+
+    // ENVIAR / ACTUALIZAR EN FIRESTORE
+    formControlCebaderos.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const estaciones = obtenerEstacionesDeTabla();
+        if (!estaciones.length) return alert("Agrega estaciones.");
+
+        const arrayFinalStore = estaciones.map(e => ({
+            numero_estacion: parseInt(e.numero),
+            ubicacion: e.ubicacion,
+            estado_cebo: e.estado_cebo,
+            actividad: e.actividad,
+            mantenimiento_realizado: e.mantenimiento === "Sí",
+            observaciones: e.observaciones
+        }));
+
+        const idProd = productoSelect.value;
+        const infoProdCompleta = cacheProductos[idProd] || {};
+
+        const dataFinal = {
+            cliente_ref: clienteSelect.value, 
+            consecutivo_origen: consecutivoInput.value,
+            fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
+            estaciones: arrayFinalStore,
+            producto_utilizado: {
+                id_producto: idProd,
+                nombre_comercial: infoProdCompleta["Nombre Comercial"] || "",
+                ingrediente_activo: infoProdCompleta["Ingrediente Activo"] || "",
+                lote: infoProdCompleta["Lote"] || ""
+            }
+        };
+
+        try {
+            if (currentMode === 'EDICION' && docIdVisitaExistente) {
+                // Modo Edición: Se sobreescribe usando setDoc con la opción de merge
+                await setDoc(doc(db, "Cebaderos", docIdVisitaExistente), dataFinal, { merge: true });
+                alert("¡Reporte de visita actualizado exitosamente en la Base de Datos!");
+            } else {
+                // Modo Nuevo: Guarda un registro fresco con identificador autogenerado
+                await addDoc(collection(db, "Cebaderos"), dataFinal);
+                alert("¡Nuevo reporte guardado exitosamente en la Base de Datos!");
+            }
+            btnNuevo.click();
+        } catch (err) { alert("Error al procesar: " + err.message); }
+    });
+
+    // INICIAR CONSULTAS AUTOMÁTICAS
     cargarClientesDesdeFirebase();
     cargarProductosDesdeFirebase();
 
@@ -575,49 +695,6 @@
         const estadoPredeterminado = bulkEstadoCebo.value;
         const yaExistentes = tbodyEstaciones.querySelectorAll('.fila-estacion').length;
         for (let i = 1; i <= cantidad; i++) { agregarFilaEstacion(yaExistentes + i, { estado_cebo: estadoPredeterminado }); }
-    });
-
-    btnNuevo.addEventListener('click', () => {
-        formControlCebaderos.reset();
-        tbodyEstaciones.innerHTML = '';
-        productInfoCard.style.display = "none";
-    });
-
-    formControlCebaderos.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const estaciones = obtenerEstacionesDeTabla();
-        if (!estaciones.length) return alert("Agrega estaciones.");
-
-        const arrayFinalStore = estaciones.map(e => ({
-            numero_estacion: parseInt(e.numero),
-            ubicacion: e.ubicacion,
-            estado_cebo: e.estado_cebo,
-            actividad: e.actividad,
-            mantenimiento_realizado: e.mantenimiento === "Sí",
-            observaciones: e.observaciones
-        }));
-
-        const idProd = productoSelect.value;
-        const infoProdCompleta = cacheProductos[idProd] || {};
-
-        const dataFinal = {
-            cliente_ref: clienteSelect.value, 
-            consecutivo_origen: consecutivoInput.value,
-            fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
-            estaciones: arrayFinalStore,
-            producto_utilizado: {
-                id_producto: idProd,
-                nombre_comercial: infoProdCompleta["Nombre Comercial"] || "",
-                ingrediente_activo: infoProdCompleta["Ingrediente Activo"] || "",
-                lote: infoProdCompleta["Lote"] || ""
-            }
-        };
-
-        try {
-            await addDoc(collection(db, "Cebaderos"), dataFinal);
-            alert("¡Reporte guardado exitosamente en la base de datos!");
-            btnNuevo.click();
-        } catch (err) { alert("Error: " + err.message); }
     });
 </script>
 </body>
