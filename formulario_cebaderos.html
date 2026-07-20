@@ -39,16 +39,44 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            position: relative;
         }
 
         header {
             margin-bottom: 25px;
             border-bottom: 2px solid var(--accent-color);
             padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .header-titles {
+            flex: 1;
         }
 
         header h1 { color: var(--primary-color); font-size: 24px; }
         header p { color: #7f8c8d; font-size: 14px; }
+
+        /* NUEVO ESTILO: BOTÓN MENÚ PRINCIPAL */
+        .btn-menu {
+            background-color: #34495e;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-menu:hover {
+            background-color: #2c3e50;
+        }
 
         .search-section {
             background-color: #edf2f7;
@@ -183,12 +211,12 @@
         .status-new { background: #d4efdf; color: #196f3d; }
         .status-edit { background: #fcedc9; color: #b7950b; }
 
-        /* SOLUCIÓN AL PDF BLANCO: Fuera del viewport en vez de display:none */
+        /* REPORTE OCULTO FUERA DE PANTALLA PARA EL PDF */
         #pdfTemplate {
             position: absolute;
             left: -9999px;
             top: 0;
-            width: 210mm; /* Ancho estándar A4/Carta aproximado */
+            width: 210mm;
             padding: 30px;
             background: white;
             color: #333;
@@ -205,19 +233,30 @@
 
 <div class="container">
     <header>
-        <h1>Control y Monitoreo de Estaciones de Cebaderos</h1>
-        <p>Ingreso de inspecciones en lote y edición conectado a Firestore (nam5)</p>
+        <div class="header-titles">
+            <h1>Control y Monitoreo de Estaciones de Cebaderos</h1>
+            <p>Ingreso de inspecciones en lote y edición conectado a Firestore (nam5)</p>
+        </div>
+        <!-- BOTÓN ADICIONADO PARA VOLVER AL MENÚ -->
+        <button type="button" class="btn-menu" id="btnIrMenu">🏠 Menú Principal</button>
     </header>
 
-    <!-- BÚSQUEDA / CARGA DE DOCUMENTO EXISTENTE -->
+    <!-- SECCIÓN DE BÚSQUEDA AVANZADA POR NOMBRE -->
     <section class="search-section">
         <div class="form-group" style="flex: 2;">
-            <label for="searchConsecutivo">Buscar Visita por Consecutivo Documento</label>
-            <input type="text" id="searchConsecutivo" placeholder="Ej: DOC-000002">
+            <label for="searchNombreCliente">Buscar por Nombre del Cliente</label>
+            <input type="text" id="searchNombreCliente" placeholder="Ej: Juan Pérez o TecnoEmpresa">
         </div>
-        <button type="button" class="btn-primary" id="btnBuscar">Buscar y Editar</button>
+        <button type="button" class="btn-primary" id="btnBuscarCliente">Buscar Visitas</button>
         <button type="button" class="btn-secondary" id="btnNuevo">Limpiar / Nuevo</button>
         <span id="formMode" class="status-badge status-new">Modo: Nuevo Registro</span>
+        
+        <div class="form-group" id="contenedorHistorial" style="display:none; width: 100%; margin-top: 15px; flex: none;">
+            <label for="selectVisitasEncontradas" style="color: #d35400;">⚠️ Se encontraron múltiples visitas. Selecciona una fecha:</label>
+            <select id="selectVisitasEncontradas">
+                <option value="">-- Elige una visita del historial --</option>
+            </select>
+        </div>
     </section>
 
     <form id="formControlCebaderos">
@@ -309,7 +348,7 @@
     </form>
 </div>
 
-<!-- CONTAINER OCULTO EN OTRA COORDENADA - TOTALMENTE VISIBLE PARA EL MOTOR DE PDF -->
+<!-- TEMPLATE DE IMPRESIÓN DEL PDF -->
 <div id="pdfTemplate">
     <div class="pdf-header">
         <div>
@@ -384,11 +423,14 @@
     const bulkCantidad = document.getElementById('bulkCantidad');
     const bulkEstadoCebo = document.getElementById('bulkEstadoCebo');
     const formControlCebaderos = document.getElementById('formControlCebaderos');
-    const searchConsecutivo = document.getElementById('searchConsecutivo');
-    const btnBuscar = document.getElementById('btnBuscar');
+    const searchNombreCliente = document.getElementById('searchNombreCliente');
+    const btnBuscarCliente = document.getElementById('btnBuscarCliente');
     const btnNuevo = document.getElementById('btnNuevo');
     const formModeBadge = document.getElementById('formMode');
     
+    const contenedorHistorial = document.getElementById('contenedorHistorial');
+    const selectVisitasEncontradas = document.getElementById('selectVisitasEncontradas');
+
     const clienteSelect = document.getElementById('clienteSelect');
     const productoSelect = document.getElementById('productoSelect'); 
     const consecutivoInput = document.getElementById('consecutivo');
@@ -402,12 +444,19 @@
     const lblVencimiento = document.getElementById('lblVencimiento');
 
     let cacheProductos = {};
+    let cacheVisitasBuscadas = {}; 
     let currentMode = 'NUEVO';
-    let docIdVisitaExistente = null; // Guardará el ID interno del documento al editar
+    let docIdVisitaExistente = null; 
     
     fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
 
-    // CARGAR CLIENTES
+    // ACCIÓN DEL BOTÓN MENÚ PRINCIPAL
+    document.getElementById('btnIrMenu').addEventListener('click', () => {
+        // Redirige al archivo principal de tu aplicación (ajusta 'index.html' si es necesario)
+        window.location.href = 'index.html'; 
+    });
+
+    // CARGAR LISTA DE CLIENTES EN EL SELECT
     async function cargarClientesDesdeFirebase() {
         try {
             const querySnapshot = await getDocs(collection(db, "clientes"));
@@ -455,70 +504,108 @@
         productInfoCard.style.display = "block";
     });
 
-    // --- NUEVO: MÓDULO BUSCAR VISITA REAL EN FIRESTORE Y SETEAR EN MODO EDICIÓN ---
-    btnBuscar.addEventListener('click', async () => {
-        const busqueda = searchConsecutivo.value.trim();
-        if (!busqueda) return alert("Por favor ingresa un Consecutivo para realizar la consulta.");
+    // CONSULTA INTELIGENTE DE VISITAS POR NOMBRE DE CLIENTE
+    btnBuscarCliente.addEventListener('click', async () => {
+        const textoBusqueda = searchNombreCliente.value.trim().toLowerCase();
+        if (!textoBusqueda) return alert("Por favor escribe el nombre de un cliente.");
 
         try {
-            // Buscamos en la colección donde se guardan los reportes de cebado
-            const q = query(collection(db, "Cebaderos"), where("consecutivo_origen", "==", busqueda));
-            const querySnapshot = await getDocs(q);
+            const queryClientes = await getDocs(collection(db, "clientes"));
+            let clientesEncontradosRefs = [];
 
-            if (querySnapshot.empty) {
-                alert(`No se encontró ningún reporte de visita asociado al consecutivo: ${busqueda}`);
+            queryClientes.forEach((docSnap) => {
+                const datosClie = docSnap.data();
+                const nombreClie = (datosClie.nombre || "").toLowerCase();
+                if (nombreClie.includes(textoBusqueda)) {
+                    const idCliente = datosClie.consecutivo || docSnap.id;
+                    clientesEncontradosRefs.push(`clientes/${idCliente}`);
+                }
+            });
+
+            if (clientesEncontradosRefs.length === 0) {
+                alert("No se encontró ningún cliente registrado con ese nombre.");
                 return;
             }
 
-            // Cambiar la interfaz a Modo Edición
-            currentMode = 'EDICION';
-            formModeBadge.textContent = "Modo: Edición de Registro";
-            formModeBadge.className = "status-badge status-edit";
-            tbodyEstaciones.innerHTML = ""; // Limpiar tabla de captura
+            cacheVisitasBuscadas = {};
+            selectVisitasEncontradas.innerHTML = '<option value="">-- Seleccione la visita que desea cargar --</option>';
+            let visitasEncontradasContador = 0;
 
-            // Extraer el primer documento que coincida
-            const docVisita = querySnapshot.docs[0];
-            docIdVisitaExistente = docVisita.id; // Guardamos la referencia para el sobreescrito posterior
-            const datosVisita = docVisita.data();
-
-            // Seteamos el encabezado
-            clienteSelect.value = datosVisita.cliente_ref || "";
-            consecutivoInput.value = datosVisita.consecutivo_origen || "";
+            const queryVisitas = await getDocs(collection(db, "Cebaderos"));
             
-            if (datosVisita.fecha_inspeccion) {
-                const fechaDate = datosVisita.fecha_inspeccion.toDate();
-                fechaInspeccionInput.value = fechaDate.toISOString().split('T')[0];
+            queryVisitas.forEach((docSnap) => {
+                const datosVisita = docSnap.data();
+                if (clientesEncontradosRefs.includes(datosVisita.cliente_ref)) {
+                    visitasEncontradasContador++;
+                    const idVisita = docSnap.id;
+                    cacheVisitasBuscadas[idVisita] = datosVisita;
+
+                    let fechaTexto = "Sin Fecha";
+                    if (datosVisita.fecha_inspeccion) {
+                        fechaTexto = datosVisita.fecha_inspeccion.toDate().toLocaleDateString('es-ES');
+                    }
+
+                    const opt = document.createElement('option');
+                    opt.value = idVisita;
+                    opt.textContent = `Fecha: ${fechaTexto} | Ref: ${datosVisita.consecutivo_origen || 'S/N'}`;
+                    selectVisitasEncontradas.appendChild(opt);
+                }
+            });
+
+            if (visitasEncontradasContador === 0) {
+                alert("Se ubicó al cliente, pero no registra ninguna visita o inspección histórica de cebaderos.");
+                contenedorHistorial.style.display = "none";
+                return;
             }
 
-            // Setear el producto utilizado
-            if (datosVisita.producto_utilizado && datosVisita.producto_utilizado.id_producto) {
-                productoSelect.value = datosVisita.producto_utilizado.id_producto;
-                // Gatillamos manualmente el cuadro de ficha técnica en pantalla
-                productoSelect.dispatchEvent(new Event('change'));
-            }
-
-            // Seteamos las estaciones encontradas en la BD en filas editables
-            if (datosVisita.estaciones && datosVisita.estaciones.length > 0) {
-                datosVisita.estaciones.forEach((est) => {
-                    agregarFilaEstacion(est.numero_estacion, {
-                        ubicacion: est.ubicacion,
-                        estado_cebo: est.estado_cebo,
-                        actividad: est.actividad,
-                        mantenimiento: est.mantenimiento_realizado,
-                        observaciones: est.observaciones
-                    });
-                });
-            }
-
-            alert("¡Visita cargada con éxito! Puedes editar los datos o imprimir el PDF.");
+            contenedorHistorial.style.display = "block";
+            alert(`Sincronizadas ${visitasEncontradasContador} visitas asociadas. Selecciónala en la lista desplegada abajo.`);
 
         } catch (error) {
             console.error(error);
-            alert("Error al intentar consultar la visita: " + error.message);
+            alert("Error en la consulta: " + error.message);
         }
     });
 
-    // ARMAR RECOLECCIÓN DE LAS FILAS DE LA TABLA
+    // EVENTO AL SELECCIONAR UNA VISITA DEL HISTORIAL FILTRADO
+    selectVisitasEncontradas.addEventListener('change', (e) => {
+        const idVisitaSel = e.target.value;
+        if (!idVisitaSel || !cacheVisitasBuscadas[idVisitaSel]) return;
+
+        const datosVisita = cacheVisitasBuscadas[idVisitaSel];
+        docIdVisitaExistente = idVisitaSel;
+        currentMode = 'EDICION';
+        formModeBadge.textContent = "Modo: Edición de Registro";
+        formModeBadge.className = "status-badge status-edit";
+
+        tbodyEstaciones.innerHTML = ""; 
+
+        clienteSelect.value = datosVisita.cliente_ref || "";
+        consecutivoInput.value = datosVisita.consecutivo_origen || "";
+        
+        if (datosVisita.fecha_inspeccion) {
+            fechaInspeccionInput.value = datosVisita.fecha_inspeccion.toDate().toISOString().split('T')[0];
+        }
+
+        if (datosVisita.producto_utilizado && datosVisita.producto_utilizado.id_producto) {
+            productoSelect.value = datosVisita.producto_utilizado.id_producto;
+            productoSelect.dispatchEvent(new Event('change'));
+        }
+
+        if (datosVisita.estaciones && datosVisita.estaciones.length > 0) {
+            datosVisita.estaciones.forEach((est) => {
+                agregarFilaEstacion(est.numero_estacion, {
+                    ubicacion: est.ubicacion,
+                    estado_cebo: est.estado_cebo,
+                    actividad: est.actividad,
+                    mantenimiento: est.mantenimiento_realizado,
+                    observaciones: est.observaciones
+                });
+            });
+        }
+    });
+
+    // RECOLECTAR FILAS DE LA TABLA
     function obtenerEstacionesDeTabla() {
         const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
         const lista = [];
@@ -535,13 +622,12 @@
         return lista;
     }
 
-    // GENERAR REPORTE PDF (CORREGIDO PARA EVITAR HOJA EN BLANCO)
+    // EXPORTAR PDF
     document.getElementById('btnGenerarPDF').addEventListener('click', () => {
         const estaciones = obtenerEstacionesDeTabla();
         if (!estaciones.length) return alert("Por favor inyecta al menos una estación para armar el PDF.");
         if (!clienteSelect.value || !productoSelect.value) return alert("Completa el cliente y producto antes de exportar.");
 
-        // Mapear metadatos al área del PDF
         const opcionCliente = clienteSelect.options[clienteSelect.selectedIndex];
         document.getElementById('pdfCliente').textContent = opcionCliente.text;
         document.getElementById('pdfDoc').textContent = consecutivoInput.value || "S/N Consecutivo";
@@ -552,7 +638,6 @@
         document.getElementById('pdfProdActivo').textContent = prodSel["Ingrediente Activo"] || "-";
         document.getElementById('pdfProdLote').textContent = prodSel["Lote"] || "-";
 
-        // Mapear filas a la tabla limpia del PDF
         const pdfTbody = document.getElementById('pdfTbodyEstaciones');
         pdfTbody.innerHTML = ""; 
 
@@ -569,7 +654,6 @@
             pdfTbody.appendChild(tr);
         });
 
-        // Configuración y ejecución de html2pdf
         const elementoPDF = document.getElementById('pdfTemplate');
         const opcionesConfig = {
             margin:       15,
@@ -579,15 +663,16 @@
             jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
         };
 
-        // Al usar desplazamientos fuera del viewport en vez de display:none, la librería lo procesa al instante sin fallos de blanco.
         html2pdf().set(opcionesConfig).from(elementoPDF).save();
     });
 
-    // REINICIAR TODO A NUEVO
+    // LIMPIAR FORMULARIO / NUEVO REGISTRO
     btnNuevo.addEventListener('click', () => {
         formControlCebaderos.reset();
         tbodyEstaciones.innerHTML = '';
         productInfoCard.style.display = "none";
+        contenedorHistorial.style.display = "none";
+        searchNombreCliente.value = "";
         currentMode = 'NUEVO';
         docIdVisitaExistente = null;
         formModeBadge.textContent = "Modo: Nuevo Registro";
@@ -596,7 +681,7 @@
 
     document.getElementById('btnResetForm').addEventListener('click', () => { btnNuevo.click(); });
 
-    // ENVIAR / ACTUALIZAR EN FIRESTORE
+    // ENVIAR O ACTUALIZAR DATOS EN LA DB
     formControlCebaderos.addEventListener('submit', async (e) => {
         e.preventDefault();
         const estaciones = obtenerEstacionesDeTabla();
@@ -629,19 +714,17 @@
 
         try {
             if (currentMode === 'EDICION' && docIdVisitaExistente) {
-                // Modo Edición: Se sobreescribe usando setDoc con la opción de merge
                 await setDoc(doc(db, "Cebaderos", docIdVisitaExistente), dataFinal, { merge: true });
-                alert("¡Reporte de visita actualizado exitosamente en la Base de Datos!");
+                alert("¡Visita actualizada de forma exitosa!");
             } else {
-                // Modo Nuevo: Guarda un registro fresco con identificador autogenerado
                 await addDoc(collection(db, "Cebaderos"), dataFinal);
-                alert("¡Nuevo reporte guardado exitosamente en la Base de Datos!");
+                alert("¡Nueva visita creada e inyectada con éxito!");
             }
             btnNuevo.click();
-        } catch (err) { alert("Error al procesar: " + err.message); }
+        } catch (err) { alert("Error al guardar: " + err.message); }
     });
 
-    // INICIAR CONSULTAS AUTOMÁTICAS
+    // ARRANCAR PROCESOS AL CARGAR LA PÁGINA
     cargarClientesDesdeFirebase();
     cargarProductosDesdeFirebase();
 
