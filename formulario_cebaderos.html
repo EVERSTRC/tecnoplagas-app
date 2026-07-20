@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Estaciones de Cebaderos - Firebase</title>
+    <!-- LIBRERÍA PARA GENERAR EL PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -101,6 +104,8 @@
         .btn-secondary:hover { background-color: #616a6b; }
         .btn-danger { background-color: #e74c3c; color: white; }
         .btn-danger:hover { background-color: #c0392b; }
+        .btn-pdf { background-color: #e67e22; color: white; }
+        .btn-pdf:hover { background-color: #d35400; }
 
         .metadata-grid {
             display: grid;
@@ -113,14 +118,13 @@
             border-radius: 6px;
         }
 
-        /* DISEÑO DE LA TARJETA INFORMATIVA DEL PRODUCTO */
         .product-info-card {
             background: #eef2f7;
             border-left: 5px solid #2980b9;
             padding: 15px;
             border-radius: 6px;
             margin-bottom: 25px;
-            display: none; /* Se oculta por defecto hasta que elijan uno */
+            display: none;
         }
 
         .product-info-grid {
@@ -178,6 +182,20 @@
         }
         .status-new { background: #d4efdf; color: #196f3d; }
         .status-edit { background: #fcedc9; color: #b7950b; }
+
+        /* VISTA PREVIA OCULTA EXCLUSIVA PARA EL PDF */
+        #pdfTemplate {
+            display: none;
+            padding: 30px;
+            background: white;
+            color: #333;
+        }
+        .pdf-header { display: flex; justify-content: space-between; border-bottom: 3px solid #16a085; padding-bottom: 15px; margin-bottom: 20px; }
+        .pdf-title { font-size: 22px; font-weight: bold; color: #2c3e50; }
+        .pdf-meta-box { background: #f8f9fa; border: 1px solid #ddd; padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+        .pdf-table th { background: #2c3e50; color: white; padding: 8px; }
+        .pdf-table td { padding: 8px; border-bottom: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -224,7 +242,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DE DETALLES EXTENDIDOS DEL PRODUCTO (SE LLENA AUTOMÁTICAMENTE) -->
+        <!-- SECCIÓN DE DETALLES EXTENDIDOS DEL PRODUCTO -->
         <div id="productInfoCard" class="product-info-card">
             <strong style="color: #2980b9; font-size: 15px;">📋 Ficha Técnica del Producto Seleccionado:</strong>
             <div class="product-info-grid">
@@ -282,16 +300,71 @@
         <!-- ACCIONES -->
         <div class="actions-footer">
             <button type="button" class="btn-secondary" id="btnResetForm">Cancelar</button>
+            <!-- NUEVO BOTÓN PDF -->
+            <button type="button" class="btn-pdf" id="btnGenerarPDF">📄 Generar Reporte PDF</button>
             <button type="submit" class="btn-primary" id="btnGuardar">Guardar en Firebase (nam5)</button>
         </div>
     </form>
 </div>
 
+<!-- CONTAINER OCULTO EN LA WEB - PERO ESTRUCTURADO PARA IMPRESIÓN PDF -->
+<div id="pdfTemplate">
+    <div class="pdf-header">
+        <div>
+            <div class="pdf-title">FUMIGADORA TECNOPLAGAS</div>
+            <div style="font-size: 12px; color: #555;">Control de Vectores y Roedores</div>
+        </div>
+        <div style="text-align: right; font-size: 12px;">
+            <strong>REPORTE TÉCNICO</strong><br>
+            Estaciones de Cebado
+        </div>
+    </div>
+
+    <div class="pdf-meta-box">
+        <table style="width:100%; border:none; font-size:13px;">
+            <tr>
+                <td><strong>Cliente:</strong> <span id="pdfCliente">-</span></td>
+                <td><strong>Documento Ref:</strong> <span id="pdfDoc">-</span></td>
+            </tr>
+            <tr>
+                <td><strong>Fecha de Visita:</strong> <span id="pdfFecha">-</span></td>
+                <td><strong>Producto Empleado:</strong> <span id="pdfProdNombre">-</span></td>
+            </tr>
+            <tr>
+                <td><strong>Ing. Activo:</strong> <span id="pdfProdActivo">-</span></td>
+                <td><strong>Lote Químico:</strong> <span id="pdfProdLote">-</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <h4 style="color:#2c3e50; margin-top:10px;">Estado General de Dispositivos de Monitoreo:</h4>
+    <table class="pdf-table">
+        <thead>
+            <tr>
+                <th style="width:10%;">N° Est.</th>
+                <th style="width:30%;">Ubicación</th>
+                <th style="width:20%;">Estado Cebo</th>
+                <th style="width:15%;">Actividad</th>
+                <th style="width:10%;">Mant.</th>
+                <th style="width:15%;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody id="pdfTbodyEstaciones">
+            <!-- Se llena por JavaScript antes de imprimir -->
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 50px; display: flex; justify-content: space-between; font-size: 12px;">
+        <div style="border-top: 1px solid #333; width: 40%; text-align: center; padding-top: 5px;">Firma de Técnico Asignado</div>
+        <div style="border-top: 1px solid #333; width: 40%; text-align: center; padding-top: 5px;">Recibido por el Cliente</div>
+    </div>
+</div>
+
+
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    // NOTA: Coloca tus credenciales Web App reales de Firebase para conectarte de inmediato
     const firebaseConfig = {
         apiKey: "TU_API_KEY_AQUÍ", 
         authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -304,7 +377,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Mapeo del DOM
     const tbodyEstaciones = document.getElementById('tbodyEstaciones');
     const btnAgregarLote = document.getElementById('btnAgregarLote');
     const bulkCantidad = document.getElementById('bulkCantidad');
@@ -320,7 +392,6 @@
     const consecutivoInput = document.getElementById('consecutivo');
     const fechaInspeccionInput = document.getElementById('fechaInspeccion');
 
-    // Mapeo de etiquetas de la tarjeta informativa del producto
     const productInfoCard = document.getElementById('productInfoCard');
     const lblActivo = document.getElementById('lblActivo');
     const lblLote = document.getElementById('lblLote');
@@ -328,20 +399,14 @@
     const lblRegistro = document.getElementById('lblRegistro');
     const lblVencimiento = document.getElementById('lblVencimiento');
 
-    // Almacenamiento local temporal de los productos cargados para agilizar la lectura de campos
     let cacheProductos = {};
-    let currentMode = 'NUEVO';
-    
     fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
 
-    // LEER CLIENTES
+    // CARGAR CLIENTES
     async function cargarClientesDesdeFirebase() {
         try {
             const querySnapshot = await getDocs(collection(db, "clientes"));
-            if (querySnapshot.empty) {
-                clienteSelect.innerHTML = '<option value="">No se encontraron clientes</option>';
-                return;
-            }
+            if (querySnapshot.empty) return;
             clienteSelect.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
             querySnapshot.forEach((docSnap) => {
                 const datos = docSnap.data();
@@ -350,79 +415,119 @@
                 
                 const option = document.createElement('option');
                 option.value = `clientes/${idCliente}`; 
-                option.textContent = `${idCliente} - ${nombreCliente}`;
+                option.text = `${idCliente} - ${nombreCliente}`;
+                option.setAttribute('data-nombre', nombreCliente); // Guardamos el texto plano
                 clienteSelect.appendChild(option);
             });
-        } catch (error) {
-            console.error(error);
-            clienteSelect.innerHTML = '<option value="">Fallo al sincronizar clientes</option>';
-        }
+        } catch (error) { console.error(error); }
     }
 
-    // LEER PRODUCTOS Y GUARDARLOS EN MEMORIA CACHÉ
+    // CARGAR PRODUCTOS
     async function cargarProductosDesdeFirebase() {
         try {
             const querySnapshot = await getDocs(collection(db, "Productos"));
-            if (querySnapshot.empty) {
-                productoSelect.innerHTML = '<option value="">No se encontraron productos</option>';
-                return;
-            }
-
+            if (querySnapshot.empty) return;
             productoSelect.innerHTML = '<option value="">-- Seleccione un Producto --</option>';
-            cacheProductos = {}; // Reiniciamos el almacenamiento temporal
-
             querySnapshot.forEach((docSnap) => {
                 const datosProducto = docSnap.data();
                 const idProducto = datosProducto.IdProductos || docSnap.id;
-                const nombreComercial = datosProducto["Nombre Comercial"] || "Producto sin Nombre";
-                
-                // Guardamos todo el objeto completo del producto usando su ID como llave
                 cacheProductos[idProducto] = datosProducto;
 
                 const option = document.createElement('option');
                 option.value = idProducto; 
-                option.textContent = nombreComercial; 
+                option.textContent = datosProducto["Nombre Comercial"] || "Producto sin Nombre"; 
                 productoSelect.appendChild(option);
             });
-        } catch (error) {
-            console.error(error);
-            productoSelect.innerHTML = '<option value="">Fallo al sincronizar productos</option>';
-        }
+        } catch (error) { console.error(error); }
     }
 
-    // --- NUEVO: EVENTO CUANDO EL USUARIO CAMBIA/SELECCIONA UN PRODUCTO ---
     productoSelect.addEventListener('change', (e) => {
-        const idSeleccionado = e.target.value;
-
-        // Si el usuario vuelve a poner la opción vacía, ocultamos la tarjeta
-        if (!idSeleccionado || !cacheProductos[idSeleccionado]) {
-            productInfoCard.style.display = "none";
-            return;
-        }
-
-        // Jalamos los datos que guardamos previamente en el mapa de caché
-        const prod = cacheProductos[idSeleccionado];
-
-        // Rellenamos los campos de la interfaz basándonos exactamente en las mayúsculas de tu base de datos
+        const id = e.target.value;
+        if (!id || !cacheProductos[id]) { productInfoCard.style.display = "none"; return; }
+        const prod = cacheProductos[id];
         lblActivo.textContent = prod["Ingrediente Activo"] || "N/A";
         lblLote.textContent = prod["Lote"] || "N/A";
         lblDosis.textContent = prod["Dosis Recomendada"] || "N/A";
         lblRegistro.textContent = prod["Registro M.S."] || "N/A";
         lblVencimiento.textContent = prod["Vencimiento del Producto"] || "N/A";
-
-        // Hacemos visible la tarjeta informativa con una animación suave o cambio de display
         productInfoCard.style.display = "block";
     });
 
-    // Iniciar cargas
+    // MÓDULO DE RECOLECCIÓN DE FILAS COMÚN
+    function obtenerEstacionesDeTabla() {
+        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
+        const lista = [];
+        filas.forEach((fila) => {
+            lista.push({
+                numero: fila.querySelector('.col-numero').textContent,
+                ubicacion: fila.querySelector('.input-ubicacion').value,
+                estado_cebo: fila.querySelector('.select-cebo').value,
+                actividad: fila.querySelector('.select-actividad').value,
+                mantenimiento: fila.querySelector('.check-mantenimiento').checked ? "Sí" : "No",
+                observaciones: fila.querySelector('.input-observaciones').value
+            });
+        });
+        return lista;
+    }
+
+    // --- NUEVO FUNCIÓN: INYECTAR DATOS AL TEMPLATE Y DISPARAR GENERACIÓN PDF ---
+    document.getElementById('btnGenerarPDF').addEventListener('click', () => {
+        const estaciones = obtenerEstacionesDeTabla();
+        if (!estaciones.length) return alert("Por favor inyecta al menos una estación para armar el PDF.");
+        if (!clienteSelect.value || !productoSelect.value) return alert("Completa el cliente y producto antes de exportar.");
+
+        // 1. Mapear metadatos al área del PDF
+        const opcionCliente = clienteSelect.options[clienteSelect.selectedIndex];
+        document.getElementById('pdfCliente').textContent = opcionCliente.text;
+        document.getElementById('pdfDoc').textContent = consecutivoInput.value || "S/N Consecutivo";
+        document.getElementById('pdfFecha').textContent = fechaInspeccionInput.value;
+
+        const prodSel = cacheProductos[productoSelect.value] || {};
+        document.getElementById('pdfProdNombre').textContent = prodSel["Nombre Comercial"] || "-";
+        document.getElementById('pdfProdActivo').textContent = prodSel["Ingrediente Activo"] || "-";
+        document.getElementById('pdfProdLote').textContent = prodSel["Lote"] || "-";
+
+        // 2. Mapear filas a la tabla limpia del PDF
+        const pdfTbody = document.getElementById('pdfTbodyEstaciones');
+        pdfTbody.innerHTML = ""; // Resetear
+
+        estaciones.forEach((est) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="text-align:center; font-weight:bold;">${est.numero}</td>
+                <td>${est.ubicacion}</td>
+                <td>${est.estado_cebo}</td>
+                <td>${est.actividad}</td>
+                <td style="text-align:center;">${est.mantenimiento}</td>
+                <td>${est.observaciones || 'Ninguna'}</td>
+            `;
+            pdfTbody.appendChild(tr);
+        });
+
+        // 3. Configuración de guardado de html2pdf
+        const elementoPDF = document.getElementById('pdfTemplate');
+        const opcionesConfig = {
+            margin:       15,
+            filename:     `Reporte_Cebaderos_${consecutivoInput.value || 'Fumigacion'}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Cambiar temporalmente el display para renderizarlo correctamente, luego volverlo a ocultar
+        elementoPDF.style.display = "block";
+        html2pdf().set(opcionesConfig).from(elementoPDF).save().then(() => {
+            elementoPDF.style.display = "none";
+        });
+    });
+
+    // INICIADORES Y COMPLEMENTOS DE FILAS
     cargarClientesDesdeFirebase();
     cargarProductosDesdeFirebase();
 
-    // FILAS DINÁMICAS
     function agregarFilaEstacion(numero, datos = {}) {
         const tr = document.createElement('tr');
         tr.className = 'fila-estacion';
-        
         const ubicacion = datos.ubicacion || '';
         const estadoCebo = datos.estado_cebo || 'Intacto';
         const actividad = datos.actividad || 'Ninguna';
@@ -456,86 +561,63 @@
                 <button type="button" class="btn-danger btn-eliminar-fila" style="padding: 5px 10px; font-size: 11px;">X</button>
             </td>
         `;
-
-        tr.querySelector('.btn-eliminar-fila').addEventListener('click', () => {
-            tr.remove();
-            reordenarNumeracion();
-        });
-
+        tr.querySelector('.btn-eliminar-fila').addEventListener('click', () => { tr.remove(); reordenarNumeracion(); });
         tbodyEstaciones.appendChild(tr);
     }
 
     function reordenarNumeracion() {
         const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
-        filas.forEach((fila, index) => {
-            fila.querySelector('.col-numero').textContent = index + 1;
-        });
+        filas.forEach((fila, index) => { fila.querySelector('.col-numero').textContent = index + 1; });
     }
 
     btnAgregarLote.addEventListener('click', () => {
         const cantidad = parseInt(bulkCantidad.value) || 1;
         const estadoPredeterminado = bulkEstadoCebo.value;
         const yaExistentes = tbodyEstaciones.querySelectorAll('.fila-estacion').length;
-        
-        for (let i = 1; i <= cantidad; i++) {
-            agregarFilaEstacion(yaExistentes + i, { estado_cebo: estadoPredeterminado });
-        }
+        for (let i = 1; i <= cantidad; i++) { agregarFilaEstacion(yaExistentes + i, { estado_cebo: estadoPredeterminado }); }
     });
 
     btnNuevo.addEventListener('click', () => {
         formControlCebaderos.reset();
         tbodyEstaciones.innerHTML = '';
         productInfoCard.style.display = "none";
-        currentMode = 'NUEVO';
-        formModeBadge.textContent = "Modo: Nuevo Registro";
-        formModeBadge.className = "status-badge status-new";
     });
 
-    // GUARDAR EN FIRESTORE CON DETALLES EMBEBIDOS DEL PRODUCTO
     formControlCebaderos.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
-        if (!filas.length) return alert("Agrega al menos una estación.");
+        const estaciones = obtenerEstacionesDeTabla();
+        if (!estaciones.length) return alert("Agrega estaciones.");
 
-        const arrayEstaciones = [];
-        filas.forEach((fila) => {
-            arrayEstaciones.push({
-                numero_estacion: parseInt(fila.querySelector('.col-numero').textContent),
-                ubicacion: fila.querySelector('.input-ubicacion').value,
-                estado_cebo: fila.querySelector('.select-cebo').value,
-                actividad: fila.querySelector('.select-actividad').value,
-                mantenimiento_realizado: fila.querySelector('.check-mantenimiento').checked,
-                observaciones: fila.querySelector('.input-observaciones').value
-            });
-        });
+        const arrayFinalStore = estaciones.map(e => ({
+            numero_estacion: parseInt(e.numero),
+            ubicacion: e.ubicacion,
+            estado_cebo: e.estado_cebo,
+            actividad: e.actividad,
+            mantenimiento_realizado: e.mantenimiento === "Sí",
+            observaciones: e.observaciones
+        }));
 
         const idProd = productoSelect.value;
         const infoProdCompleta = cacheProductos[idProd] || {};
 
-        // Creamos la estructura final que guardará el histórico completo para evitar perder datos si el producto se edita a futuro
         const dataFinal = {
             cliente_ref: clienteSelect.value, 
             consecutivo_origen: consecutivoInput.value,
             fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
-            estaciones: arrayEstaciones,
-            // Guardamos la ficha técnica del producto dentro del mismo reporte
+            estaciones: arrayFinalStore,
             producto_utilizado: {
                 id_producto: idProd,
                 nombre_comercial: infoProdCompleta["Nombre Comercial"] || "",
                 ingrediente_activo: infoProdCompleta["Ingrediente Activo"] || "",
-                lote: infoProdCompleta["Lote"] || "",
-                registro_ms: infoProdCompleta["Registro M.S."] || "",
-                dosis_recomendada: infoProdCompleta["Dosis Recomendada"] || ""
+                lote: infoProdCompleta["Lote"] || ""
             }
         };
 
         try {
             await addDoc(collection(db, "Cebaderos"), dataFinal);
-            alert("¡Reporte guardado con éxito! Se incluyó toda la ficha técnica del cebo utilizado.");
+            alert("¡Reporte guardado exitosamente en la base de datos!");
             btnNuevo.click();
-        } catch (err) {
-            alert("Fallo al guardar: " + err.message);
-        }
+        } catch (err) { alert("Error: " + err.message); }
     });
 </script>
 </body>
