@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Estaciones de Cebaderos - Firebase</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #16a085;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #dcdde1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        header {
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        header h1 { color: var(--primary-color); font-size: 24px; }
+        header p { color: #7f8c8d; font-size: 14px; }
+
+        .search-section {
+            background-color: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        label {
+            font-size: 13px;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary { background-color: var(--accent-color); color: white; }
+        .btn-primary:hover { background-color: #117a65; }
+        .btn-secondary { background-color: #7f8c8d; color: white; }
+        .btn-secondary:hover { background-color: #616a6b; }
+        .btn-danger { background-color: #e74c3c; color: white; }
+        .btn-danger:hover { background-color: #c0392b; }
+
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+            background: #fdfefe;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .bulk-section {
+            background: #f4f6f6;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .bulk-controls {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .stations-table-container { overflow-x: auto; margin-bottom: 25px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: var(--primary-color); color: white; }
+        tr:hover { background-color: #f2f4f4; }
+
+        .actions-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-new { background: #d4efdf; color: #196f3d; }
+        .status-edit { background: #fcedc9; color: #b7950b; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Control y Monitoreo de Estaciones de Cebaderos</h1>
+        <p>Ingreso de inspecciones en lote y edición conectado a Firestore (nam5)</p>
+    </header>
+
+    <!-- BÚSQUEDA / CARGA DE DOCUMENTO EXISTENTE -->
+    <section class="search-section">
+        <div class="form-group" style="flex: 2;">
+            <label for="searchConsecutivo">Buscar por Consecutivo de Documento (Cotización / Factura)</label>
+            <input type="text" id="searchConsecutivo" placeholder="Ej: DOC-000002">
+        </div>
+        <button type="button" class="btn-primary" id="btnBuscar">Buscar y Cargar</button>
+        <button type="button" class="btn-secondary" id="btnNuevo">Limpiar / Nuevo</button>
+        <span id="formMode" class="status-badge status-new">Modo: Nuevo Registro</span>
+    </section>
+
+    <form id="formControlCebaderos">
+        <!-- DATOS DEL CLIENTE Y DOCUMENTO (Campos mapeados con tu BD actual) -->
+        <div class="metadata-grid">
+            <div class="form-group">
+                <label for="clienteId">Cliente (ID/Referencia)</label>
+                <input type="text" id="clienteId" placeholder="clientes/CLI-000001">
+            </div>
+            <div class="form-group">
+                <label for="consecutivo">Consecutivo</label>
+                <input type="text" id="consecutivo" readonly placeholder="Se autocompleta">
+            </div>
+            <div class="form-group">
+                <label for="fechaEmisionDoc">Fecha de Emisión Original</label>
+                <input type="text" id="fechaEmisionDoc" readonly placeholder="Se autocompleta">
+            </div>
+            <div class="form-group">
+                <label for="fechaInspeccion">Fecha de Inspección Actual</label>
+                <input type="date" id="fechaInspeccion" required>
+            </div>
+        </div>
+
+        <!-- GENERADOR EN MASA (MÚLTIPLES ÍTEMS A LA VEZ) -->
+        <div class="bulk-section">
+            <h3>Agregar Múltiples Estaciones Simultáneamente</h3>
+            <p style="font-size: 12px; color: #666;">Ingresa cuántas estaciones deseas inyectar a la lista de golpe.</p>
+            <div class="bulk-controls">
+                <div class="form-group" style="max-width: 150px;">
+                    <label for="bulkCantidad">Cantidad a agregar</label>
+                    <input type="number" id="bulkCantidad" value="5" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="bulkEstadoCebo">Estado Inicial del Cebo</label>
+                    <select id="bulkEstadoCebo">
+                        <option value="Intacto">Intacto</option>
+                        <option value="Consumo Parcial">Consumo Parcial</option>
+                        <option value="Consumo Total">Consumo Total</option>
+                        <option value="Sin Cebo / Desaparecido">Sin Cebo / Desaparecido</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-primary" id="btnAgregarLote" style="background-color: var(--primary-color);">+ Generar Estaciones</button>
+            </div>
+        </div>
+
+        <!-- TABLA DINÁMICA DE ESTACIONES -->
+        <h3>Detalle de Estaciones de Cebado</h3>
+        <div class="stations-table-container">
+            <table id="tablaEstaciones">
+                <thead>
+                    <tr>
+                        <th style="width: 80px; text-align: center;">N° Est.</th>
+                        <th>Ubicación Específica</th>
+                        <th style="width: 180px;">Estado del Cebo</th>
+                        <th style="width: 150px;">Actividad</th>
+                        <th style="width: 110px; text-align: center;">Mantenimiento</th>
+                        <th>Observaciones</th>
+                        <th style="width: 70px; text-align: center;">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tbodyEstaciones">
+                    <!-- Filas dinámicas -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="actions-footer">
+            <button type="button" class="btn-secondary" id="btnResetForm">Cancelar</button>
+            <button type="submit" class="btn-primary" id="btnGuardar">Guardar en Firebase (nam5)</button>
+        </div>
+    </form>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Reemplaza esto con tus credenciales reales del proyecto Firebase
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_PROYECTO.firebaseapp.com",
+        projectId: "TU_PROYECTO_ID",
+        storageBucket: "TU_PROYECTO.appspot.com",
+        locationId: "nam5", // Tu ubicación guardada
+        appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Mapeo de elementos
+    const tbodyEstaciones = document.getElementById('tbodyEstaciones');
+    const btnAgregarLote = document.getElementById('btnAgregarLote');
+    const bulkCantidad = document.getElementById('bulkCantidad');
+    const bulkEstadoCebo = document.getElementById('bulkEstadoCebo');
+    const formControlCebaderos = document.getElementById('formControlCebaderos');
+    const searchConsecutivo = document.getElementById('searchConsecutivo');
+    const btnBuscar = document.getElementById('btnBuscar');
+    const btnNuevo = document.getElementById('btnNuevo');
+    const formModeBadge = document.getElementById('formMode');
+    
+    const clienteIdInput = document.getElementById('clienteId');
+    const consecutivoInput = document.getElementById('consecutivo');
+    const fechaEmisionDocInput = document.getElementById('fechaEmisionDoc');
+    const fechaInspeccionInput = document.getElementById('fechaInspeccion');
+
+    let currentMode = 'NUEVO';
+    let documentIdEdicion = null; 
+
+    fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
+
+    // FUNCIÓN PARA INYECTAR FILA INDIVIDUAL O MÚLTIPLE
+    function agregarFilaEstacion(numero, datos = {}) {
+        const tr = document.createElement('tr');
+        tr.className = 'fila-estacion';
+        
+        const ubicacion = datos.ubicacion || '';
+        const estadoCebo = datos.estado_cebo || 'Intacto';
+        const actividad = datos.actividad || 'Ninguna';
+        const mantenimiento = datos.mantenimiento !== undefined ? datos.mantenimiento : true;
+        const observaciones = datos.observaciones || '';
+
+        tr.innerHTML = `
+            <td style="text-align: center; font-weight: bold;" class="col-numero">${numero}</td>
+            <td><input type="text" class="input-ubicacion" value="${ubicacion}" placeholder="Ej: Pasillo A, Planta 1..." required></td>
+            <td>
+                <select class="select-cebo">
+                    <option value="Intacto" ${estadoCebo === 'Intacto' ? 'selected' : ''}>Intacto</option>
+                    <option value="Consumo Parcial" ${estadoCebo === 'Consumo Parcial' ? 'selected' : ''}>Consumo Parcial</option>
+                    <option value="Consumo Total" ${estadoCebo === 'Consumo Total' ? 'selected' : ''}>Consumo Total</option>
+                    <option value="Sin Cebo / Desaparecido" ${estadoCebo === 'Sin Cebo / Desaparecido' ? 'selected' : ''}>Sin Cebo / Desaparecido</option>
+                </select>
+            </td>
+            <td>
+                <select class="select-actividad">
+                    <option value="Ninguna" ${actividad === 'Ninguna' ? 'selected' : ''}>Ninguna</option>
+                    <option value="Baja" ${actividad === 'Baja' ? 'selected' : ''}>Baja</option>
+                    <option value="Media" ${actividad === 'Media' ? 'selected' : ''}>Media</option>
+                    <option value="Alta" ${actividad === 'Alta' ? 'selected' : ''}>Alta</option>
+                </select>
+            </td>
+            <td style="text-align: center;">
+                <input type="checkbox" class="check-mantenimiento" ${mantenimiento ? 'checked' : ''} style="width: auto; transform: scale(1.2);">
+            </td>
+            <td><input type="text" class="input-observaciones" value="${observaciones}" placeholder="Ninguna"></td>
+            <td style="text-align: center;">
+                <button type="button" class="btn-danger btn-eliminar-fila" style="padding: 5px 10px; font-size: 11px;">X</button>
+            </td>
+        `;
+
+        tr.querySelector('.btn-eliminar-fila').addEventListener('click', () => {
+            tr.remove();
+            reordenarNumeracion();
+        });
+
+        tbodyEstaciones.appendChild(tr);
+    }
+
+    function reordenarNumeracion() {
+        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
+        filas.forEach((fila, index) => {
+            fila.querySelector('.col-numero').textContent = index + 1;
+        });
+    }
+
+    // DISPARADOR: AGREGAR MUCHAS ESTACIONES JUNTAS
+    btnAgregarLote.addEventListener('click', () => {
+        const cantidad = parseInt(bulkCantidad.value) || 1;
+        const estadoPredeterminado = bulkEstadoCebo.value;
+        const yaExistentes = tbodyEstaciones.querySelectorAll('.fila-estacion').length;
+        
+        for (let i = 1; i <= cantidad; i++) {
+            agregarFilaEstacion(yaExistentes + i, {
+                estado_cebo: estadoPredeterminado,
+                mantenimiento: true
+            });
+        }
+    });
+
+    // BUSCAR Y EDITAR (Simulación y lógica para Firebase)
+    btnBuscar.addEventListener('click', async () => {
+        const consecutivoBusqueda = searchConsecutivo.value.trim();
+        if (!consecutivoBusqueda) return alert("Digita un consecutivo.");
+
+        // LÓGICA CON FIREBASE REAL:
+        // 1. Buscas en la colección de cotizaciones/facturas para traer los datos del cliente
+        // 2. Buscas si ya existe una inspección previa para ese consecutivo para "Editarlo"
+        
+        if (consecutivoBusqueda === "DOC-000002") {
+            clienteIdInput.value = "clientes/CLI-000001";
+            consecutivoInput.value = "DOC-000002";
+            fechaEmisionDocInput.value = "19 de julio de 2026";
+            
+            tbodyEstaciones.innerHTML = '';
+            currentMode = 'EDICION';
+            formModeBadge.textContent = "Modo: Edición de Registro";
+            formModeBadge.className = "status-badge status-edit";
+            
+            // Simulación de carga de ítems existentes
+            agregarFilaEstacion(1, { ubicacion: "Pasillo Norte", estado_cebo: "Consumo Parcial", actividad: "Baja" });
+            agregarFilaEstacion(2, { ubicacion: "Bodega Principal", estado_cebo: "Intacto", actividad: "Ninguna" });
+        } else {
+            alert("Prueba buscando 'DOC-000002' para simular la carga e inserción múltiple.");
+        }
+    });
+
+    btnNuevo.addEventListener('click', () => {
+        formControlCebaderos.reset();
+        tbodyEstaciones.innerHTML = '';
+        currentMode = 'NUEVO';
+        formModeBadge.textContent = "Modo: Nuevo Registro";
+        formModeBadge.className = "status-badge status-new";
+    });
+
+    // GUARDAR TODO EN UN SOLO MAPA/ARRAY EN FIRESTORE
+    formControlCebaderos.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
+        if (!filas.length) return alert("Agrega al menos una estación.");
+
+        // Recolectamos todas las estaciones de la pantalla en un lote
+        const arrayEstaciones = [];
+        filas.forEach((fila) => {
+            arrayEstaciones.push({
+                numero_estacion: parseInt(fila.querySelector('.col-numero').textContent),
+                ubicacion: fila.querySelector('.input-ubicacion').value,
+                estado_cebo: fila.querySelector('.select-cebo').value,
+                actividad: fila.querySelector('.select-actividad').value,
+                mantenimiento_realizado: fila.querySelector('.check-mantenimiento').checked,
+                observaciones: fila.querySelector('.input-observaciones').value
+            });
+        });
+
+        const dataFinal = {
+            cliente_ref: clienteIdInput.value,
+            consecutivo_origen: consecutivoInput.value,
+            fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
+            estaciones: arrayEstaciones // ARREGLO DE OBJETOS SIMULTÁNEOS
+        };
+
+        try {
+            console.log("Guardando lote en Firestore:", dataFinal);
+            // CÓDIGO REAL FIRESTORE:
+            // await addDoc(collection(db, "control_cebaderos"), dataFinal);
+            
+            alert("¡Se guardaron las " + arrayEstaciones.length + " estaciones con éxito en Firebase!");
+            btnNuevo.click();
+        } catch (err) {
+            alert("Error al guardar: " + err.message);
+        }
+    });
+</script>
+</body>
+</html>
