@@ -72,7 +72,7 @@
             font-weight: 600;
         }
 
-        input, select, textarea {
+        input, select {
             padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
@@ -178,10 +178,9 @@
         <!-- DATOS DEL CLIENTE Y DOCUMENTO -->
         <div class="metadata-grid">
             <div class="form-group">
-                <label for="clienteSelect">Seleccionar Cliente (Desde Firebase)</label>
-                <!-- Modificado a SELECT dinámico -->
+                <label for="clienteSelect">Seleccionar Cliente (Desde Base de Datos)</label>
                 <select id="clienteSelect" required>
-                    <option value="">Cargando clientes...</option>
+                    <option value="">Cargando clientes de Firestore...</option>
                 </select>
             </div>
             <div class="form-group">
@@ -249,20 +248,22 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getFirestore, collection, doc, setDoc, addDoc, getDocs, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-    // Reemplaza esto con tus credenciales reales del proyecto Firebase
+    // ATENCIÓN: Reemplaza las 'X' con las claves completas de tu Web App de Firebase.
+    // El 'projectId' ya está configurado exactamente igual a tu pantalla de Firebase Console.
     const firebaseConfig = {
-        apiKey: "TU_API_KEY",
-        authDomain: "TU_PROYECTO.firebaseapp.com",
-        projectId: "TU_PROYECTO_ID",
-        storageBucket: "TU_PROYECTO.appspot.com",
-        locationId: "nam5", 
-        appId: "TU_APP_ID"
+        apiKey: "TU_API_KEY_AQUÍ", 
+        authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+        projectId: "fumigadora-tecnoplagas",
+        storageBucket: "fumigadora-tecnoplagas.appspot.com",
+        messagingSenderId: "TU_SENDER_ID_AQUÍ",
+        appId: "TU_APP_ID_AQUÍ"
     };
 
+    // Inicialización de la App
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Mapeo de elementos
+    // Mapeo del DOM
     const tbodyEstaciones = document.getElementById('tbodyEstaciones');
     const btnAgregarLote = document.getElementById('btnAgregarLote');
     const bulkCantidad = document.getElementById('bulkCantidad');
@@ -280,37 +281,52 @@
     let currentMode = 'NUEVO';
     let documentIdEdicion = null; 
 
+    // Establecer fecha por defecto (Hoy)
     fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
 
-    // --- NUEVO: FUNCIÓN PARA CARGAR CLIENTES DESDE FIRESTORE AL INICIAR ---
+    // FUNCIÓN PRINCIPAL: CONSULTAR LA BASE DE DATOS 'CLIENTES'
     async function cargarClientesDesdeFirebase() {
         try {
-            // Se apunta a tu colección 'clientes' tal como se ve en tu imagen
+            console.log("Iniciando consulta a la colección 'clientes'...");
+            
+            // Petición directa a la colección en minúsculas 'clientes'
             const querySnapshot = await getDocs(collection(db, "clientes"));
             
+            if (querySnapshot.empty) {
+                console.warn("La colección 'clientes' existe pero no tiene documentos.");
+                clienteSelect.innerHTML = '<option value="">No se encontraron clientes creados</option>';
+                return;
+            }
+
             clienteSelect.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
             
             querySnapshot.forEach((docSnap) => {
                 const datosCliente = docSnap.data();
-                // Usamos 'consecutivo' (CLI-000001) como value y el 'nombre' para mostrar en la interfaz
+                
+                // Mapeo de variables idénticas a tu imagen: 'consecutivo' y 'nombre'
                 const idCliente = datosCliente.consecutivo || docSnap.id;
-                const nombreCliente = datosCliente.nombre || "Sin Nombre";
+                const nombreCliente = datosCliente.nombre || "Cliente sin Nombre";
                 
                 const option = document.createElement('option');
-                option.value = `clientes/${idCliente}`; // Lo guardamos con la estructura de referencia que manejas
+                option.value = `clientes/${idCliente}`; 
                 option.textContent = `${idCliente} - ${nombreCliente}`;
                 clienteSelect.appendChild(option);
             });
+
+            console.log("¡Clientes cargados con éxito en la lista!");
+
         } catch (error) {
-            console.error("Error al cargar los clientes: ", error);
-            clienteSelect.innerHTML = '<option value="">Error al cargar clientes</option>';
+            console.error("Error al leer Firestore:", error);
+            // Alerta en vivo por si el fallo corresponde a Reglas de Seguridad bloqueadas (Falta de Permisos)
+            alert("Error crítico al obtener clientes: " + error.message + "\n\nVerifica las Reglas de Seguridad en la Consola Firebase.");
+            clienteSelect.innerHTML = '<option value="">Fallo al sincronizar clientes</option>';
         }
     }
 
-    // Ejecutar la carga de clientes automáticamente al abrir la pantalla
+    // Iniciar la consulta automáticamente al abrir el archivo
     cargarClientesDesdeFirebase();
 
-    // FUNCIÓN PARA INYECTAR FILA INDIVIDUAL O MÚLTIPLE
+    // FILAS DINÁMICAS
     function agregarFilaEstacion(numero, datos = {}) {
         const tr = document.createElement('tr');
         tr.className = 'fila-estacion';
@@ -364,6 +380,7 @@
         });
     }
 
+    // BOTÓN ACCIÓN: AGREGAR ESTACIONES EN LOTE
     btnAgregarLote.addEventListener('click', () => {
         const cantidad = parseInt(bulkCantidad.value) || 1;
         const estadoPredeterminado = bulkEstadoCebo.value;
@@ -377,13 +394,12 @@
         }
     });
 
-    // BUSCAR Y EDITAR
+    // BUSCAR DOCUMENTO PARA EDITAR / CARGAR
     btnBuscar.addEventListener('click', async () => {
         const consecutivoBusqueda = searchConsecutivo.value.trim();
         if (!consecutivoBusqueda) return alert("Digita un consecutivo.");
         
         if (consecutivoBusqueda === "DOC-000002") {
-            // Auto selecciona el cliente en la lista desplegable
             clienteSelect.value = "clientes/CLI-000001";
             consecutivoInput.value = "DOC-000002";
             
@@ -395,7 +411,7 @@
             agregarFilaEstacion(1, { ubicacion: "Pasillo Norte", estado_cebo: "Consumo Parcial", actividad: "Baja" });
             agregarFilaEstacion(2, { ubicacion: "Bodega Principal", estado_cebo: "Intacto", actividad: "Ninguna" });
         } else {
-            alert("Muestra de simulación. Cuando asocies tus credenciales completas de Firebase, aquí podrás consultar directamente por queries.");
+            alert("Muestra de simulación. Recuerda que puedes asociar queries directos aquí.");
         }
     });
 
@@ -407,7 +423,7 @@
         formModeBadge.className = "status-badge status-new";
     });
 
-    // GUARDAR EN FIRESTORE
+    // PROCESAR GUARDADO COMPLETO EN FIRESTORE
     formControlCebaderos.addEventListener('submit', async (e) => {
         e.preventDefault();
         const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
@@ -426,21 +442,19 @@
         });
 
         const dataFinal = {
-            cliente_ref: clienteSelect.value, // Guarda la selección del menú desplegable
+            cliente_ref: clienteSelect.value, 
             consecutivo_origen: consecutivoInput.value,
             fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
             estaciones: arrayEstaciones 
         };
 
         try {
-            console.log("Guardando datos en Firestore:", dataFinal);
-            // Ejecución de guardado real:
-            // await addDoc(collection(db, "Cebaderos"), dataFinal);
-            
-            alert("¡Se guardaron las " + arrayEstaciones.length + " estaciones con éxito bajo el cliente " + clienteSelect.value + "!");
+            // Guarda los datos en la colección "Cebaderos" (con mayúscula o minúscula según desees)
+            await addDoc(collection(db, "Cebaderos"), dataFinal);
+            alert("¡Reporte guardado con éxito con las " + arrayEstaciones.length + " estaciones asociadas!");
             btnNuevo.click();
         } catch (err) {
-            alert("Error al guardar: " + err.message);
+            alert("Fallo al escribir el registro en Firestore: " + err.message);
         }
     });
 </script>
