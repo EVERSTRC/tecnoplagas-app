@@ -135,6 +135,29 @@
       box-shadow: 0 0 0 3px rgba(0, 176, 116, 0.15);
     }
 
+    /* Contenedor flexible para alinear el botón al lado del campo de GPS */
+    .gps-input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-gps-auto {
+      background-color: #4b5563;
+      color: white;
+      border: none;
+      padding: 0 15px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background-color 0.2s;
+    }
+
+    .btn-gps-auto:hover {
+      background-color: #374151;
+    }
+
     fieldset {
       border: 1px solid var(--border-color);
       border-radius: 8px;
@@ -289,8 +312,8 @@
               <input type="text" id="cliente-telefono" required placeholder="Ej: 89877776">
             </div>
             <div class="form-group">
-              <label for="cliente-correo">Email</label>
-              <input type="email" id="cliente-correo" required placeholder="Ej: gtpcrc@gmail.com">
+              <label for="cliente-correo">Email (Opcional)</label>
+              <input type="email" id="cliente-correo" placeholder="Ej: gtpcrc@gmail.com">
             </div>
             <div class="form-group">
               <label for="cliente-frecuencia">Frecuencia de Fumigación</label>
@@ -315,7 +338,10 @@
           <div class="form-row">
             <div class="form-group">
               <label for="cliente-gps">Coordenadas GPS (Texto)</label>
-              <input type="text" id="cliente-gps" placeholder="Ej: 9.9080975, -83.9921879" value="0, 0">
+              <div class="gps-input-group">
+                <input type="text" id="cliente-gps" placeholder="Ej: 9.9080975, -83.9921879" value="0, 0">
+                <button type="button" class="btn-gps-auto" id="btn-detectar-gps">📍 Obtener GPS</button>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -399,6 +425,46 @@
 
     let todosLosClientes = [];
 
+    // DETECCIÓN AUTOMÁTICA DE GEOLOCALIZACIÓN GPS
+    document.getElementById('btn-detectar-gps').addEventListener('click', function() {
+      const btn = this;
+      if (navigator.geolocation) {
+        btn.textContent = "⏳ Detectando...";
+        btn.disabled = true;
+        
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            document.getElementById('cliente-gps').value = `${lat}, ${lon}`;
+            btn.textContent = "📍 Obtener GPS";
+            btn.disabled = false;
+          }, 
+          function(error) {
+            btn.textContent = "📍 Obtener GPS";
+            btn.disabled = false;
+            switch(error.code) {
+              case error.PERMISSION_DENIED:
+                alert("Permiso denegado. Por favor, habilita la ubicación en tu dispositivo o navegador.");
+                break;
+              case error.POSITION_UNAVAILABLE:
+                alert("La información de ubicación no está disponible actualmente.");
+                break;
+              case error.TIMEOUT:
+                alert("Se agotó el tiempo de espera para obtener la ubicación.");
+                break;
+              default:
+                alert("Ocurrió un error desconocido al obtener la localización.");
+                break;
+            }
+          },
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        alert("Tu navegador o dispositivo no soporta la detección automática de GPS.");
+      }
+    });
+
     function generarSiguienteConsecutivo(lista) {
       if (lista.length === 0) return "CLI-000001";
       let maxNum = 0;
@@ -417,7 +483,6 @@
       if (!tbody) return;
 
       try {
-        // CORREGIDO: Apunta a 'clientes' en minúscula tal como en tu Firebase
         const querySnapshot = await getDocs(collection(db, "clientes"));
         todosLosClientes = [];
         tbody.innerHTML = "";
@@ -474,7 +539,6 @@
           const cliente = todosLosClientes.find(c => c.id === id);
 
           if (cliente) {
-            // Asignación con los campos exactos de tu documento Firestore
             document.getElementById('cliente-id-edicion').value = id;
             document.getElementById('cliente-consecutivo').value = cliente.consecutivo || "";
             document.getElementById('cliente-nombre').value = cliente.nombre || "";
@@ -501,7 +565,6 @@
           const cliente = todosLosClientes.find(c => c.id === id);
           if (confirm(`¿Desea borrar permanentemente a ${cliente?.nombre || 'este registro'}?`)) {
             try {
-              // CORREGIDO: Apunta a 'clientes'
               await deleteDoc(doc(db, "clientes", id));
               alert("🗑️ Eliminado correctamente.");
               cargarClientesDesdeFirestore();
@@ -533,7 +596,6 @@
         e.preventDefault();
         const idEdicion = document.getElementById('cliente-id-edicion').value;
         
-        // Mapeo idéntico al esquema de tu Firestore
         const payload = {
           "cedula": document.getElementById('cliente-cedula').value,
           "consecutivo": document.getElementById('cliente-consecutivo').value,
@@ -548,7 +610,6 @@
 
         try {
           if (idEdicion) {
-            // CORREGIDO: Apunta a 'clientes'
             await updateDoc(doc(db, "clientes", idEdicion), payload);
             alert("✅ ¡Datos actualizados correctamente!");
             document.getElementById('cliente-id-edicion').value = "";
@@ -556,9 +617,7 @@
             document.getElementById('btn-submit-cliente').textContent = "💾 Guardar Cliente";
             document.getElementById('btn-submit-cliente').style.backgroundColor = "#00b074";
           } else {
-            // Campos de creación con la fecha en texto o formato ISO según desees
             payload["fechaRegistro"] = new Date().toISOString();
-            // CORREGIDO: Apunta a 'clientes'
             await addDoc(collection(db, "clientes"), payload);
             alert("✅ ¡Cliente guardado con éxito!");
           }
