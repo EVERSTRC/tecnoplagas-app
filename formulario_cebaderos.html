@@ -175,19 +175,18 @@
     </section>
 
     <form id="formControlCebaderos">
-        <!-- DATOS DEL CLIENTE Y DOCUMENTO (Campos mapeados con tu BD actual) -->
+        <!-- DATOS DEL CLIENTE Y DOCUMENTO -->
         <div class="metadata-grid">
             <div class="form-group">
-                <label for="clienteId">Cliente (ID/Referencia)</label>
-                <input type="text" id="clienteId" placeholder="clientes/CLI-000001">
+                <label for="clienteSelect">Seleccionar Cliente (Desde Firebase)</label>
+                <!-- Modificado a SELECT dinámico -->
+                <select id="clienteSelect" required>
+                    <option value="">Cargando clientes...</option>
+                </select>
             </div>
             <div class="form-group">
-                <label for="consecutivo">Consecutivo</label>
-                <input type="text" id="consecutivo" readonly placeholder="Se autocompleta">
-            </div>
-            <div class="form-group">
-                <label for="fechaEmisionDoc">Fecha de Emisión Original</label>
-                <input type="text" id="fechaEmisionDoc" readonly placeholder="Se autocompleta">
+                <label for="consecutivo">Consecutivo Documento</label>
+                <input type="text" id="consecutivo" placeholder="Ej: DOC-000002">
             </div>
             <div class="form-group">
                 <label for="fechaInspeccion">Fecha de Inspección Actual</label>
@@ -195,7 +194,7 @@
             </div>
         </div>
 
-        <!-- GENERADOR EN MASA (MÚLTIPLES ÍTEMS A LA VEZ) -->
+        <!-- GENERADOR EN MASA -->
         <div class="bulk-section">
             <h3>Agregar Múltiples Estaciones Simultáneamente</h3>
             <p style="font-size: 12px; color: #666;">Ingresa cuántas estaciones deseas inyectar a la lista de golpe.</p>
@@ -256,7 +255,7 @@
         authDomain: "TU_PROYECTO.firebaseapp.com",
         projectId: "TU_PROYECTO_ID",
         storageBucket: "TU_PROYECTO.appspot.com",
-        locationId: "nam5", // Tu ubicación guardada
+        locationId: "nam5", 
         appId: "TU_APP_ID"
     };
 
@@ -274,15 +273,42 @@
     const btnNuevo = document.getElementById('btnNuevo');
     const formModeBadge = document.getElementById('formMode');
     
-    const clienteIdInput = document.getElementById('clienteId');
+    const clienteSelect = document.getElementById('clienteSelect');
     const consecutivoInput = document.getElementById('consecutivo');
-    const fechaEmisionDocInput = document.getElementById('fechaEmisionDoc');
     const fechaInspeccionInput = document.getElementById('fechaInspeccion');
 
     let currentMode = 'NUEVO';
     let documentIdEdicion = null; 
 
     fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
+
+    // --- NUEVO: FUNCIÓN PARA CARGAR CLIENTES DESDE FIRESTORE AL INICIAR ---
+    async function cargarClientesDesdeFirebase() {
+        try {
+            // Se apunta a tu colección 'clientes' tal como se ve en tu imagen
+            const querySnapshot = await getDocs(collection(db, "clientes"));
+            
+            clienteSelect.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
+            
+            querySnapshot.forEach((docSnap) => {
+                const datosCliente = docSnap.data();
+                // Usamos 'consecutivo' (CLI-000001) como value y el 'nombre' para mostrar en la interfaz
+                const idCliente = datosCliente.consecutivo || docSnap.id;
+                const nombreCliente = datosCliente.nombre || "Sin Nombre";
+                
+                const option = document.createElement('option');
+                option.value = `clientes/${idCliente}`; // Lo guardamos con la estructura de referencia que manejas
+                option.textContent = `${idCliente} - ${nombreCliente}`;
+                clienteSelect.appendChild(option);
+            });
+        } catch (error) {
+            console.error("Error al cargar los clientes: ", error);
+            clienteSelect.innerHTML = '<option value="">Error al cargar clientes</option>';
+        }
+    }
+
+    // Ejecutar la carga de clientes automáticamente al abrir la pantalla
+    cargarClientesDesdeFirebase();
 
     // FUNCIÓN PARA INYECTAR FILA INDIVIDUAL O MÚLTIPLE
     function agregarFilaEstacion(numero, datos = {}) {
@@ -338,7 +364,6 @@
         });
     }
 
-    // DISPARADOR: AGREGAR MUCHAS ESTACIONES JUNTAS
     btnAgregarLote.addEventListener('click', () => {
         const cantidad = parseInt(bulkCantidad.value) || 1;
         const estadoPredeterminado = bulkEstadoCebo.value;
@@ -352,30 +377,25 @@
         }
     });
 
-    // BUSCAR Y EDITAR (Simulación y lógica para Firebase)
+    // BUSCAR Y EDITAR
     btnBuscar.addEventListener('click', async () => {
         const consecutivoBusqueda = searchConsecutivo.value.trim();
         if (!consecutivoBusqueda) return alert("Digita un consecutivo.");
-
-        // LÓGICA CON FIREBASE REAL:
-        // 1. Buscas en la colección de cotizaciones/facturas para traer los datos del cliente
-        // 2. Buscas si ya existe una inspección previa para ese consecutivo para "Editarlo"
         
         if (consecutivoBusqueda === "DOC-000002") {
-            clienteIdInput.value = "clientes/CLI-000001";
+            // Auto selecciona el cliente en la lista desplegable
+            clienteSelect.value = "clientes/CLI-000001";
             consecutivoInput.value = "DOC-000002";
-            fechaEmisionDocInput.value = "19 de julio de 2026";
             
             tbodyEstaciones.innerHTML = '';
             currentMode = 'EDICION';
             formModeBadge.textContent = "Modo: Edición de Registro";
             formModeBadge.className = "status-badge status-edit";
             
-            // Simulación de carga de ítems existentes
             agregarFilaEstacion(1, { ubicacion: "Pasillo Norte", estado_cebo: "Consumo Parcial", actividad: "Baja" });
             agregarFilaEstacion(2, { ubicacion: "Bodega Principal", estado_cebo: "Intacto", actividad: "Ninguna" });
         } else {
-            alert("Prueba buscando 'DOC-000002' para simular la carga e inserción múltiple.");
+            alert("Muestra de simulación. Cuando asocies tus credenciales completas de Firebase, aquí podrás consultar directamente por queries.");
         }
     });
 
@@ -387,13 +407,12 @@
         formModeBadge.className = "status-badge status-new";
     });
 
-    // GUARDAR TODO EN UN SOLO MAPA/ARRAY EN FIRESTORE
+    // GUARDAR EN FIRESTORE
     formControlCebaderos.addEventListener('submit', async (e) => {
         e.preventDefault();
         const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
         if (!filas.length) return alert("Agrega al menos una estación.");
 
-        // Recolectamos todas las estaciones de la pantalla en un lote
         const arrayEstaciones = [];
         filas.forEach((fila) => {
             arrayEstaciones.push({
@@ -407,18 +426,18 @@
         });
 
         const dataFinal = {
-            cliente_ref: clienteIdInput.value,
+            cliente_ref: clienteSelect.value, // Guarda la selección del menú desplegable
             consecutivo_origen: consecutivoInput.value,
             fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
-            estaciones: arrayEstaciones // ARREGLO DE OBJETOS SIMULTÁNEOS
+            estaciones: arrayEstaciones 
         };
 
         try {
-            console.log("Guardando lote en Firestore:", dataFinal);
-            // CÓDIGO REAL FIRESTORE:
-            // await addDoc(collection(db, "control_cebaderos"), dataFinal);
+            console.log("Guardando datos en Firestore:", dataFinal);
+            // Ejecución de guardado real:
+            // await addDoc(collection(db, "Cebaderos"), dataFinal);
             
-            alert("¡Se guardaron las " + arrayEstaciones.length + " estaciones con éxito en Firebase!");
+            alert("¡Se guardaron las " + arrayEstaciones.length + " estaciones con éxito bajo el cliente " + clienteSelect.value + "!");
             btnNuevo.click();
         } catch (err) {
             alert("Error al guardar: " + err.message);
