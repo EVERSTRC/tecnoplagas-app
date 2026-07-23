@@ -150,12 +150,6 @@
       font-size: 14px;
       font-weight: bold;
       color: #475569;
-      transition: background-color 0.2s;
-    }
-
-    .btn-clear-input:hover {
-      background-color: #cbd5e1;
-      color: #1e293b;
     }
 
     .checkbox-group {
@@ -168,6 +162,7 @@
       border: 1px solid #cbd5e1;
       border-radius: 6px;
     }
+
     .checkbox-item {
       display: flex;
       align-items: center;
@@ -175,10 +170,10 @@
       font-size: 14px;
       cursor: pointer;
     }
+
     .checkbox-item input {
       width: auto;
       margin: 0;
-      cursor: pointer;
     }
 
     fieldset {
@@ -211,20 +206,10 @@
       justify-content: center;
       align-items: center;
       gap: 8px;
-      transition: background-color 0.2s;
     }
 
-    .btn-submit:hover {
-      background-color: var(--blue-hover);
-    }
-
-    /* Estilo dinámico cuando se edita un certificado */
     .btn-submit.modo-edicion {
       background-color: var(--orange-btn);
-    }
-
-    .btn-submit.modo-edicion:hover {
-      background-color: var(--orange-hover);
     }
 
     .search-wrapper {
@@ -279,121 +264,105 @@
     .seccion-modulo {
       display: none;
     }
+
     .seccion-modulo.active {
       display: block;
     }
 
-    /* =========================================================================
-       CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE)
-       ========================================================================= */
+    /* ESTILOS DE IMPRESIÓN */
+    .only-print {
+      display: none;
+    }
+
     @media print {
-      .no-print { display: none !important; }
-      .only-print { display: block !important; }
-      
-      @page {
-        size: A4 landscape; 
-        margin: 6mm 8mm 6mm 8mm; 
+      .no-print {
+        display: none !important;
       }
       
-      body {
+      /* Modo Certificado Carta/A4 Horizontal */
+      body.print-cert {
         background: #fff;
         color: #000;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-family: Arial, sans-serif;
         font-size: 11px;
-        line-height: 1.25;
-        padding: 0;
         margin: 0;
-        position: relative;
+        padding: 0;
       }
 
-      body::before {
-        content: "";
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 65%;
-        height: 65%;
-        background-image: url('https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/677ca6b312a9bb696385ebe2612087a36249f256/TecnoPlagas%20Logo.png');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        opacity: 0.07; 
-        z-index: -1000;
-        pointer-events: none;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      body.print-cert #vista-impresion {
+        display: block !important;
       }
 
-      .certificate-border {
-        border: 3px double #475569;
-        padding: 12px;
-        border-radius: 4px;
-        box-sizing: border-box;
+      body.print-cert #vista-etiqueta-qr {
+        display: none !important;
       }
 
-      table.print-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 6px;
+      /* Modo Etiqueta Térmica 50mm x 30mm */
+      body.print-qr-mode #vista-impresion {
+        display: none !important;
       }
 
-      table.print-table th, table.print-table td {
-        border: 1px solid #94a3b8;
-        padding: 5px 8px;
-        vertical-align: middle;
+      body.print-qr-mode #vista-etiqueta-qr {
+        display: flex !important;
       }
 
-      table.print-table th {
-        background-color: #f1f5f9 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-weight: bold;
-        text-align: left;
-        color: #1e293b;
-      }
-
-      .print-header-title {
-        text-align: center;
-        font-weight: bold;
-        font-size: 18px;
-        letter-spacing: 2px;
-        color: #0f172a;
-        margin: 0 0 10px 0;
-        padding-bottom: 3px;
-        border-bottom: 2px dashed #475569;
-      }
-      
-      .legal-text {
-        font-size: 8.5px;
-        color: #334155;
-        text-align: center;
-        line-height: 1.2;
-        margin-top: 8px;
-        border-top: 1px solid #cbd5e1;
-        padding-top: 4px;
-      }
-
-      .flex-row-print {
-        display: table;
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      .flex-col-print {
-        display: table-cell;
-        width: 50%;
-        vertical-align: top;
+      @page {
+        size: auto;
+        margin: 0mm;
       }
     }
-    
-    .only-print { display: none; }
+
+    /* Contenedor exacto para Etiqueta 50x30mm */
+    .etiqueta-qr-container {
+      width: 50mm;
+      height: 30mm;
+      box-sizing: border-box;
+      padding: 1.5mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .etiqueta-qr-header {
+      font-size: 7px;
+      font-weight: bold;
+      color: #0f172a;
+      text-transform: uppercase;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .etiqueta-qr-body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .etiqueta-qr-info {
+      font-size: 6.5px;
+      text-align: left;
+      line-height: 1.2;
+      color: #334155;
+    }
+
+    .etiqueta-qr-info strong {
+      color: #000;
+    }
   </style>
 
+  <!-- Librería QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
-<body>
+<body class="print-cert">
 
+  <!-- VISTA PRINCIPAL (Formulario + Tabla) -->
   <div class="no-print container">
     <div class="nav-bar">
       <div class="tabs-left">
@@ -403,6 +372,7 @@
       <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
     </div>
 
+    <!-- Módulo Emisión -->
     <div id="vista-emision" class="seccion-modulo active">
       <div id="titulo-pantalla" class="titulo-modulo">Fumigadora Tecnoplagas - Nuevo Certificado</div>
       
@@ -544,6 +514,7 @@
       </form>
     </div>
 
+    <!-- Módulo Historial -->
     <div id="vista-consulta" class="seccion-modulo">
       <div class="titulo-modulo">Fumigadora Tecnoplagas - Panel de Historial</div>
       <div class="search-wrapper">
@@ -572,127 +543,93 @@
     </div>
   </div>
 
+  <!-- VISTA 1: IMPRESIÓN CERTIFICADO COMPLETO -->
   <div id="vista-impresion" class="only-print">
-    <div class="certificate-border">
-      
-      <div class="flex-row-print">
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; width: 90%;">Datos del Cliente</h3>
-          <table style="width: 95%; border-collapse: collapse; font-size: 11px;">
-            <tr><td style="padding: 3px 0; font-weight: bold; width: 35%;">Razón Social:</td><td style="padding: 3px 0;" id="print-cliente">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Nombre Fantasía:</td><td style="padding: 3px 0;" id="print-fantasia">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Dirección Física:</td><td style="padding: 3px 0;" id="print-direccion">---</td></tr>
-          </table>
+    <div style="border: 2px solid #0f172a; padding: 15px; border-radius: 6px;">
+      <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #00b074; padding-bottom: 10px; margin-bottom: 10px;">
+        <div>
+          <h2 style="margin:0; color:#00b074;">Fumigadora TecnoPlagas C.R.C</h2>
+          <small>Permiso Sanitario: ARSLU-3160-02-2025 | Tel: 7232-5001 / 8987-7776</small>
         </div>
-        
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">Datos de la Empresa de Servicio</h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.3;">
-            <tr><td style="padding: 2px 0; font-weight: bold; width: 30%;">Razón Social:</td><td style="padding: 2px 0;">Fumigadora TecnoPlagas C.R.C</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Sede Central:</td><td style="padding: 2px 0;">Tres Ríos, La Unión, Cartago</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Permiso Sanitario:</td><td style="padding: 2px 0; font-weight: bold; color: #0f172a;">ARSLU-3160-02-2025</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Código CIIU:</td><td style="padding: 2px 0;">8129.0 Grupo de Riesgo: B</td></tr>
-          </table>
+        <div style="text-align: right;">
+          <h3 style="margin:0;">N° CERTIFICADO: <span id="print-num-cert">---</span></h3>
         </div>
       </div>
 
-      <div class="print-header-title">CERTIFICADO DE MANEJO INTEGRADO DE PLAGAS #<span id="print-num-cert">---</span></div>
-
-      <table class="print-table">
-        <tr>
-          <td><strong>Prestación del Servicio:</strong> <span id="print-fecha">---</span></td>
-          <td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
-          <td><strong>Horario Técnico:</strong> <span id="print-inicio">00:00</span> a <span id="print-fin">00:00</span></td>
-        </tr>
-        <tr>
-          <td><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
-          <td><strong>Placa Cabezal:</strong> <span id="print-cabezal">N/A</span></td>
-          <td><strong>Placa Remolque / Cont.:</strong> <span id="print-remolque">N/A</span></td>
-        </tr>
+      <table style="width: 100%; font-size: 11px; margin-bottom: 10px;">
+        <tr><td><strong>Cliente:</strong> <span id="print-cliente">---</span></td><td><strong>Fantasía:</strong> <span id="print-fantasia">---</span></td></tr>
+        <tr><td colspan="2"><strong>Dirección:</strong> <span id="print-direccion">---</span></td></tr>
+        <tr><td><strong>Fecha Servicio:</strong> <span id="print-fecha">---</span></td><td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td></tr>
+        <tr><td><strong>Horario:</strong> <span id="print-inicio">00:00</span> - <span id="print-fin">00:00</span></td><td><strong>Tipo Servicio:</strong> <span id="print-tipo">---</span></td></tr>
+        <tr><td><strong>Cabezal:</strong> <span id="print-cabezal">N/A</span></td><td><strong>Remolque:</strong> <span id="print-remolque">N/A</span></td></tr>
       </table>
 
-      <table class="print-table">
+      <div style="margin-bottom: 10px;">
+        <strong>Objetivos:</strong>
+        <div id="print-objetivos-elegidos"></div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <strong>Métodos:</strong>
+        <div id="print-metodos-elegidos"></div>
+      </div>
+
+      <div style="margin-bottom: 10px;">
+        <strong>Plagas que Controla:</strong> <span id="print-plagas">---</span>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #ccc; font-size: 10px; margin-bottom: 15px;">
         <thead>
-          <tr>
-            <th style="width: 30%;">Objetivo de Control</th>
-            <th style="width: 30%;">Método de Aplicación</th>
-            <th style="width: 40%;">Plagas que Controla (Rastreros / Voladores / Arácnidos)</th>
+          <tr style="background: #f1f5f9;">
+            <th style="border: 1px solid #ccc; padding: 4px;">Producto</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Ing. Activo</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Reg. M.S.</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Lote</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Dosis</th>
+            <th style="border: 1px solid #ccc; padding: 4px;">Vencimiento</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style="line-height: 1.6; padding: 6px; vertical-align: top;" id="print-objetivos-elegidos">
-              </td>
-            <td style="line-height: 1.4; padding: 6px; font-size: 10px; vertical-align: top;" id="print-metodos-elegidos">
-              </td>
-            <td id="print-plagas" style="padding: 8px; font-style: italic; vertical-align: top; color: #334155;">
-              ---
-            </td>
+            <td id="td-prod-nombre" style="border: 1px solid #ccc; padding: 4px;">---</td>
+            <td id="td-prod-activo" style="border: 1px solid #ccc; padding: 4px;">---</td>
+            <td id="td-prod-ms" style="border: 1px solid #ccc; padding: 4px;">---</td>
+            <td id="td-prod-lote" style="border: 1px solid #ccc; padding: 4px;">---</td>
+            <td id="td-prod-dosis" style="border: 1px solid #ccc; padding: 4px;">---</td>
+            <td id="td-prod-vence" style="border: 1px solid #ccc; padding: 4px;">---</td>
           </tr>
         </tbody>
       </table>
 
-      <h4 style="margin: 8px 0 4px 0; font-size: 11px; color: #1e293b; font-weight: bold;">Especificación de los Productos Químicos Utilizados:</h4>
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th>Producto Utilizado</th>
-            <th>Ingrediente Activo</th>
-            <th>N° Registro M.S.</th>
-            <th>Lote Fabricación</th>
-            <th>Dosis Aplicada</th>
-            <th>Vencimiento Químico</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td id="td-prod-nombre" style="font-weight: bold; color: #0f172a;">---</td>
-            <td id="td-prod-activo">---</td>
-            <td id="td-prod-ms">---</td>
-            <td id="td-prod-lote">---</td>
-            <td id="td-prod-dosis">---</td>
-            <td id="td-prod-vence">---</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <tr>
-          <td style="width: 38%; text-align: left; border: none; padding: 0 0 0 15px; vertical-align: bottom;">
-            <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; height: 75px; margin-bottom: 5px;">
-              <img src="https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/main/firma.png" 
-                   alt="Firma Everst" 
-                   style="max-height: 65px; max-width: 140px; object-fit: contain; display: block;" />
-            </div>
-            <div style="border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 90%;">
-              <strong>Everst Rojas Camacho</strong><br>Técnico Responsable Aplicador
-            </div>
-          </td>
-          <td style="width: 32%; text-align: center; border: none; padding: 0; vertical-align: bottom;">
-            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 85%; margin-left: auto; margin-right: auto;">
-              <br>Firma / Sello de Recibido Cliente
-            </div>
-          </td>
-          <td style="width: 30%; text-align: right; border: none; padding: 0; vertical-align: bottom;">
-            <div style="display: inline-block; text-align: center; padding: 5px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;">
-              <div style="font-size: 8px; font-weight: bold; color: #475569; margin-bottom: 3px; max-width: 100px; line-height: 1.1; margin-left: auto; margin-right: auto;">
-                Consulte la validez y autenticidad aquí
-              </div>
-              <div id="qrcode" style="display: inline-block;"></div>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <div class="legal-text">
-        De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud). <br>
-        <strong>Contacto Corporativo:</strong> Teléfono Oficina: 7232-5001 o 8987-7776 | Email: Info@tecnoplagascrc.com | Web: http://tecnoplagascrc.com
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 20px;">
+        <div>
+          <img src="https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/main/firma.png" alt="Firma" style="max-height: 50px;" /><br>
+          ________________________<br>
+          <strong>Everst Rojas Camacho</strong><br>Técnico Responsable
+        </div>
+        <div id="qrcode"></div>
       </div>
+    </div>
+  </div>
 
+  <!-- VISTA 2: IMPRESIÓN ETIQUETA QR (50x30 mm) -->
+  <div id="vista-etiqueta-qr" class="only-print">
+    <div class="etiqueta-qr-container">
+      <div class="etiqueta-qr-header">TECNOPLAGAS C.R.C</div>
+      <div class="etiqueta-qr-body">
+        <div id="qrcode-etiqueta"></div>
+        <div class="etiqueta-qr-info">
+          <div><strong>Certificado:</strong></div>
+          <div id="lbl-qr-cert">#---</div>
+          <div style="margin-top: 2px;"><strong>Fecha:</strong></div>
+          <div id="lbl-qr-fecha">---</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
+    // Cambio entre pestañas Emitir / Consultar
     function cambiarVista(vista) {
       const btnEmitir = document.getElementById('tab-emitir');
       const btnConsultar = document.getElementById('tab-consultar');
@@ -712,7 +649,7 @@
       }
     }
 
-    // Funcionalidad de copiar cliente a Nombre de Fantasía y limpiarlo
+    // Eventos UI del formulario
     document.addEventListener('DOMContentLoaded', () => {
       const selectCliente = document.getElementById('select-cliente');
       const inputFantasia = document.getElementById('nombre-fantasia');
@@ -722,7 +659,8 @@
         selectCliente.addEventListener('change', () => {
           const selectedText = selectCliente.options[selectCliente.selectedIndex]?.text;
           if (selectedText && selectCliente.value !== '') {
-            inputFantasia.value = selectedText;
+            // Elimina el prefijo [id] del texto para dejar solo la razón social
+            inputFantasia.value = selectedText.replace(/^\[.*?\]\s*/, '');
           } else {
             inputFantasia.value = '';
           }
@@ -736,8 +674,32 @@
         });
       }
     });
+
+    // Función de impresión de la Etiqueta QR 50x30 mm
+    window.imprimirSoloQR = function(idCert, fechaServ, urlVerificacion) {
+      document.body.className = 'print-qr-mode';
+
+      document.getElementById('lbl-qr-cert').innerText = idCert || '---';
+      document.getElementById('lbl-qr-fecha').innerText = fechaServ || '---';
+
+      const containerQR = document.getElementById('qrcode-etiqueta');
+      containerQR.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        new QRCode(containerQR, {
+          text: urlVerificacion || window.location.href,
+          width: 65,
+          height: 65
+        });
+      }
+
+      setTimeout(() => {
+        window.print();
+        document.body.className = 'print-cert';
+      }, 300);
+    };
   </script>
 
+  <!-- JS Principal (Firebase + Lógica del panel) -->
   <script type="module" src="certificados.js"></script>
 </body>
 </html>
