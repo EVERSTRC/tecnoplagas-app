@@ -218,6 +218,7 @@
       background-color: var(--blue-hover);
     }
 
+    /* Estilo dinámico cuando se edita un certificado */
     .btn-submit.modo-edicion {
       background-color: var(--orange-btn);
     }
@@ -282,34 +283,12 @@
       display: block;
     }
 
-    /* VISTA DE IMPRESIÓN SOLO CÓDIGO QR */
-    #vista-qr-solo {
-      display: none;
-    }
-
+    /* =========================================================================
+       CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE)
+       ========================================================================= */
     @media print {
-      body.print-qr-only .no-print,
-      body.print-qr-only #vista-impresion {
-        display: none !important;
-      }
-
-      body.print-qr-only #vista-qr-solo {
-        display: flex !important;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        width: 100vw;
-        margin: 0;
-        padding: 0;
-      }
-
-      body.print-qr-only @page {
-        size: auto;
-        margin: 0mm;
-      }
-
-      body:not(.print-qr-only) .no-print { display: none !important; }
-      body:not(.print-qr-only) .only-print { display: block !important; }
+      .no-print { display: none !important; }
+      .only-print { display: block !important; }
       
       @page {
         size: A4 landscape; 
@@ -593,12 +572,6 @@
     </div>
   </div>
 
-  <!-- VISTA PARA IMPRIMIR SOLO EL CÓDIGO QR -->
-  <div id="vista-qr-solo">
-    <div id="qrcode-solo-container"></div>
-  </div>
-
-  <!-- VISTA PARA IMPRIMIR EL CERTIFICADO COMPLETO -->
   <div id="vista-impresion" class="only-print">
     <div class="certificate-border">
       
@@ -739,6 +712,7 @@
       }
     }
 
+    // Funcionalidad de copiar cliente a Nombre de Fantasía y limpiarlo
     document.addEventListener('DOMContentLoaded', () => {
       const selectCliente = document.getElementById('select-cliente');
       const inputFantasia = document.getElementById('nombre-fantasia');
