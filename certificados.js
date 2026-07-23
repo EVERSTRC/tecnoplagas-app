@@ -2,11 +2,12 @@
    CERTIFICADOS.JS - Módulo de Gestión e Impresión
    ========================================================================== */
 
-// Variable global para almacenar el listado de certificados en memoria
+// Variables globales en memoria
 let listaCertificadosGlobal = [];
+let listaClientesGlobal = [];
 
 /**
- * Función principal para cargar la lista de certificados desde Supabase / BD
+ * Función principal para cargar clientes y certificados desde Supabase / BD
  */
 async function cargarListaCertificados() {
   try {
@@ -15,21 +16,47 @@ async function cargarListaCertificados() {
 
     contenedor.innerHTML = '<p class="text-center text-muted">Cargando certificados...</p>';
 
-    // Se asume la existencia del cliente 'supabaseClient' en el ámbito global
+    // Verificación de cliente Supabase
     if (typeof supabaseClient === 'undefined') {
       console.error("Error: supabaseClient no está definido.");
       contenedor.innerHTML = '<p class="text-center text-danger">Error al conectar con la base de datos.</p>';
       return;
     }
 
-    const { data, error } = await supabaseClient
+    // 1. Cargar la lista de Clientes
+    const { data: clientesData, error: errClientes } = await supabaseClient
+      .from('clientes')
+      .select('*');
+
+    if (errClientes) {
+      console.warn("Advertencia al cargar clientes:", errClientes);
+    } else {
+      listaClientesGlobal = clientesData || [];
+    }
+
+    // 2. Cargar los Certificados
+    const { data: certData, error: errCert } = await supabaseClient
       .from('certificados')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (errCert) throw errCert;
 
-    listaCertificadosGlobal = data || [];
+    // Relacionar cliente si el certificado solo guarda el cliente_id
+    listaCertificadosGlobal = (certData || []).map(cert => {
+      let clienteNombre = cert.clienteNombre;
+      if (!clienteNombre && cert.cliente_id) {
+        const cliEncontrado = listaClientesGlobal.find(c => c.id === cert.cliente_id);
+        if (cliEncontrado) {
+          clienteNombre = cliEncontrado.nombre || cliEncontrado.razon_social || cliEncontrado.nombre_comercial;
+        }
+      }
+      return {
+        ...cert,
+        clienteNombre: clienteNombre || cert.clienteNombre || '---'
+      };
+    });
+
     renderizarTablaCertificados(listaCertificadosGlobal);
 
   } catch (err) {
@@ -99,8 +126,8 @@ function renderizarTablaCertificados(lista) {
 }
 
 /**
- * 1. IMPRIMIR SOLO QR (Corregido)
- * Aplica la clase 'print-qr-only' y la remueve usando 'afterprint'
+ * 1. IMPRIMIR SOLO QR
+ * Aplica la clase 'print-qr-only' y la remueve con 'onafterprint'
  */
 window.imprimirSoloQR = function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
@@ -133,26 +160,21 @@ window.imprimirSoloQR = function(idCert) {
     }
   }
 
-  // Desvinculamos listeners previos de afterprint
   window.onafterprint = null;
-
-  // Marcamos el body para imprimir únicamente la sección de solo QR
   document.body.classList.add('print-qr-only');
 
-  // Evento nativo: se activa únicamente al cerrar o confirmar el cuadro de impresión
   window.onafterprint = () => {
     document.body.classList.remove('print-qr-only');
     window.onafterprint = null;
   };
 
-  // Breve retardo para permitir el renderizado del código QR en el DOM
   setTimeout(() => {
     window.print();
   }, 200);
 };
 
 /**
- * Disparador para imprimir certificado desde botón de tabla
+ * Disparador para imprimir certificado completo desde botón de la tabla
  */
 window.imprimirCertificadoDesdeLista = function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
@@ -164,12 +186,12 @@ window.imprimirCertificadoDesdeLista = function(idCert) {
 };
 
 /**
- * 2. IMPRIMIR CERTIFICADO COMPLETO (Corregido)
- * Rena datos en la plantilla HTML y dispara la impresión completa
+ * 2. IMPRIMIR CERTIFICADO COMPLETO
+ * Rellena la plantilla HTML y limpia los estados de impresión
  */
 function prepararYDispararImpresion(cert) {
   try {
-    // FORZAMOS la remoción de la clase por si quedó vinculada previamente
+    // FORZAMOS LA LIMPIEZA DE LA CLASE ANTES DE IMPRIMIR EL CERTIFICADO COMPLETO
     document.body.classList.remove('print-qr-only');
 
     if (document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -230,7 +252,7 @@ function prepararYDispararImpresion(cert) {
     if (document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if (document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Generar Código QR dentro de la plantilla completa del certificado
+    // Código QR dentro del certificado
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = "";
@@ -255,7 +277,6 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // Disparar la impresión tras un breve retardo
     setTimeout(() => {
       window.print();
     }, 300);
@@ -265,7 +286,7 @@ function prepararYDispararImpresion(cert) {
   }
 }
 
-// Inicializar la carga cuando el documento esté completamente disponible
+// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
   cargarListaCertificados();
 });
