@@ -269,50 +269,7 @@
       display: block;
     }
 
-    /* ESTILOS DE IMPRESIÓN */
-    .only-print {
-      display: none;
-    }
-
-    @media print {
-      .no-print {
-        display: none !important;
-      }
-      
-      /* Modo Certificado Carta/A4 Horizontal */
-      body.print-cert {
-        background: #fff;
-        color: #000;
-        font-family: Arial, sans-serif;
-        font-size: 11px;
-        margin: 0;
-        padding: 0;
-      }
-
-      body.print-cert #vista-impresion {
-        display: block !important;
-      }
-
-      body.print-cert #vista-etiqueta-qr {
-        display: none !important;
-      }
-
-      /* Modo Etiqueta Térmica 50mm x 30mm */
-      body.print-qr-mode #vista-impresion {
-        display: none !important;
-      }
-
-      body.print-qr-mode #vista-etiqueta-qr {
-        display: flex !important;
-      }
-
-      @page {
-        size: auto;
-        margin: 0mm;
-      }
-    }
-
-    /* Contenedor exacto para Etiqueta 50x30mm */
+    /* ESTILOS DE ETIQUETA QR TÉRMICA 50x30 mm */
     .etiqueta-qr-container {
       width: 50mm;
       height: 30mm;
@@ -355,6 +312,39 @@
     .etiqueta-qr-info strong {
       color: #000;
     }
+
+    /* OCULTAR ELEMENTOS DE IMPRESIÓN EN PANTALLA NORMAL */
+    .only-print, #vista-etiqueta-qr {
+      display: none;
+    }
+
+    /* REGLAS DE IMPRESIÓN */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+
+      /* Caso 1: Imprimir Certificado Completo */
+      body.print-cert #vista-impresion {
+        display: block !important;
+      }
+      body.print-cert #vista-etiqueta-qr {
+        display: none !important;
+      }
+
+      /* Caso 2: Imprimir Solo la Etiqueta QR (50x30 mm) */
+      body.print-qr-mode #vista-impresion {
+        display: none !important;
+      }
+      body.print-qr-mode #vista-etiqueta-qr {
+        display: flex !important;
+      }
+
+      @page {
+        size: auto;
+        margin: 0mm;
+      }
+    }
   </style>
 
   <!-- Librería QRCode.js -->
@@ -362,7 +352,7 @@
 </head>
 <body class="print-cert">
 
-  <!-- VISTA PRINCIPAL (Formulario + Tabla) -->
+  <!-- VISTA PRINCIPAL (Formulario + Panel Historial) -->
   <div class="no-print container">
     <div class="nav-bar">
       <div class="tabs-left">
@@ -543,7 +533,7 @@
     </div>
   </div>
 
-  <!-- VISTA 1: IMPRESIÓN CERTIFICADO COMPLETO -->
+  <!-- VISTA 1: CERTIFICADO COMPLETO PARA IMPRESIÓN -->
   <div id="vista-impresion" class="only-print">
     <div style="border: 2px solid #0f172a; padding: 15px; border-radius: 6px;">
       <div style="display: flex; justify-content: space-between; border-bottom: 2px solid #00b074; padding-bottom: 10px; margin-bottom: 10px;">
@@ -612,8 +602,8 @@
     </div>
   </div>
 
-  <!-- VISTA 2: IMPRESIÓN ETIQUETA QR (50x30 mm) -->
-  <div id="vista-etiqueta-qr" class="only-print">
+  <!-- VISTA 2: ETIQUETA QR TÉRMICA (50x30 mm) EXCLUSIVA -->
+  <div id="vista-etiqueta-qr">
     <div class="etiqueta-qr-container">
       <div class="etiqueta-qr-header">TECNOPLAGAS C.R.C</div>
       <div class="etiqueta-qr-body">
@@ -629,7 +619,6 @@
   </div>
 
   <script>
-    // Cambio entre pestañas Emitir / Consultar
     function cambiarVista(vista) {
       const btnEmitir = document.getElementById('tab-emitir');
       const btnConsultar = document.getElementById('tab-consultar');
@@ -649,7 +638,6 @@
       }
     }
 
-    // Eventos UI del formulario
     document.addEventListener('DOMContentLoaded', () => {
       const selectCliente = document.getElementById('select-cliente');
       const inputFantasia = document.getElementById('nombre-fantasia');
@@ -659,7 +647,6 @@
         selectCliente.addEventListener('change', () => {
           const selectedText = selectCliente.options[selectCliente.selectedIndex]?.text;
           if (selectedText && selectCliente.value !== '') {
-            // Elimina el prefijo [id] del texto para dejar solo la razón social
             inputFantasia.value = selectedText.replace(/^\[.*?\]\s*/, '');
           } else {
             inputFantasia.value = '';
@@ -675,7 +662,7 @@
       }
     });
 
-    // Función de impresión de la Etiqueta QR 50x30 mm
+    // Función exclusiva para imprimir únicamente el cuadrito QR de 50x30 mm
     window.imprimirSoloQR = function(idCert, fechaServ, urlVerificacion) {
       document.body.className = 'print-qr-mode';
 
@@ -699,7 +686,6 @@
     };
   </script>
 
-  <!-- JS Principal (Firebase + Lógica del panel) -->
   <script type="module" src="certificados.js"></script>
 </body>
 </html>
