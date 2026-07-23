@@ -136,6 +136,28 @@
       font-weight: bold;
     }
 
+    .input-with-btn {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-clear-input {
+      padding: 0 12px;
+      background-color: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      color: #475569;
+      transition: background-color 0.2s;
+    }
+
+    .btn-clear-input:hover {
+      background-color: #cbd5e1;
+      color: #1e293b;
+    }
+
     .checkbox-group {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -401,7 +423,10 @@
         <div class="form-row">
           <div class="form-group">
             <label for="nombre-fantasia">Nombre de Fantasía</label>
-            <input type="text" id="nombre-fantasia" placeholder="Opcional">
+            <div class="input-with-btn">
+              <input type="text" id="nombre-fantasia" placeholder="Opcional">
+              <button type="button" id="btn-limpiar-fantasia" class="btn-clear-input" title="Limpiar campo">✕</button>
+            </div>
           </div>
           <div class="form-group">
             <label for="cabezal">Placa Cabezal</label>
@@ -686,6 +711,31 @@
         vistaConsulta.classList.add('active');
       }
     }
+
+    // Funcionalidad de copiar cliente a Nombre de Fantasía y limpiarlo
+    document.addEventListener('DOMContentLoaded', () => {
+      const selectCliente = document.getElementById('select-cliente');
+      const inputFantasia = document.getElementById('nombre-fantasia');
+      const btnLimpiar = document.getElementById('btn-limpiar-fantasia');
+
+      if (selectCliente && inputFantasia) {
+        selectCliente.addEventListener('change', () => {
+          const selectedText = selectCliente.options[selectCliente.selectedIndex]?.text;
+          if (selectedText && selectCliente.value !== '') {
+            inputFantasia.value = selectedText;
+          } else {
+            inputFantasia.value = '';
+          }
+        });
+      }
+
+      if (btnLimpiar && inputFantasia) {
+        btnLimpiar.addEventListener('click', () => {
+          inputFantasia.value = '';
+          inputFantasia.focus();
+        });
+      }
+    });
   </script>
 
   <script type="module" src="certificados.js"></script>
