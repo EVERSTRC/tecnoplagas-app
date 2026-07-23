@@ -3,7 +3,7 @@ import {
   getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Configuración de la BD Firebase
+// Configuración de la base de datos Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -43,7 +43,39 @@ let listaProductosGlobal = [];
 let isEditMode = false;
 let currentEditingId = null;
 
-// Escuchador de Productos
+// DEFINICIÓN DE LA FUNCIÓN PARA IMPRIMIR SOLO EL CÓDIGO QR
+window.imprimirSoloQR = function(idCert) {
+  const cert = listaCertificadosGlobal.find(c => c.id === idCert);
+  if (!cert) return;
+
+  const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+  const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
+  const textoQrPublico = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
+
+  const qrContainerSolo = document.getElementById('qrcode-solo-container');
+  if (qrContainerSolo) {
+    qrContainerSolo.innerHTML = "";
+    const InstanciaQRCode = window.QRCode || QRCode;
+    if (typeof InstanciaQRCode !== 'undefined') {
+      new InstanciaQRCode(qrContainerSolo, {
+        text: textoQrPublico,
+        width: 260,
+        height: 260,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
+      });
+    }
+  }
+
+  document.body.classList.add('print-qr-only');
+  setTimeout(() => {
+    window.print();
+    document.body.classList.remove('print-qr-only');
+  }, 350);
+};
+
+// Escuchador de Productos Químicos
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
@@ -192,7 +224,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Renderizado de Historial con los 3 Botones Independientes
+// Renderizado del Historial
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -215,11 +247,6 @@ function renderTablaHistorial(lista) {
       cert.clienteNombre = "No especificado";
     }
 
-    // URL pública para la validación web mediante QR
-    const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
-    const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
-    const urlQr = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
-
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${cert.id}</strong></td>
@@ -228,16 +255,23 @@ function renderTablaHistorial(lista) {
       <td>${cert.pNombre}</td>
       <td>
         <div style="display: flex; gap: 6px;">
-          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Certificado</button>
-          <button class="btn-qr-action" style="background-color:#8b5cf6; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.imprimirSoloQR('${cert.id}', '${cert.fecha}', '${urlQr}')">📱 Etiqueta QR</button>
-          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
+          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ Certificado</button>
+          <button class="btn-qr-solo" style="background-color:#8b5cf6; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">📱 Imprimir QR</button>
+          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;">✏️ Editar</button>
         </div>
       </td>
     `;
+
+    // ASIGNACIÓN DIRECTA DE EVENTOS A LOS BOTONES
+    tr.querySelector('.btn-reimprimir').addEventListener('click', () => window.ejecutarReimpresionDirecta(cert.id));
+    tr.querySelector('.btn-qr-solo').addEventListener('click', () => window.imprimirSoloQR(cert.id));
+    tr.querySelector('.btn-editar').addEventListener('click', () => window.cargarEnEditor(cert.id));
+
     tablaHistorialBody.appendChild(tr);
   });
 }
 
+// Búsqueda
 if (inputBuscar) {
   inputBuscar.addEventListener('input', (e) => {
     const termino = e.target.value.toLowerCase().trim();
@@ -249,7 +283,7 @@ if (inputBuscar) {
   });
 }
 
-// Cargar Certificado para Edición
+// Cargar para editar
 window.cargarEnEditor = function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) return;
@@ -327,10 +361,10 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Disparar Impresión del Certificado Completo
+// Impresión Completa del Certificado
 function prepararYDispararImpresion(cert) {
   try {
-    document.body.className = 'print-cert';
+    document.body.classList.remove('print-qr-only');
 
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
@@ -398,8 +432,8 @@ function prepararYDispararImpresion(cert) {
       if (typeof InstanciaQRCode !== 'undefined') {
         new InstanciaQRCode(qrContainer, {
           text: textoQrPublico,
-          width: 115,
-          height: 115,
+          width: 95,
+          height: 95,
           colorDark: "#000000",
           colorLight: "#ffffff",
           correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
@@ -409,13 +443,11 @@ function prepararYDispararImpresion(cert) {
 
     setTimeout(() => { window.print(); }, 400);
   } catch (error) {
-    console.error("Error imprimiendo certificado:", error);
+    console.error("Error al preparar la impresión:", error);
   }
 }
 
-window.prepararYDispararImpresion = prepararYDispararImpresion;
-
-// Guardar/Actualizar
+// Guardar/Actualizar Certificado
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
