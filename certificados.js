@@ -3,7 +3,7 @@ import {
   getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Configuración de tu base de datos Firebase
+// Configuración de la BD Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
   authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Referencias de los elementos del formulario
+// Referencias HTML
 const formCert = document.getElementById('certificado-form');
 const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
@@ -27,7 +27,7 @@ const btnSubmit = document.getElementById('btn-submit-certificado');
 const tituloPantalla = document.getElementById('titulo-pantalla');
 const labelConsecutivo = document.getElementById('label-consecutivo');
 
-// Campos de detalles químicos
+// Campos de detalles del producto
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
@@ -40,11 +40,10 @@ let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
 let listaProductosGlobal = []; 
 
-// Control del estado de Edición
 let isEditMode = false;
 let currentEditingId = null;
 
-// Sincronización de Productos
+// Escuchador de Productos
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
@@ -69,7 +68,7 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
   }
 });
 
-// Autocompletado de campos del formulario
+// Autocompletado de Producto
 if (selectProducto) {
   selectProducto.addEventListener('change', () => {
     const valorSeleccionado = selectProducto.value;
@@ -105,7 +104,7 @@ function limpiarCamposProducto() {
   if (inPlagasControla) inPlagasControla.value = "";
 }
 
-// Sincronización de Clientes
+// Escuchador de Clientes
 onSnapshot(collection(db, "clientes"), (snapshot) => {
   if (selectCliente) selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
   listaClientesGlobal = [];
@@ -125,7 +124,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización del Historial e ID Autoincrementable
+// Escuchador de Certificados
 onSnapshot(collection(db, "certificados"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -185,7 +184,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         pVence: cert["Producto vencimiento"] || '---'
       });
     } catch (e) {
-      console.warn("Inconsistencia en documento omitida:", docSnap.id);
+      console.warn("Error leyendo documento:", docSnap.id);
     }
   });
 
@@ -193,7 +192,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Rellena la tabla con los 3 botones (Imprimir Certificado, Imprimir Etiqueta QR, Editar)
+// Renderizado de Historial con los 3 Botones Independientes
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -216,7 +215,7 @@ function renderTablaHistorial(lista) {
       cert.clienteNombre = "No especificado";
     }
 
-    // Construcción de la URL para la validación mediante el código QR
+    // URL pública para la validación web mediante QR
     const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
     const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
     const urlQr = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
@@ -250,13 +249,10 @@ if (inputBuscar) {
   });
 }
 
-// Cargar datos en el formulario para edición
+// Cargar Certificado para Edición
 window.cargarEnEditor = function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
-  if (!cert) {
-    alert("Certificado no localizado.");
-    return;
-  }
+  if (!cert) return;
 
   isEditMode = true;
   currentEditingId = cert.id;
@@ -281,21 +277,21 @@ window.cargarEnEditor = function(idCert) {
 
   document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
-  if (cert.tipo && cert.tipo !== "---" && cert.tipo !== "No especificado") {
+  if (cert.tipo && cert.tipo !== "---") {
     cert.tipo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="tipo-servicio"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
     });
   }
 
-  if (cert.objetivo && cert.objetivo !== "---" && cert.objetivo !== "No especificado") {
+  if (cert.objetivo && cert.objetivo !== "---") {
     cert.objetivo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="objetivo-control"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
     });
   }
 
-  if (cert.metodo && cert.metodo !== "---" && cert.metodo !== "No especificado") {
+  if (cert.metodo && cert.metodo !== "---") {
     cert.metodo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="metodo-aplicacion"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
@@ -313,26 +309,13 @@ window.cargarEnEditor = function(idCert) {
 
   if (typeof window.cambiarVista === "function") {
     window.cambiarVista('emitir');
-  } else {
-    const btnEmitir = document.getElementById('tab-emitir');
-    const btnConsultar = document.getElementById('tab-consultar');
-    const vistaEmision = document.getElementById('vista-emision');
-    const vistaConsulta = document.getElementById('vista-consulta');
-    if (btnEmitir && btnConsultar && vistaEmision && vistaConsulta) {
-      btnEmitir.className = 'tab-btn active-green';
-      btnConsultar.className = 'tab-btn inactive-gray';
-      vistaEmision.classList.add('active');
-      vistaConsulta.classList.remove('active');
-    }
   }
 };
 
 window.ejecutarReimpresionDirecta = async function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
-  if (!cert) {
-    alert("Certificado no localizado.");
-    return;
-  }
+  if (!cert) return;
+
   if (cert.direccion === "---" && cert.clienteId) {
     try {
       const snap = await getDoc(doc(db, "clientes", cert.clienteId));
@@ -344,8 +327,11 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
+// Disparar Impresión del Certificado Completo
 function prepararYDispararImpresion(cert) {
   try {
+    document.body.className = 'print-cert';
+
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
     if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || '---';
@@ -423,13 +409,13 @@ function prepararYDispararImpresion(cert) {
 
     setTimeout(() => { window.print(); }, 400);
   } catch (error) {
-    console.error("Error al preparar la impresión:", error);
+    console.error("Error imprimiendo certificado:", error);
   }
 }
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Guardar/Actualizar certificado
+// Guardar/Actualizar
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -440,7 +426,7 @@ if (formCert) {
       const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
 
       if(!clienteSeleccionadoId) {
-        alert("⚠️ Por favor seleccione un cliente de la lista.");
+        alert("⚠️ Seleccione un cliente de la lista.");
         return;
       }
 
@@ -448,41 +434,33 @@ if (formCert) {
       const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
       const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
 
-      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
-      const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
-      const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
-
       const fechaServicioRaw = document.getElementById('fecha-servicio').value;
       const servicioValidoRaw = document.getElementById('servicio-valido').value;
       if (!fechaServicioRaw || !servicioValidoRaw) {
-        alert("⚠️ Por favor asigne la Fecha del Servicio y su vencimiento.");
+        alert("⚠️ Asigne la Fecha del Servicio y su vencimiento.");
         return;
       }
 
       const fServicio = new Date(fechaServicioRaw + "T00:00:00");
       const fValido = new Date(servicioValidoRaw + "T00:00:00");
-      
       const hInicioStr = document.getElementById('hora-inicio').value || "08:00";
       const hFinStr = document.getElementById('hora-finalizacion').value || "09:00";
-      const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
-      const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
 
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
         Cabezal: (document.getElementById('cabezal').value || "N/A").trim(),
         Remolque: (document.getElementById('remolque').value || "N/A").trim(),
         "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
-        "Tipo de servicio": tipoServicioString,
-        "Metodo de aplicacion": metodoAplicacionString,
-        "Objetivo de Control": objetivoControlString,
+        "Tipo de servicio": tiposSeleccionados.join(', ') || "No especificado",
+        "Metodo de aplicacion": metodosSeleccionados.join(', ') || "No especificado",
+        "Objetivo de Control": objetivosSeleccionados.join(', ') || "No especificado",
         "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
         "Producto utilizado": selectProducto.value || "Otro", 
         "Fecha del Servicio": Timestamp.fromDate(fServicio),
         "Servicio valido": Timestamp.fromDate(fValido),
-        "Hora de Inicio": Timestamp.fromDate(hInicio),
-        "Hora Finalizacion": Timestamp.fromDate(hFin),
+        "Hora de Inicio": Timestamp.fromDate(new Date(fechaServicioRaw + "T" + hInicioStr)),
+        "Hora Finalizacion": Timestamp.fromDate(new Date(fechaServicioRaw + "T" + hFinStr)),
         Nombre: doc(db, "clientes", clienteSeleccionadoId), 
-        
         "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
         "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
         "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
@@ -504,9 +482,9 @@ if (formCert) {
         cabezal: payloadCertificado.Cabezal,
         remolque: payloadCertificado.Remolque,
         fantasia: payloadCertificado["Nombre de fantasia"],
-        tipo: tipoServicioString,
-        metodo: metodoAplicacionString,
-        objetivo: objetivoControlString,
+        tipo: payloadCertificado["Tipo de servicio"],
+        metodo: payloadCertificado["Metodo de aplicacion"],
+        objetivo: payloadCertificado["Objetivo de Control"],
         plagas: payloadCertificado["Plagas que controla"],
         horaInicio: hInicioStr,
         horaFin: hFinStr,
