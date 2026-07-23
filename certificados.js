@@ -16,7 +16,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Referencias de los elementos del formulario (Respetando tus IDs originales)
+// Referencias de los elementos del formulario
 const formCert = document.getElementById('certificado-form');
 const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
@@ -27,7 +27,7 @@ const btnSubmit = document.getElementById('btn-submit-certificado');
 const tituloPantalla = document.getElementById('titulo-pantalla');
 const labelConsecutivo = document.getElementById('label-consecutivo');
 
-// Campos de detalles químicos (Inputs de tu formulario)
+// Campos de detalles químicos
 const inProdNombre = document.getElementById('form-prod-nombre');
 const inProdActivo = document.getElementById('form-prod-activo');
 const inProdMs = document.getElementById('form-prod-ms');
@@ -44,7 +44,7 @@ let listaProductosGlobal = [];
 let isEditMode = false;
 let currentEditingId = null;
 
-// Sincronización de Productos (Sin alterar el diseño del select)
+// Sincronización de Productos
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
@@ -69,7 +69,7 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
   }
 });
 
-// Autocompletado de los campos del formulario al cambiar producto
+// Autocompletado de campos del formulario
 if (selectProducto) {
   selectProducto.addEventListener('change', () => {
     const valorSeleccionado = selectProducto.value;
@@ -133,7 +133,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   const numeroSiguiente = totalCertificados + 1;
   const formatoNumero = String(numeroSiguiente).padStart(6, '0');
   
-  // Solo se calcula el consecutivo si NO estamos editando
   if(!isEditMode && formCert && inputIdCertificado) {
     inputIdCertificado.value = `CERT-${formatoNumero}`;
   }
@@ -162,7 +161,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         direccion: cert.Direccion || "---", 
         fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
-        // Guardamos las fechas en formato crudo para el editor
         fechaRaw: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toISOString().split('T')[0] : '',
         venceRaw: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toISOString().split('T')[0] : '',
         producto: cert["Producto utilizado"] || cert["Nombre del producto"] || '---',
@@ -174,7 +172,6 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
         objetivo: cert["Objetivo de Control"] || '---',
         plagas: cert["Plagas que controla"] || '---',
         
-        // Conversión horaria para inputs
         horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '08:00',
         horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '09:00',
         
@@ -196,7 +193,7 @@ onSnapshot(collection(db, "certificados"), (snapshot) => {
   renderTablaHistorial(listaCertificadosGlobal);
 });
 
-// Rellena tu tabla inferior usando tus estilos nativos
+// Rellena la tabla con los 3 botones (Imprimir Certificado, Imprimir Etiqueta QR, Editar)
 function renderTablaHistorial(lista) {
   if (!tablaHistorialBody) return;
   tablaHistorialBody.innerHTML = "";
@@ -219,6 +216,11 @@ function renderTablaHistorial(lista) {
       cert.clienteNombre = "No especificado";
     }
 
+    // Construcción de la URL para la validación mediante el código QR
+    const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+    const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
+    const urlQr = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&cab=${encodeURIComponent(cert.cabezal)}&rem=${encodeURIComponent(cert.remolque)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${cert.id}</strong></td>
@@ -226,9 +228,10 @@ function renderTablaHistorial(lista) {
       <td>${cert.fecha}</td>
       <td>${cert.pNombre}</td>
       <td>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Imprimir</button>
-          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Certificado</button>
+          <button class="btn-qr-action" style="background-color:#8b5cf6; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="window.imprimirSoloQR('${cert.id}', '${cert.fecha}', '${urlQr}')">📱 Etiqueta QR</button>
+          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
         </div>
       </td>
     `;
@@ -247,7 +250,7 @@ if (inputBuscar) {
   });
 }
 
-// Cargar todos los datos del certificado seleccionado de vuelta al formulario
+// Cargar datos en el formulario para edición
 window.cargarEnEditor = function(idCert) {
   const cert = listaCertificadosGlobal.find(c => c.id === idCert);
   if (!cert) {
@@ -255,11 +258,9 @@ window.cargarEnEditor = function(idCert) {
     return;
   }
 
-  // Activar modo edición
   isEditMode = true;
   currentEditingId = cert.id;
 
-  // Cambiar visualización del título y botón de guardado
   if (tituloPantalla) tituloPantalla.innerText = `⚠️ EDITANDO CERTIFICADO: ${cert.id}`;
   if (labelConsecutivo) labelConsecutivo.innerText = "Consecutivo / N° de Certificado (Modo Edición)";
   if (btnSubmit) {
@@ -267,23 +268,19 @@ window.cargarEnEditor = function(idCert) {
     btnSubmit.innerHTML = "⚠️ Actualizar y Reimprimir Certificado";
   }
 
-  // Llenar campos de cabecera
   if (inputIdCertificado) inputIdCertificado.value = cert.id;
   if (selectCliente) selectCliente.value = cert.clienteId;
   if (document.getElementById('nombre-fantasia')) document.getElementById('nombre-fantasia').value = cert.fantasia !== "---" ? cert.fantasia : "";
   if (document.getElementById('cabezal')) document.getElementById('cabezal').value = cert.cabezal !== "N/A" ? cert.cabezal : "";
   if (document.getElementById('remolque')) document.getElementById('remolque').value = cert.remolque !== "N/A" ? cert.remolque : "";
   
-  // Llenar fechas y horas
   if (document.getElementById('fecha-servicio')) document.getElementById('fecha-servicio').value = cert.fechaRaw;
   if (document.getElementById('servicio-valido')) document.getElementById('servicio-valido').value = cert.venceRaw;
   if (document.getElementById('hora-inicio')) document.getElementById('hora-inicio').value = cert.horaInicioInput;
   if (document.getElementById('hora-finalizacion')) document.getElementById('hora-finalizacion').value = cert.horaFinInput;
 
-  // Desmarcar todos los checkboxes primero
   document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
-  // Marcar Tipo de Servicio
   if (cert.tipo && cert.tipo !== "---" && cert.tipo !== "No especificado") {
     cert.tipo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="tipo-servicio"][value="${val.trim()}"]`);
@@ -291,7 +288,6 @@ window.cargarEnEditor = function(idCert) {
     });
   }
 
-  // Marcar Objetivo de Control
   if (cert.objetivo && cert.objetivo !== "---" && cert.objetivo !== "No especificado") {
     cert.objetivo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="objetivo-control"][value="${val.trim()}"]`);
@@ -299,7 +295,6 @@ window.cargarEnEditor = function(idCert) {
     });
   }
 
-  // Marcar Métodos de Aplicación
   if (cert.metodo && cert.metodo !== "---" && cert.metodo !== "No especificado") {
     cert.metodo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="metodo-aplicacion"][value="${val.trim()}"]`);
@@ -307,7 +302,6 @@ window.cargarEnEditor = function(idCert) {
     });
   }
 
-  // Llenar ficha técnica química
   if (selectProducto) selectProducto.value = cert.producto;
   if (inProdNombre) inProdNombre.value = cert.pNombre !== "---" ? cert.pNombre : "";
   if (inProdActivo) inProdActivo.value = cert.pActivo !== "---" ? cert.pActivo : "";
@@ -317,11 +311,9 @@ window.cargarEnEditor = function(idCert) {
   if (inProdVence) inProdVence.value = cert.pVence !== "---" ? cert.pVence : "";
   if (inPlagasControla) inPlagasControla.value = cert.plagas !== "---" ? cert.plagas : "";
 
-  // Cambiar la vista a "Emitir" automáticamente
   if (typeof window.cambiarVista === "function") {
     window.cambiarVista('emitir');
   } else {
-    // Fallback nativo
     const btnEmitir = document.getElementById('tab-emitir');
     const btnConsultar = document.getElementById('tab-consultar');
     const vistaEmision = document.getElementById('vista-emision');
@@ -352,7 +344,6 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
-// Vinculación estricta con el área de impresión original de tu HTML
 function prepararYDispararImpresion(cert) {
   try {
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
@@ -368,7 +359,6 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('print-remolque')) document.getElementById('print-remolque').innerText = cert.remolque || 'N/A';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
 
-    // Renderizado dinámico de Objetivos Seleccionados (Solo los elegidos)
     const contenedorObjetivos = document.getElementById('print-objetivos-elegidos');
     if (contenedorObjetivos) {
       contenedorObjetivos.innerHTML = "";
@@ -387,7 +377,6 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // Renderizado dinámico de Métodos Seleccionados (Solo los elegidos)
     const contenedorMetodos = document.getElementById('print-metodos-elegidos');
     if (contenedorMetodos) {
       contenedorMetodos.innerHTML = "";
@@ -432,7 +421,6 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // El retraso de 400ms garantiza que el DOM esté completamente listo con los nuevos textos antes de imprimir
     setTimeout(() => { window.print(); }, 400);
   } catch (error) {
     console.error("Error al preparar la impresión:", error);
@@ -441,7 +429,7 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Captura y almacenamiento lógico del formulario (Sin tocar elementos visuales)
+// Guardar/Actualizar certificado
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -456,7 +444,6 @@ if (formCert) {
         return;
       }
 
-      // Procesa los checkboxes utilizando exactamente el atributo 'name' de tu HTML
       const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="tipo-servicio"]:checked')).map(cb => cb.value);
       const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
       const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
@@ -531,15 +518,12 @@ if (formCert) {
         pVence: payloadCertificado["Producto vencimiento"]
       };
 
-      // Disparamos la impresión primero
       prepararYDispararImpresion(certMock);
       
-      // Limpieza y reseteo de estados
       setTimeout(() => {
         formCert.reset();
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         
-        // Finalizar y restaurar desde el modo edición
         if (isEditMode) {
           isEditMode = false;
           currentEditingId = null;
