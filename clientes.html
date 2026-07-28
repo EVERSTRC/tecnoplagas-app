@@ -18,6 +18,8 @@
       --text-muted: #64748b;
       --red-btn: #ef4444;
       --red-hover: #dc2626;
+      --calendar-btn: #16a34a;
+      --calendar-hover: #15803d;
     }
 
     body {
@@ -135,7 +137,6 @@
       box-shadow: 0 0 0 3px rgba(0, 176, 116, 0.15);
     }
 
-    /* Contenedor flexible para alinear el botón al lado del campo de GPS */
     .gps-input-group {
       display: flex;
       gap: 10px;
@@ -243,9 +244,9 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    .btn-editar, .btn-eliminar {
+    .btn-editar, .btn-eliminar, .btn-agenda {
       border: none;
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 4px;
       font-size: 12px;
       font-weight: bold;
@@ -258,6 +259,8 @@
     .btn-editar:hover { background-color: var(--blue-hover); }
     .btn-eliminar { background-color: var(--red-btn); }
     .btn-eliminar:hover { background-color: var(--red-hover); }
+    .btn-agenda { background-color: var(--calendar-btn); }
+    .btn-agenda:hover { background-color: var(--calendar-hover); }
 
     .seccion-modulo { display: none; }
     .seccion-modulo.active { display: block; }
@@ -406,7 +409,7 @@
     }
   </script>
 
-  <!-- LÓGICA DIRECTA REVISADA CON TUS LLAVES EXACTAS -->
+  <!-- LÓGICA DIRECTA REVISADA -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -521,7 +524,8 @@
           <td>${cliente.telefono || "---"}</td>
           <td style="font-size: 13px;">${cliente.email || "---"}</td>
           <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:12px;">${cliente.frecuenciaFumigacion || "---"}</span></td>
-          <td>
+          <td style="white-space: nowrap;">
+            <button class="btn-agenda" data-id="${cliente.id}" title="Agendar Cita en Google Calendar">📅 Cita</button>
             <button class="btn-editar" data-id="${cliente.id}">✏️ Editar</button>
             <button class="btn-eliminar" data-id="${cliente.id}">🗑️ Borrar</button>
           </td>
@@ -533,6 +537,38 @@
     }
 
     function inicializarAcciones() {
+      // BOTÓN AGENDAR CITA EN GOOGLE CALENDAR
+      document.querySelectorAll('.btn-agenda').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const id = this.getAttribute('data-id');
+          const cliente = todosLosClientes.find(c => c.id === id);
+
+          if (cliente) {
+            const titulo = `Fumigación - ${cliente.nombre || 'Cliente'}`;
+            
+            // Construcción exacta de la descripción que envías en la imagen
+            const descripcion = `📋 Tipo de Visita: Control de Plagas
+💰 Monto a Facturar: ₡50000
+📝 Notas: Ninguna
+
+------------------------------------
+📞 Teléfono: ${cliente.telefono || 'No especificado'}
+📍 Dirección: ${cliente.direccion || 'No especificada'}
+🗺️ Coordenadas GPS: ${cliente.gps || 'No capturado'}
+🚗 Ruta Maps: ${cliente.gps && cliente.gps !== '0, 0' ? `https://www.google.com/maps?q=${encodeURIComponent(cliente.gps)}` : 'No disponible'}
+------------------------------------`;
+
+            const ubicacion = cliente.direccion || "";
+
+            // Generar enlace interactivo de Google Calendar
+            const urlCalendar = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&details=${encodeURIComponent(descripcion)}&location=${encodeURIComponent(ubicacion)}`;
+
+            // Abrir en una pestaña nueva
+            window.open(urlCalendar, '_blank');
+          }
+        });
+      });
+
       document.querySelectorAll('.btn-editar').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
