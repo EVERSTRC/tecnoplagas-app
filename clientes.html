@@ -115,7 +115,7 @@
       color: #475569;
     }
 
-    input[type="text"], input[type="email"], select, textarea {
+    input[type="text"], input[type="email"], input[type="date"], input[type="time"], input[type="number"], select, textarea {
       width: 100%;
       box-sizing: border-box;
       padding: 12px;
@@ -264,6 +264,45 @@
 
     .seccion-modulo { display: none; }
     .seccion-modulo.active { display: block; }
+
+    /* ESTILOS DEL MODAL PARA AGENDAR CITA */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+    .modal-content {
+      background: #ffffff;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+    .modal-header h3 { margin: 0; color: #1e293b; }
+    .btn-cerrar-modal {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
@@ -385,6 +424,64 @@
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA FORMULARIO SEPARADO DE CITAS -->
+  <div id="modal-cita" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="cita-cliente-nombre">Agendar Cita en Google Calendar</h3>
+        <button class="btn-cerrar-modal" id="btn-cerrar-modal">&times;</button>
+      </div>
+      <form id="form-cita-calendar">
+        <input type="hidden" id="cita-cliente-id">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cita-fecha">Fecha de la Cita</label>
+            <input type="date" id="cita-fecha" required>
+          </div>
+          <div class="form-group">
+            <label for="cita-hora">Hora de Inicio</label>
+            <input type="time" id="cita-hora" required value="08:00">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cita-duracion">Duración (Horas)</label>
+            <select id="cita-duracion" required>
+              <option value="1">1 hora</option>
+              <option value="2" selected>2 horas</option>
+              <option value="3">3 horas</option>
+              <option value="4">4 horas</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cita-monto">Monto a Facturar (₡)</label>
+            <input type="number" id="cita-monto" placeholder="Ej: 50000" value="50000" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="cita-tipo">Tipo de Visita</label>
+            <input type="text" id="cita-tipo" value="Control de Plagas" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="cita-notas">Notas Adicionales</label>
+            <textarea id="cita-notas" placeholder="Escriba alguna nota sobre el servicio...">Ninguna</textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" style="background-color: var(--calendar-btn);">
+          📅 Agendar en Google Calendar
+        </button>
+      </form>
     </div>
   </div>
 
@@ -537,34 +634,22 @@
     }
 
     function inicializarAcciones() {
-      // BOTÓN AGENDAR CITA EN GOOGLE CALENDAR
+      // EVENTO AL PRESIONAR "📅 CITA" -> ABRE MODAL CON EL FORMULARIO
       document.querySelectorAll('.btn-agenda').forEach(btn => {
         btn.addEventListener('click', function() {
           const id = this.getAttribute('data-id');
           const cliente = todosLosClientes.find(c => c.id === id);
 
           if (cliente) {
-            const titulo = `Fumigación - ${cliente.nombre || 'Cliente'}`;
+            document.getElementById('cita-cliente-id').value = id;
+            document.getElementById('cita-cliente-nombre').textContent = `📅 Agendar Cita: ${cliente.nombre || 'Cliente'}`;
             
-            // Construcción exacta de la descripción que envías en la imagen
-            const descripcion = `📋 Tipo de Visita: Control de Plagas
-💰 Monto a Facturar: ₡50000
-📝 Notas: Ninguna
+            // Establecer fecha por defecto: Hoy
+            const hoy = new Date().toISOString().split('T')[0];
+            document.getElementById('cita-fecha').value = hoy;
 
-------------------------------------
-📞 Teléfono: ${cliente.telefono || 'No especificado'}
-📍 Dirección: ${cliente.direccion || 'No especificada'}
-🗺️ Coordenadas GPS: ${cliente.gps || 'No capturado'}
-🚗 Ruta Maps: ${cliente.gps && cliente.gps !== '0, 0' ? `https://www.google.com/maps?q=${encodeURIComponent(cliente.gps)}` : 'No disponible'}
-------------------------------------`;
-
-            const ubicacion = cliente.direccion || "";
-
-            // Generar enlace interactivo de Google Calendar
-            const urlCalendar = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&details=${encodeURIComponent(descripcion)}&location=${encodeURIComponent(ubicacion)}`;
-
-            // Abrir en una pestaña nueva
-            window.open(urlCalendar, '_blank');
+            // Abrir el modal
+            document.getElementById('modal-cita').classList.add('active');
           }
         });
       });
@@ -609,6 +694,60 @@
         });
       });
     }
+
+    // CERRAR MODAL DE CITAS
+    document.getElementById('btn-cerrar-modal').addEventListener('click', () => {
+      document.getElementById('modal-cita').classList.remove('active');
+    });
+
+    // PROCESAR FORMULARIO DE CITA Y MANDAR A GOOGLE CALENDAR
+    document.getElementById('form-cita-calendar').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const id = document.getElementById('cita-cliente-id').value;
+      const cliente = todosLosClientes.find(c => c.id === id);
+
+      if (!cliente) return;
+
+      const fechaVal = document.getElementById('cita-fecha').value; // YYYY-MM-DD
+      const horaVal = document.getElementById('cita-hora').value;   // HH:MM
+      const duracionHoras = parseInt(document.getElementById('cita-duracion').value, 10);
+      const monto = document.getElementById('cita-monto').value;
+      const tipoVisita = document.getElementById('cita-tipo').value;
+      const notas = document.getElementById('cita-notas').value;
+
+      // Cálculo de la fecha y hora de inicio y fin para Google Calendar (Formato UTC ISO sin guiones/puntos)
+      const fechaInicio = new Date(`${fechaVal}T${horaVal}:00`);
+      const fechaFin = new Date(fechaInicio.getTime() + (duracionHoras * 60 * 60 * 1000));
+
+      const formatIsoCalendar = (date) => {
+        return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+      };
+
+      const datesParam = `${formatIsoCalendar(fechaInicio)}/${formatIsoCalendar(fechaFin)}`;
+
+      // Titulo y detalles automáticos con los datos tomados de la BD
+      const titulo = `Fumigación - ${cliente.nombre || 'Cliente'}`;
+      const descripcion = `📋 Tipo de Visita: ${tipoVisita}
+💰 Monto a Facturar: ₡${monto}
+📝 Notas: ${notas}
+
+------------------------------------
+📞 Teléfono: ${cliente.telefono || 'No especificado'}
+📍 Dirección: ${cliente.direccion || 'No especificada'}
+🗺️ Coordenadas GPS: ${cliente.gps || 'No capturado'}
+🚗 Ruta Maps: ${cliente.gps && cliente.gps !== '0, 0' ? `https://www.google.com/maps?q=${encodeURIComponent(cliente.gps)}` : 'No disponible'}
+------------------------------------`;
+
+      const ubicacion = cliente.direccion || "";
+
+      // Generación del Link para Google Calendar con fechas y horarios procesados
+      const urlCalendar = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${datesParam}&details=${encodeURIComponent(descripcion)}&location=${encodeURIComponent(ubicacion)}`;
+
+      // Cerrar modal y abrir Google Calendar
+      document.getElementById('modal-cita').classList.remove('active');
+      window.open(urlCalendar, '_blank');
+    });
 
     cargarClientesDesdeFirestore();
 
