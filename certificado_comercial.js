@@ -20,18 +20,10 @@ const selectCliente = document.getElementById('select-cliente');
 const inputIdCertificado = document.getElementById('id-certificado');
 const tablaHistorialBody = document.getElementById('tabla-historial-body');
 const inputBuscar = document.getElementById('input-buscar');
-const selectProducto = document.getElementById('producto-utilizado');
 const btnSubmit = document.getElementById('btn-submit-certificado');
 const tituloPantalla = document.getElementById('titulo-pantalla');
 const labelConsecutivo = document.getElementById('label-consecutivo');
-
-const inProdNombre = document.getElementById('form-prod-nombre');
-const inProdActivo = document.getElementById('form-prod-activo');
-const inProdMs = document.getElementById('form-prod-ms');
-const inProdLote = document.getElementById('form-prod-lote');
-const inProdDosis = document.getElementById('form-prod-dosis');
-const inProdVence = document.getElementById('form-prod-vence');
-const inPlagasControla = document.getElementById('plagas-controla');
+const contenedorProductos = document.getElementById('contenedor-productos-lista');
 
 let listaClientesGlobal = [];
 let listaCertificadosGlobal = [];
@@ -39,67 +31,129 @@ let listaProductosGlobal = [];
 
 let isEditMode = false;
 let currentEditingId = null;
+let contadorProductos = 0;
 
-// Sincronización de Productos
+// Sincronización de Productos disponibles desde Firestore
 onSnapshot(collection(db, "Productos"), (snapshot) => {
-  if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
   listaProductosGlobal = [];
-  
   snapshot.forEach((docSnap) => {
     const producto = docSnap.data();
     listaProductosGlobal.push({ id: docSnap.id, ...producto });
-    
-    if (selectProducto) {
-      const option = document.createElement('option');
-      option.value = docSnap.id; 
-      option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
-      selectProducto.appendChild(option);
-    }
   });
 
-  if (selectProducto) {
-    const optionOtro = document.createElement('option');
-    optionOtro.value = "Otro";
-    optionOtro.textContent = "Otro (Manual)";
-    selectProducto.appendChild(optionOtro);
-  }
+  // Re-actualiza los desplegables de productos existentes
+  document.querySelectorAll('.prod-select').forEach(sel => {
+    const valActual = sel.value;
+    actualizarOpcionesSelectProducto(sel);
+    sel.value = valActual;
+  });
 });
 
-// Autocompletado de producto
-if (selectProducto) {
-  selectProducto.addEventListener('change', () => {
-    const valorSeleccionado = selectProducto.value;
+function actualizarOpcionesSelectProducto(selectElem) {
+  selectElem.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  listaProductosGlobal.forEach(p => {
+    const option = document.createElement('option');
+    option.value = p.id;
+    option.textContent = p["Nombre Comercial"] || p.nombre || p.id;
+    selectElem.appendChild(option);
+  });
+  const optionOtro = document.createElement('option');
+  optionOtro.value = "Otro";
+  optionOtro.textContent = "Otro (Manual)";
+  selectElem.appendChild(optionOtro);
+}
 
-    if (!valorSeleccionado || valorSeleccionado === "Otro") {
-      limpiarCamposProducto();
+// Función para agregar un producto dinámico
+function agregarFilaProducto(datosProd = null) {
+  contadorProductos++;
+  const idIndex = contadorProductos;
+
+  const divProd = document.createElement('div');
+  divProd.className = 'card-producto-item';
+  divProd.dataset.id = idIndex;
+  divProd.style.cssText = "background: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 15px; margin-bottom: 15px; position: relative;";
+
+  divProd.innerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <strong style="color:var(--primary-dark);">Producto Químico #${idIndex}</strong>
+      ${contenedorProductos.children.length > 0 ? `<button type="button" onclick="eliminarFilaProducto(${idIndex})" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Eliminar</button>` : ''}
+    </div>
+
+    <div class="form-group">
+      <label>Seleccionar Producto Base</label>
+      <select class="prod-select" id="prod-select-${idIndex}"></select>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group"><label>Nombre Comercial</label><input type="text" class="prod-nombre"></div>
+      <div class="form-group"><label>Ingrediente Activo</label><input type="text" class="prod-activo"></div>
+    </div>
+
+    <div class="grid-3">
+      <div class="form-group"><label>Registro M.S.</label><input type="text" class="prod-ms"></div>
+      <div class="form-group"><label>N° Lote</label><input type="text" class="prod-lote"></div>
+      <div class="form-group"><label>Dosis Recomendada</label><input type="text" class="prod-dosis"></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="form-group"><label>Vencimiento Producto</label><input type="text" class="prod-vence" placeholder="DD/MM/AAAA"></div>
+      <div class="form-group"><label>Plagas que Controla</label><input type="text" class="prod-plagas"></div>
+    </div>
+  `;
+
+  contenedorProductos.appendChild(divProd);
+
+  const selectElem = divProd.querySelector('.prod-select');
+  actualizarOpcionesSelectProducto(selectElem);
+
+  selectElem.addEventListener('change', () => {
+    const val = selectElem.value;
+    if (!val || val === "Otro") {
+      limpiarCamposFila(divProd);
       return;
     }
-
-    const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
-
-    if (prodEncontrado) {
-      if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
-      if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
-      if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
-      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; 
-      if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
-      if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
-      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
-    } else {
-      limpiarCamposProducto();
+    const match = listaProductosGlobal.find(p => p.id === val);
+    if (match) {
+      divProd.querySelector('.prod-nombre').value = match["Nombre Comercial"] || "";
+      divProd.querySelector('.prod-activo').value = match["Ingrediente Activo"] || "";
+      divProd.querySelector('.prod-ms').value = match["Registro M.S."] || "";
+      divProd.querySelector('.prod-lote').value = match["Lote"] || "";
+      divProd.querySelector('.prod-dosis').value = match["Dosis Recomendada"] || "";
+      divProd.querySelector('.prod-vence').value = match["Vencimiento del Producto"] || "";
+      divProd.querySelector('.prod-plagas').value = match["Plagas que Controla"] || "";
     }
   });
+
+  if (datosProd) {
+    selectElem.value = datosProd.productoId || "";
+    divProd.querySelector('.prod-nombre').value = datosProd.pNombre || "";
+    divProd.querySelector('.prod-activo').value = datosProd.pActivo || "";
+    divProd.querySelector('.prod-ms').value = datosProd.pReg || "";
+    divProd.querySelector('.prod-lote').value = datosProd.pLote || "";
+    divProd.querySelector('.prod-dosis').value = datosProd.pDosis || "";
+    divProd.querySelector('.prod-vence').value = datosProd.pVence || "";
+    divProd.querySelector('.prod-plagas').value = datosProd.plagas || "";
+  }
 }
 
-function limpiarCamposProducto() {
-  if (inProdNombre) inProdNombre.value = "";
-  if (inProdActivo) inProdActivo.value = "";
-  if (inProdMs) inProdMs.value = "";
-  if (inProdDosis) inProdDosis.value = "";
-  if (inProdLote) inProdLote.value = "";
-  if (inProdVence) inProdVence.value = "";
-  if (inPlagasControla) inPlagasControla.value = "";
+window.eliminarFilaProducto = function(index) {
+  const elem = document.querySelector(`.card-producto-item[data-id="${index}"]`);
+  if (elem) elem.remove();
+};
+
+function limpiarCamposFila(container) {
+  container.querySelector('.prod-nombre').value = "";
+  container.querySelector('.prod-activo').value = "";
+  container.querySelector('.prod-ms').value = "";
+  container.querySelector('.prod-lote').value = "";
+  container.querySelector('.prod-dosis').value = "";
+  container.querySelector('.prod-vence').value = "";
+  container.querySelector('.prod-plagas').value = "";
 }
+
+document.getElementById('btn-agregar-producto')?.addEventListener('click', () => {
+  agregarFilaProducto();
+});
 
 // Sincronización de Clientes
 onSnapshot(collection(db, "clientes"), (snapshot) => {
@@ -121,7 +175,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización del Historial e ID Autoincrementable (Colección: certificados_comerciales)
+// Sincronización del Historial e ID Autoincrementable
 onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -150,6 +204,23 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         idClienteRelacionado = cert.Nombre.split('/').pop();
       }
 
+      // Soporte para arreglo de productos o producto único antiguo
+      let listaProds = [];
+      if (Array.isArray(cert.productos) && cert.productos.length > 0) {
+        listaProds = cert.productos;
+      } else {
+        listaProds = [{
+          productoId: cert["Producto utilizado"] || "Otro",
+          pNombre: cert["Nombre del producto"] || '---',
+          pActivo: cert["Ingrediente Activo"] || '---',
+          pReg: cert["Registro M.S."] || '---',
+          pLote: cert["Lote del producto"] || '---',
+          pDosis: cert["Dosis recomendada"] || '---',
+          pVence: cert["Producto vencimiento"] || '---',
+          plagas: cert["Plagas que controla"] || '---'
+        }];
+      }
+
       listaCertificadosGlobal.push({
         id: cert.IdCertificados || docSnap.id,
         clienteId: idClienteRelacionado,
@@ -159,24 +230,19 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
         fechaRaw: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toISOString().split('T')[0] : '',
         venceRaw: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toISOString().split('T')[0] : '',
-        producto: cert["Producto utilizado"] || cert["Nombre del producto"] || '---',
         fantasia: cert["Nombre de fantasia"] || '---',
         tipo: cert["Tipo de servicio"] || '---',
         metodo: cert["Metodo de aplicacion"] || '---',
         objetivo: cert["Objetivo de Control"] || '---',
-        plagas: cert["Plagas que controla"] || '---',
+        plagas: cert["Plagas que controla"] || (listaProds[0]?.plagas || '---'),
         
         horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '08:00',
         horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '09:00',
         
         horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
         horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
-        pNombre: cert["Nombre del producto"] || '---',
-        pActivo: cert["Ingrediente Activo"] || '---',
-        pReg: cert["Registro M.S."] || '---',
-        pLote: cert["Lote del producto"] || '---',
-        pDosis: cert["Dosis recomendada"] || '---',
-        pVence: cert["Producto vencimiento"] || '---'
+        
+        productos: listaProds
       });
     } catch (e) {
       console.warn("Inconsistencia en documento omitida:", docSnap.id);
@@ -209,16 +275,18 @@ function renderTablaHistorial(lista) {
       cert.clienteNombre = "No especificado";
     }
 
+    const nombresProductos = cert.productos.map(p => p.pNombre).filter(n => n && n !== '---').join(', ') || '---';
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${cert.id}</strong></td>
       <td>${cert.clienteNombre}</td>
       <td>${cert.fecha}</td>
-      <td>${cert.pNombre}</td>
+      <td>${nombresProductos}</td>
       <td>
         <div style="display: flex; gap: 8px;">
-          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Imprimir</button>
-          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
+          <button style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Imprimir</button>
+          <button style="background-color:#2563eb; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
         </div>
       </td>
     `;
@@ -257,7 +325,6 @@ window.cargarEnEditor = function(idCert) {
   if (inputIdCertificado) inputIdCertificado.value = cert.id;
   if (selectCliente) selectCliente.value = cert.clienteId;
   
-  // Limpia corchetes si los tuviera guardados en el historial
   const fantasiaLimpia = (cert.fantasia && cert.fantasia !== "---") ? cert.fantasia.replace(/^\[.*?\]\s*/, '') : "";
   if (document.getElementById('nombre-fantasia')) document.getElementById('nombre-fantasia').value = fantasiaLimpia;
   
@@ -289,28 +356,17 @@ window.cargarEnEditor = function(idCert) {
     });
   }
 
-  if (selectProducto) selectProducto.value = cert.producto;
-  if (inProdNombre) inProdNombre.value = cert.pNombre !== "---" ? cert.pNombre : "";
-  if (inProdActivo) inProdActivo.value = cert.pActivo !== "---" ? cert.pActivo : "";
-  if (inProdMs) inProdMs.value = cert.pReg !== "---" ? cert.pReg : "";
-  if (inProdLote) inProdLote.value = cert.pLote !== "---" ? cert.pLote : "";
-  if (inProdDosis) inProdDosis.value = cert.pDosis !== "---" ? cert.pDosis : "";
-  if (inProdVence) inProdVence.value = cert.pVence !== "---" ? cert.pVence : "";
-  if (inPlagasControla) inPlagasControla.value = cert.plagas !== "---" ? cert.plagas : "";
+  // Cargar productos en la interfaz
+  contenedorProductos.innerHTML = "";
+  contadorProductos = 0;
+  if (cert.productos && cert.productos.length > 0) {
+    cert.productos.forEach(prod => agregarFilaProducto(prod));
+  } else {
+    agregarFilaProducto();
+  }
 
   if (typeof window.cambiarVista === "function") {
     window.cambiarVista('emitir');
-  } else {
-    const btnEmitir = document.getElementById('tab-emitir');
-    const btnConsultar = document.getElementById('tab-consultar');
-    const vistaEmision = document.getElementById('vista-emision');
-    const vistaConsulta = document.getElementById('vista-consulta');
-    if (btnEmitir && btnConsultar && vistaEmision && vistaConsulta) {
-      btnEmitir.className = 'tab-btn active-green';
-      btnConsultar.className = 'tab-btn inactive-gray';
-      vistaEmision.classList.add('active');
-      vistaConsulta.classList.remove('active');
-    }
   }
 };
 
@@ -381,14 +437,29 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
-    if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
-    if(document.getElementById('td-prod-ms')) document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
-    if(document.getElementById('td-prod-lote')) document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
-    if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
-    if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
+    // Renderizar filas de productos en el PDF
+    const tbodyPDF = document.getElementById('tbody-print-productos');
+    if (tbodyPDF) {
+      tbodyPDF.innerHTML = "";
+      if (cert.productos && cert.productos.length > 0) {
+        cert.productos.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${p.pNombre || '---'}</td>
+            <td>${p.pActivo || '---'}</td>
+            <td>${p.pReg || '---'}</td>
+            <td>${p.pLote || '---'}</td>
+            <td>${p.pDosis || '---'}</td>
+            <td>${p.pVence || '---'}</td>
+          `;
+          tbodyPDF.appendChild(tr);
+        });
+      } else {
+        tbodyPDF.innerHTML = `<tr><td colspan="6">No se registraron productos.</td></tr>`;
+      }
+    }
 
-    // Generación del Código QR
+    // Generación del Código QR Limpio
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -416,6 +487,13 @@ function prepararYDispararImpresion(cert) {
 }
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
+
+// Cargar por primera vez 1 fila de producto al iniciar la App
+document.addEventListener('DOMContentLoaded', () => {
+  if (contenedorProductos && contenedorProductos.children.length === 0) {
+    agregarFilaProducto();
+  }
+});
 
 if (formCert) {
   formCert.addEventListener('submit', async (e) => {
@@ -457,26 +535,36 @@ if (formCert) {
       const rawFantasia = (document.getElementById('nombre-fantasia').value || "").trim();
       const fantasiaFinal = rawFantasia.replace(/^\[.*?\]\s*/, '');
 
+      // Recolectar lista de productos agregados
+      const listaProductosGuardar = [];
+      document.querySelectorAll('.card-producto-item').forEach(card => {
+        listaProductosGuardar.push({
+          productoId: card.querySelector('.prod-select').value || "Otro",
+          pNombre: card.querySelector('.prod-nombre').value.trim(),
+          pActivo: card.querySelector('.prod-activo').value.trim(),
+          pReg: card.querySelector('.prod-ms').value.trim(),
+          pLote: card.querySelector('.prod-lote').value.trim(),
+          pDosis: card.querySelector('.prod-dosis').value.trim(),
+          pVence: card.querySelector('.prod-vence').value.trim(),
+          plagas: card.querySelector('.prod-plagas').value.trim()
+        });
+      });
+
+      const plagasCombinadas = Array.from(new Set(listaProductosGuardar.map(p => p.plagas).filter(p => p))).join(', ') || "No especificado";
+
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
         "Nombre de fantasia": fantasiaFinal,
         "Tipo de servicio": tipoServicioString,
         "Metodo de aplicacion": metodoAplicacionString,
         "Objetivo de Control": objetivoControlString,
-        "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
-        "Producto utilizado": selectProducto.value || "Otro", 
+        "Plagas que controla": plagasCombinadas,
         "Fecha del Servicio": Timestamp.fromDate(fServicio),
         "Servicio valido": Timestamp.fromDate(fValido),
         "Hora de Inicio": Timestamp.fromDate(hInicio),
         "Hora Finalizacion": Timestamp.fromDate(hFin),
         Nombre: doc(db, "clientes", clienteSeleccionadoId), 
-        
-        "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
-        "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
-        "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
-        "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
-        "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
-        "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
+        productos: listaProductosGuardar,
         "Codigo de barras": idCertificadoValue
       };
 
@@ -488,20 +576,14 @@ if (formCert) {
         direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
         fecha: fServicio.toLocaleDateString('es-CR'),
         vence: fValido.toLocaleDateString('es-CR'),
-        producto: selectProducto.value,
         fantasia: payloadCertificado["Nombre de fantasia"],
         tipo: tipoServicioString,
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
-        plagas: payloadCertificado["Plagas que controla"],
+        plagas: plagasCombinadas,
         horaInicio: hInicioStr,
         horaFin: hFinStr,
-        pNombre: payloadCertificado["Nombre del producto"],
-        pActivo: payloadCertificado["Ingrediente Activo"],
-        pReg: payloadCertificado["Registro M.S."],
-        pLote: payloadCertificado["Lote del producto"],
-        pDosis: payloadCertificado["Dosis recomendada"],
-        pVence: payloadCertificado["Producto vencimiento"]
+        productos: listaProductosGuardar
       };
 
       prepararYDispararImpresion(certMock);
@@ -509,6 +591,9 @@ if (formCert) {
       setTimeout(() => {
         formCert.reset();
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        contenedorProductos.innerHTML = "";
+        contadorProductos = 0;
+        agregarFilaProducto();
         
         if (isEditMode) {
           isEditMode = false;
