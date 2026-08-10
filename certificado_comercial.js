@@ -256,7 +256,10 @@ window.cargarEnEditor = function(idCert) {
 
   if (inputIdCertificado) inputIdCertificado.value = cert.id;
   if (selectCliente) selectCliente.value = cert.clienteId;
-  if (document.getElementById('nombre-fantasia')) document.getElementById('nombre-fantasia').value = cert.fantasia !== "---" ? cert.fantasia : "";
+  
+  // Limpia corchetes si los tuviera guardados en el historial
+  const fantasiaLimpia = (cert.fantasia && cert.fantasia !== "---") ? cert.fantasia.replace(/^\[.*?\]\s*/, '') : "";
+  if (document.getElementById('nombre-fantasia')) document.getElementById('nombre-fantasia').value = fantasiaLimpia;
   
   if (document.getElementById('fecha-servicio')) document.getElementById('fecha-servicio').value = cert.fechaRaw;
   if (document.getElementById('servicio-valido')) document.getElementById('servicio-valido').value = cert.venceRaw;
@@ -330,9 +333,11 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
 
 function prepararYDispararImpresion(cert) {
   try {
+    const fantasiaLimpia = (cert.fantasia || '---').replace(/^\[.*?\]\s*/, '');
+
     if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
-    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || '---';
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = fantasiaLimpia;
     if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
     if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
     if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
@@ -383,7 +388,7 @@ function prepararYDispararImpresion(cert) {
     if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
     if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
 
-    // Generación del Código QR Limpio (Sin datos de Placas ni Remolques)
+    // Generación del Código QR
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -449,9 +454,12 @@ if (formCert) {
       const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
       const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
 
+      const rawFantasia = (document.getElementById('nombre-fantasia').value || "").trim();
+      const fantasiaFinal = rawFantasia.replace(/^\[.*?\]\s*/, '');
+
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
-        "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
+        "Nombre de fantasia": fantasiaFinal,
         "Tipo de servicio": tipoServicioString,
         "Metodo de aplicacion": metodoAplicacionString,
         "Objetivo de Control": objetivoControlString,
