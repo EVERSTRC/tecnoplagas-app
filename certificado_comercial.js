@@ -1,0 +1,521 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { 
+  getFirestore, collection, setDoc, onSnapshot, doc, getDoc, Timestamp 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyASSZsMJsi1B2fI7bs8TDhlXTCBqHhGC8E",
+  authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
+  projectId: "fumigadora-tecnoplagas",
+  storageBucket: "fumigadora-tecnoplagas.firebasestorage.app",
+  messagingSenderId: "510795344519",
+  appId: "1:510795344519:web:9991541f95af051f12a622"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const formCert = document.getElementById('certificado-form');
+const selectCliente = document.getElementById('select-cliente');
+const inputIdCertificado = document.getElementById('id-certificado');
+const tablaHistorialBody = document.getElementById('tabla-historial-body');
+const inputBuscar = document.getElementById('input-buscar');
+const selectProducto = document.getElementById('producto-utilizado');
+const btnSubmit = document.getElementById('btn-submit-certificado');
+const tituloPantalla = document.getElementById('titulo-pantalla');
+const labelConsecutivo = document.getElementById('label-consecutivo');
+
+const inProdNombre = document.getElementById('form-prod-nombre');
+const inProdActivo = document.getElementById('form-prod-activo');
+const inProdMs = document.getElementById('form-prod-ms');
+const inProdLote = document.getElementById('form-prod-lote');
+const inProdDosis = document.getElementById('form-prod-dosis');
+const inProdVence = document.getElementById('form-prod-vence');
+const inPlagasControla = document.getElementById('plagas-controla');
+
+let listaClientesGlobal = [];
+let listaCertificadosGlobal = [];
+let listaProductosGlobal = []; 
+
+let isEditMode = false;
+let currentEditingId = null;
+
+// Sincronización de Productos
+onSnapshot(collection(db, "Productos"), (snapshot) => {
+  if (selectProducto) selectProducto.innerHTML = '<option value="">Seleccione el producto químico...</option>';
+  listaProductosGlobal = [];
+  
+  snapshot.forEach((docSnap) => {
+    const producto = docSnap.data();
+    listaProductosGlobal.push({ id: docSnap.id, ...producto });
+    
+    if (selectProducto) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      option.textContent = producto["Nombre Comercial"] || producto.nombre || docSnap.id;
+      selectProducto.appendChild(option);
+    }
+  });
+
+  if (selectProducto) {
+    const optionOtro = document.createElement('option');
+    optionOtro.value = "Otro";
+    optionOtro.textContent = "Otro (Manual)";
+    selectProducto.appendChild(optionOtro);
+  }
+});
+
+// Autocompletado de producto
+if (selectProducto) {
+  selectProducto.addEventListener('change', () => {
+    const valorSeleccionado = selectProducto.value;
+
+    if (!valorSeleccionado || valorSeleccionado === "Otro") {
+      limpiarCamposProducto();
+      return;
+    }
+
+    const prodEncontrado = listaProductosGlobal.find(p => p.id === valorSeleccionado);
+
+    if (prodEncontrado) {
+      if (inProdNombre) inProdNombre.value = prodEncontrado["Nombre Comercial"] || "";
+      if (inProdActivo) inProdActivo.value = prodEncontrado["Ingrediente Activo"] || "";
+      if (inProdMs) inProdMs.value = prodEncontrado["Registro M.S."] || "";
+      if (inProdDosis) inProdDosis.value = prodEncontrado["Dosis Recomendada"] || ""; 
+      if (inProdLote) inProdLote.value = prodEncontrado["Lote"] || "";
+      if (inProdVence) inProdVence.value = prodEncontrado["Vencimiento del Producto"] || "";
+      if (inPlagasControla) inPlagasControla.value = prodEncontrado["Plagas que Controla"] || "";
+    } else {
+      limpiarCamposProducto();
+    }
+  });
+}
+
+function limpiarCamposProducto() {
+  if (inProdNombre) inProdNombre.value = "";
+  if (inProdActivo) inProdActivo.value = "";
+  if (inProdMs) inProdMs.value = "";
+  if (inProdDosis) inProdDosis.value = "";
+  if (inProdLote) inProdLote.value = "";
+  if (inProdVence) inProdVence.value = "";
+  if (inPlagasControla) inPlagasControla.value = "";
+}
+
+// Sincronización de Clientes
+onSnapshot(collection(db, "clientes"), (snapshot) => {
+  if (selectCliente) selectCliente.innerHTML = '<option value="">Seleccione un cliente...</option>';
+  listaClientesGlobal = [];
+  snapshot.forEach((docSnap) => {
+    const cliente = docSnap.data();
+    listaClientesGlobal.push({ id: docSnap.id, ...cliente });
+    if (selectCliente) {
+      const option = document.createElement('option');
+      option.value = docSnap.id; 
+      option.textContent = `[${cliente.consecutivo || docSnap.id}] ${cliente.nombre || cliente.razonSocial || "Cliente"}`;
+      selectCliente.appendChild(option);
+    }
+  });
+  
+  if(listaCertificadosGlobal.length > 0) {
+    renderTablaHistorial(listaCertificadosGlobal);
+  }
+});
+
+// Sincronización del Historial e ID Autoincrementable (Colección: certificados_comerciales)
+onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
+  listaCertificadosGlobal = [];
+  
+  const totalCertificados = snapshot.size;
+  const numeroSiguiente = totalCertificados + 1;
+  const formatoNumero = String(numeroSiguiente).padStart(6, '0');
+  
+  if(!isEditMode && formCert && inputIdCertificado) {
+    inputIdCertificado.value = `CERT-COM-${formatoNumero}`;
+  }
+
+  if(snapshot.empty) {
+    if (tablaHistorialBody) tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay certificados comerciales registrados.</td></tr>`;
+    return;
+  }
+
+  snapshot.forEach((docSnap) => {
+    try {
+      const cert = docSnap.data();
+      if (!cert) return;
+
+      let idClienteRelacionado = "";
+      if (cert.Nombre && typeof cert.Nombre === 'object' && cert.Nombre.id) {
+        idClienteRelacionado = cert.Nombre.id;
+      } else if (cert.Nombre && typeof cert.Nombre === 'string') {
+        idClienteRelacionado = cert.Nombre.split('/').pop();
+      }
+
+      listaCertificadosGlobal.push({
+        id: cert.IdCertificados || docSnap.id,
+        clienteId: idClienteRelacionado,
+        clienteNombre: "Cargando datos...", 
+        direccion: cert.Direccion || "---", 
+        fecha: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toLocaleDateString('es-CR') : '---',
+        vence: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toLocaleDateString('es-CR') : '---',
+        fechaRaw: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toISOString().split('T')[0] : '',
+        venceRaw: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toISOString().split('T')[0] : '',
+        producto: cert["Producto utilizado"] || cert["Nombre del producto"] || '---',
+        fantasia: cert["Nombre de fantasia"] || '---',
+        tipo: cert["Tipo de servicio"] || '---',
+        metodo: cert["Metodo de aplicacion"] || '---',
+        objetivo: cert["Objetivo de Control"] || '---',
+        plagas: cert["Plagas que controla"] || '---',
+        
+        horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '08:00',
+        horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '09:00',
+        
+        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+        pNombre: cert["Nombre del producto"] || '---',
+        pActivo: cert["Ingrediente Activo"] || '---',
+        pReg: cert["Registro M.S."] || '---',
+        pLote: cert["Lote del producto"] || '---',
+        pDosis: cert["Dosis recomendada"] || '---',
+        pVence: cert["Producto vencimiento"] || '---'
+      });
+    } catch (e) {
+      console.warn("Inconsistencia en documento omitida:", docSnap.id);
+    }
+  });
+
+  listaCertificadosGlobal.sort((a, b) => b.id.localeCompare(a.id));
+  renderTablaHistorial(listaCertificadosGlobal);
+});
+
+function renderTablaHistorial(lista) {
+  if (!tablaHistorialBody) return;
+  tablaHistorialBody.innerHTML = "";
+  
+  if(lista.length === 0) {
+    tablaHistorialBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No se encontraron registros.</td></tr>`;
+    return;
+  }
+
+  lista.forEach(cert => {
+    if (cert.clienteId) {
+      const match = listaClientesGlobal.find(c => c.id === cert.clienteId);
+      if (match) {
+        cert.clienteNombre = match.nombre || match.razonSocial || "Sin nombre";
+        cert.direccion = match.direccion || "---";
+      } else {
+        cert.clienteNombre = "Cliente: " + cert.clienteId;
+      }
+    } else {
+      cert.clienteNombre = "No especificado";
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${cert.id}</strong></td>
+      <td>${cert.clienteNombre}</td>
+      <td>${cert.fecha}</td>
+      <td>${cert.pNombre}</td>
+      <td>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-reimprimir" style="background-color:#10b981; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="ejecutarReimpresionDirecta('${cert.id}')">🖨️ Imprimir</button>
+          <button class="btn-editar" style="background-color:#2563eb; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="cargarEnEditor('${cert.id}')">✏️ Editar</button>
+        </div>
+      </td>
+    `;
+    tablaHistorialBody.appendChild(tr);
+  });
+}
+
+if (inputBuscar) {
+  inputBuscar.addEventListener('input', (e) => {
+    const termino = e.target.value.toLowerCase().trim();
+    const filtrados = listaCertificadosGlobal.filter(c => 
+      c.id.toLowerCase().includes(termino) || 
+      c.clienteNombre.toLowerCase().includes(termino)
+    );
+    renderTablaHistorial(filtrados);
+  });
+}
+
+window.cargarEnEditor = function(idCert) {
+  const cert = listaCertificadosGlobal.find(c => c.id === idCert);
+  if (!cert) {
+    alert("Certificado no localizado.");
+    return;
+  }
+
+  isEditMode = true;
+  currentEditingId = cert.id;
+
+  if (tituloPantalla) tituloPantalla.innerText = `⚠️ EDITANDO CERTIFICADO COMERCIAL: ${cert.id}`;
+  if (labelConsecutivo) labelConsecutivo.innerText = "Consecutivo / N° de Certificado (Modo Edición)";
+  if (btnSubmit) {
+    btnSubmit.classList.add('modo-edicion');
+    btnSubmit.innerHTML = "⚠️ Actualizar y Reimprimir Certificado Comercial";
+  }
+
+  if (inputIdCertificado) inputIdCertificado.value = cert.id;
+  if (selectCliente) selectCliente.value = cert.clienteId;
+  if (document.getElementById('nombre-fantasia')) document.getElementById('nombre-fantasia').value = cert.fantasia !== "---" ? cert.fantasia : "";
+  
+  if (document.getElementById('fecha-servicio')) document.getElementById('fecha-servicio').value = cert.fechaRaw;
+  if (document.getElementById('servicio-valido')) document.getElementById('servicio-valido').value = cert.venceRaw;
+  if (document.getElementById('hora-inicio')) document.getElementById('hora-inicio').value = cert.horaInicioInput;
+  if (document.getElementById('hora-finalizacion')) document.getElementById('hora-finalizacion').value = cert.horaFinInput;
+
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+  if (cert.tipo && cert.tipo !== "---" && cert.tipo !== "No especificado") {
+    cert.tipo.split(',').forEach(val => {
+      const cb = document.querySelector(`input[name="tipo-servicio"][value="${val.trim()}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+
+  if (cert.objetivo && cert.objetivo !== "---" && cert.objetivo !== "No especificado") {
+    cert.objetivo.split(',').forEach(val => {
+      const cb = document.querySelector(`input[name="objetivo-control"][value="${val.trim()}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+
+  if (cert.metodo && cert.metodo !== "---" && cert.metodo !== "No especificado") {
+    cert.metodo.split(',').forEach(val => {
+      const cb = document.querySelector(`input[name="metodo-aplicacion"][value="${val.trim()}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+
+  if (selectProducto) selectProducto.value = cert.producto;
+  if (inProdNombre) inProdNombre.value = cert.pNombre !== "---" ? cert.pNombre : "";
+  if (inProdActivo) inProdActivo.value = cert.pActivo !== "---" ? cert.pActivo : "";
+  if (inProdMs) inProdMs.value = cert.pReg !== "---" ? cert.pReg : "";
+  if (inProdLote) inProdLote.value = cert.pLote !== "---" ? cert.pLote : "";
+  if (inProdDosis) inProdDosis.value = cert.pDosis !== "---" ? cert.pDosis : "";
+  if (inProdVence) inProdVence.value = cert.pVence !== "---" ? cert.pVence : "";
+  if (inPlagasControla) inPlagasControla.value = cert.plagas !== "---" ? cert.plagas : "";
+
+  if (typeof window.cambiarVista === "function") {
+    window.cambiarVista('emitir');
+  } else {
+    const btnEmitir = document.getElementById('tab-emitir');
+    const btnConsultar = document.getElementById('tab-consultar');
+    const vistaEmision = document.getElementById('vista-emision');
+    const vistaConsulta = document.getElementById('vista-consulta');
+    if (btnEmitir && btnConsultar && vistaEmision && vistaConsulta) {
+      btnEmitir.className = 'tab-btn active-green';
+      btnConsultar.className = 'tab-btn inactive-gray';
+      vistaEmision.classList.add('active');
+      vistaConsulta.classList.remove('active');
+    }
+  }
+};
+
+window.ejecutarReimpresionDirecta = async function(idCert) {
+  const cert = listaCertificadosGlobal.find(c => c.id === idCert);
+  if (!cert) {
+    alert("Certificado no localizado.");
+    return;
+  }
+  if (cert.direccion === "---" && cert.clienteId) {
+    try {
+      const snap = await getDoc(doc(db, "clientes", cert.clienteId));
+      if(snap.exists()) cert.direccion = snap.data().direccion || "---";
+    } catch(err) {
+      console.error(err);
+    }
+  }
+  prepararYDispararImpresion(cert);
+};
+
+function prepararYDispararImpresion(cert) {
+  try {
+    if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
+    if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = cert.fantasia || '---';
+    if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
+    if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
+    if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '00:00';
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '00:00';
+    if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
+    if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
+
+    const contenedorObjetivos = document.getElementById('print-objetivos-elegidos');
+    if (contenedorObjetivos) {
+      contenedorObjetivos.innerHTML = "";
+      const objTexto = cert.objetivo || "";
+      if (objTexto && objTexto !== "No especificado" && objTexto !== "---") {
+        objTexto.split(',').forEach(item => {
+          if(item.trim().length > 0) {
+            const div = document.createElement('div');
+            div.style.fontWeight = "bold";
+            div.innerText = `• ${item.trim()}`;
+            contenedorObjetivos.appendChild(div);
+          }
+        });
+      } else {
+        contenedorObjetivos.innerText = "---";
+      }
+    }
+
+    const contenedorMetodos = document.getElementById('print-metodos-elegidos');
+    if (contenedorMetodos) {
+      contenedorMetodos.innerHTML = "";
+      const metTexto = cert.metodo || "";
+      if (metTexto && metTexto !== "No especificado" && metTexto !== "---") {
+        metTexto.split(',').forEach(item => {
+          if(item.trim().length > 0) {
+            const div = document.createElement('div');
+            div.innerText = `• ${item.trim()}`;
+            contenedorMetodos.appendChild(div);
+          }
+        });
+      } else {
+        contenedorMetodos.innerText = "---";
+      }
+    }
+
+    if(document.getElementById('td-prod-nombre')) document.getElementById('td-prod-nombre').innerText = cert.pNombre || '---';
+    if(document.getElementById('td-prod-activo')) document.getElementById('td-prod-activo').innerText = cert.pActivo || '---';
+    if(document.getElementById('td-prod-ms')) document.getElementById('td-prod-ms').innerText = cert.pReg || '---';
+    if(document.getElementById('td-prod-lote')) document.getElementById('td-prod-lote').innerText = cert.pLote || '---';
+    if(document.getElementById('td-prod-dosis')) document.getElementById('td-prod-dosis').innerText = cert.pDosis || '---';
+    if(document.getElementById('td-prod-vence')) document.getElementById('td-prod-vence').innerText = cert.pVence || '---';
+
+    const qrContainer = document.getElementById('qrcode');
+    if (qrContainer) {
+      qrContainer.innerHTML = ""; 
+      const cliLimpio = (cert.clienteNombre || "Cliente").normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
+      const urlBaseValidador = "https://everstrc.github.io/tecnoplagas-app/validar.html";
+      const textoQrPublico = `${urlBaseValidador}?id=${encodeURIComponent(cert.id)}&cli=${encodeURIComponent(cliLimpio)}&emi=${encodeURIComponent(cert.fecha)}&ven=${encodeURIComponent(cert.vence)}`;
+
+      const InstanciaQRCode = window.QRCode || QRCode;
+      if (typeof InstanciaQRCode !== 'undefined') {
+        new InstanciaQRCode(qrContainer, {
+          text: textoQrPublico,
+          width: 115,
+          height: 115,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
+        });
+      }
+    }
+
+    setTimeout(() => { window.print(); }, 400);
+  } catch (error) {
+    console.error("Error al preparar la impresión:", error);
+  }
+}
+
+window.prepararYDispararImpresion = prepararYDispararImpresion;
+
+if (formCert) {
+  formCert.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    try {
+      const idCertificadoValue = inputIdCertificado.value;
+      const clienteSeleccionadoId = selectCliente.value;
+      const clienteEncontrado = listaClientesGlobal.find(c => c.id === clienteSeleccionadoId);
+
+      if(!clienteSeleccionadoId) {
+        alert("⚠️ Por favor seleccione un cliente de la lista.");
+        return;
+      }
+
+      const tiposSeleccionados = Array.from(document.querySelectorAll('input[name="tipo-servicio"]:checked')).map(cb => cb.value);
+      const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
+      const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
+
+      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
+      const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
+      const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
+
+      const fechaServicioRaw = document.getElementById('fecha-servicio').value;
+      const servicioValidoRaw = document.getElementById('servicio-valido').value;
+      if (!fechaServicioRaw || !servicioValidoRaw) {
+        alert("⚠️ Por favor asigne la Fecha del Servicio y su vencimiento.");
+        return;
+      }
+
+      const fServicio = new Date(fechaServicioRaw + "T00:00:00");
+      const fValido = new Date(servicioValidoRaw + "T00:00:00");
+      
+      const hInicioStr = document.getElementById('hora-inicio').value || "08:00";
+      const hFinStr = document.getElementById('hora-finalizacion').value || "09:00";
+      const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
+      const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
+
+      const payloadCertificado = {
+        IdCertificados: idCertificadoValue,
+        "Nombre de fantasia": (document.getElementById('nombre-fantasia').value || "").trim(),
+        "Tipo de servicio": tipoServicioString,
+        "Metodo de aplicacion": metodoAplicacionString,
+        "Objetivo de Control": objetivoControlString,
+        "Plagas que controla": inPlagasControla ? inPlagasControla.value.trim() : "",
+        "Producto utilizado": selectProducto.value || "Otro", 
+        "Fecha del Servicio": Timestamp.fromDate(fServicio),
+        "Servicio valido": Timestamp.fromDate(fValido),
+        "Hora de Inicio": Timestamp.fromDate(hInicio),
+        "Hora Finalizacion": Timestamp.fromDate(hFin),
+        Nombre: doc(db, "clientes", clienteSeleccionadoId), 
+        
+        "Nombre del producto": inProdNombre ? inProdNombre.value.trim() : "",
+        "Ingrediente Activo": inProdActivo ? inProdActivo.value.trim() : "",
+        "Registro M.S.": inProdMs ? inProdMs.value.trim() : "",
+        "Lote del producto": inProdLote ? inProdLote.value.trim() : "",
+        "Dosis recomendada": inProdDosis ? inProdDosis.value.trim() : "",
+        "Producto vencimiento": inProdVence ? inProdVence.value.trim() : "",
+        "Codigo de barras": idCertificadoValue
+      };
+
+      await setDoc(doc(db, "certificados_comerciales", idCertificadoValue), payloadCertificado);
+      
+      const certMock = {
+        id: idCertificadoValue,
+        clienteNombre: clienteEncontrado ? (clienteEncontrado.nombre || clienteEncontrado.razonSocial) : 'N/A',
+        direccion: clienteEncontrado ? (clienteEncontrado.direccion || '---') : '---',
+        fecha: fServicio.toLocaleDateString('es-CR'),
+        vence: fValido.toLocaleDateString('es-CR'),
+        producto: selectProducto.value,
+        fantasia: payloadCertificado["Nombre de fantasia"],
+        tipo: tipoServicioString,
+        metodo: metodoAplicacionString,
+        objetivo: objetivoControlString,
+        plagas: payloadCertificado["Plagas que controla"],
+        horaInicio: hInicioStr,
+        horaFin: hFinStr,
+        pNombre: payloadCertificado["Nombre del producto"],
+        pActivo: payloadCertificado["Ingrediente Activo"],
+        pReg: payloadCertificado["Registro M.S."],
+        pLote: payloadCertificado["Lote del producto"],
+        pDosis: payloadCertificado["Dosis recomendada"],
+        pVence: payloadCertificado["Producto vencimiento"]
+      };
+
+      prepararYDispararImpresion(certMock);
+      
+      setTimeout(() => {
+        formCert.reset();
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        
+        if (isEditMode) {
+          isEditMode = false;
+          currentEditingId = null;
+          if (tituloPantalla) tituloPantalla.innerText = "Fumigadora Tecnoplagas - Nuevo Certificado Comercial";
+          if (labelConsecutivo) labelConsecutivo.innerText = "Consecutivo / N° de Certificado";
+          if (btnSubmit) {
+            btnSubmit.classList.remove('modo-edicion');
+            btnSubmit.innerHTML = "💾 Guardar e Imprimir Certificado Comercial";
+          }
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error(error);
+      alert("❌ Ocurrió un error al guardar: " + error.message);
+    }
+  });
+}
