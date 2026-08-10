@@ -3,669 +3,444 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tecnoplagas - Certificado Comercial</title>
+  <title>Certificado Comercial - Fumigadora Tecnoplagas</title>
   
+  <!-- Librería QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
   <style>
     :root {
-      --primary-color: #00b074; 
-      --primary-hover: #009662;
-      --blue-btn: #2563eb;
-      --blue-hover: #1d4ed8;
-      --orange-btn: #f97316;
-      --orange-hover: #ea580c;
-      --bg-body: #f8fafc;
-      --bg-card: #ffffff;
-      --border-color: #e2e8f0;
-      --text-main: #334155;
-      --text-muted: #64748b;
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg-gray: #f3f4f6;
+      --border-color: #e5e7eb;
+      --text-main: #1f2937;
     }
 
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-body);
-      color: var(--text-main);
       margin: 0;
       padding: 20px;
+      background-color: var(--bg-gray);
+      color: var(--text-main);
     }
 
     .container {
-      max-width: 1100px;
+      max-width: 900px;
       margin: 0 auto;
-      background: var(--bg-card);
-      border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      background: white;
       padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
     }
 
-    .nav-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 30px;
+    h1, h2, h3 {
+      margin-top: 0;
+      color: #111827;
     }
 
-    .tabs-left {
+    .tabs {
       display: flex;
       gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
     }
 
     .tab-btn {
       padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
       border: none;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active-green {
-      background-color: #00b074;
-      color: white;
-    }
-    
-    .tab-btn.inactive-gray {
-      background-color: #e2e8f0;
-      color: #475569;
-    }
-
-    .btn-inicio {
-      background-color: #64748b;
-      color: white;
-      text-decoration: none;
-      padding: 10px 16px;
       border-radius: 6px;
-      font-size: 14px;
+      cursor: pointer;
       font-weight: bold;
+      transition: background 0.2s;
     }
 
-    .titulo-modulo {
-      font-size: 26px;
-      font-weight: bold;
-      color: #1e293b;
-      margin-top: 0;
-      margin-bottom: 25px;
-    }
+    .active-green { background-color: var(--primary); color: white; }
+    .inactive-gray { background-color: #e5e7eb; color: #374151; }
 
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      margin-bottom: 20px;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
     .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-group.full-width {
-      grid-column: 1 / -1;
+      margin-bottom: 15px;
     }
 
     label {
-      font-size: 13px;
-      font-weight: bold;
-      color: #475569;
+      display: block;
+      font-weight: 600;
+      margin-bottom: 5px;
+      font-size: 0.9em;
     }
 
-    input[type="text"], input[type="date"], input[type="time"], select {
+    input[type="text"], input[type="date"], input[type="time"], select, textarea {
       width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
       box-sizing: border-box;
-      padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-      color: var(--text-main);
-      background-color: #fff;
+      font-size: 0.95em;
     }
 
-    input:focus, select:focus {
-      outline: none;
-      border-color: #00b074;
-      box-shadow: 0 0 0 3px rgba(0, 176, 116, 0.15);
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
     }
 
-    input[readonly] {
-      background-color: #f1f5f9;
-      text-align: center;
-      font-weight: bold;
-    }
-
-    .input-with-btn {
-      display: flex;
-      gap: 6px;
-    }
-
-    .btn-clear-input {
-      padding: 0 12px;
-      background-color: #e2e8f0;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: bold;
-      color: #475569;
-      transition: background-color 0.2s;
-    }
-
-    .btn-clear-input:hover {
-      background-color: #cbd5e1;
-      color: #1e293b;
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
     }
 
     .checkbox-group {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 10px;
-      margin-top: 5px;
-      background: #ffffff;
+      background: #f9fafb;
       padding: 12px;
-      border: 1px solid #cbd5e1;
       border-radius: 6px;
+      border: 1px solid var(--border-color);
     }
-    .checkbox-item {
+
+    .checkbox-group label {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 14px;
+      font-weight: normal;
+      margin-bottom: 0;
       cursor: pointer;
-    }
-    .checkbox-item input {
-      width: auto;
-      margin: 0;
-      cursor: pointer;
-    }
-
-    fieldset {
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 20px;
-      margin-top: 30px;
-      background-color: #f8fafc;
-    }
-
-    legend {
-      font-weight: bold;
-      font-size: 14px;
-      color: #1e293b;
-      padding: 0 10px;
     }
 
     .btn-submit {
       width: 100%;
-      background-color: var(--blue-btn); 
+      background-color: var(--primary);
       color: white;
       border: none;
-      padding: 15px;
-      font-size: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1.1em;
       font-weight: bold;
-      border-radius: 6px;
       cursor: pointer;
-      margin-top: 25px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      transition: background-color 0.2s;
+      margin-top: 20px;
     }
 
-    .btn-submit:hover {
-      background-color: var(--blue-hover);
-    }
+    .btn-submit:hover { background-color: var(--primary-dark); }
+    .btn-submit.modo-edicion { background-color: #d97706; }
+    .btn-submit.modo-edicion:hover { background-color: #b45309; }
 
-    .btn-submit.modo-edicion {
-      background-color: var(--orange-btn);
-    }
-
-    .btn-submit.modo-edicion:hover {
-      background-color: var(--orange-hover);
-    }
-
-    .search-wrapper {
-      position: relative;
-      margin-bottom: 25px;
-    }
-
-    .search-input {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 14px 14px 14px 45px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    .search-wrapper::before {
-      content: "🔍";
-      position: absolute;
-      left: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 16px;
-    }
-
-    .table-container {
-      overflow-x: auto;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-    }
-
-    table.historial-table {
+    table {
       width: 100%;
       border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
       text-align: left;
-      font-size: 14px;
-    }
-
-    table.historial-table th {
-      background-color: #f1f5f9;
-      color: #475569;
-      font-weight: bold;
-      padding: 14px;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    table.historial-table td {
-      padding: 14px;
       border-bottom: 1px solid var(--border-color);
     }
 
-    .seccion-modulo {
+    th { background-color: #f9fafb; }
+
+    /* ESTILOS DE IMPRESIÓN (PDF) */
+    #print-template {
       display: none;
     }
-    .seccion-modulo.active {
-      display: block;
-    }
 
-    /* CONFIGURACIÓN DE IMPRESIÓN PROFESIONAL HORIZONTAL (LANDSCAPE) */
     @media print {
-      .no-print { display: none !important; }
-      .only-print { display: block !important; }
-      
-      @page {
-        size: A4 landscape; 
-        margin: 6mm 8mm 6mm 8mm; 
+      body * {
+        visibility: hidden;
       }
-      
-      body {
-        background: #fff;
-        color: #000;
-        font-family: 'Helvetica Neue', Arial, sans-serif;
-        font-size: 11px;
-        line-height: 1.25;
+
+      #print-template, #print-template * {
+        visibility: visible;
+      }
+
+      #print-template {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
         padding: 0;
         margin: 0;
-        position: relative;
+        font-family: Arial, sans-serif;
+        color: #000;
       }
 
-      body::before {
-        content: "";
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 65%;
-        height: 65%;
-        background-image: url('https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/677ca6b312a9bb696385ebe2612087a36249f256/TecnoPlagas%20Logo.png');
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: contain;
-        opacity: 0.07; 
-        z-index: -1000;
-        pointer-events: none;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
+      @page {
+        size: letter;
+        margin: 10mm;
       }
 
-      .certificate-border {
-        border: 3px double #475569;
-        padding: 12px;
+      .pdf-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+      }
+
+      .pdf-title {
+        text-align: center;
+        font-size: 1.3em;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+      }
+
+      .pdf-box {
+        border: 1px solid #000;
+        padding: 10px;
+        margin-bottom: 15px;
         border-radius: 4px;
-        box-sizing: border-box;
       }
 
-      table.print-table {
+      .pdf-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .pdf-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 6px;
+        margin-top: 10px;
       }
 
-      table.print-table th, table.print-table td {
-        border: 1px solid #94a3b8;
-        padding: 5px 8px;
-        vertical-align: middle;
+      .pdf-table th, .pdf-table td {
+        border: 1px solid #000;
+        padding: 6px;
+        font-size: 0.85em;
+        text-align: center;
       }
 
-      table.print-table th {
-        background-color: #f1f5f9 !important;
+      .pdf-table th {
+        background-color: #e5e7eb !important;
         -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-weight: bold;
-        text-align: left;
-        color: #1e293b;
       }
 
-      .print-header-title {
+      .pdf-footer {
+        margin-top: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+      }
+
+      .qr-container {
         text-align: center;
-        font-weight: bold;
-        font-size: 18px;
-        letter-spacing: 2px;
-        color: #0f172a;
-        margin: 0 0 10px 0;
-        padding-bottom: 3px;
-        border-bottom: 2px dashed #475569;
-      }
-      
-      .legal-text {
-        font-size: 8.5px;
-        color: #334155;
-        text-align: center;
-        line-height: 1.2;
-        margin-top: 8px;
-        border-top: 1px solid #cbd5e1;
-        padding-top: 4px;
-      }
-
-      .flex-row-print {
-        display: table;
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      .flex-col-print {
-        display: table-cell;
-        width: 50%;
-        vertical-align: top;
       }
     }
-    
-    .only-print { display: none; }
   </style>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
-  <div class="no-print container">
-    <div class="nav-bar">
-      <div class="tabs-left">
-        <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📝 Emitir Certificado Comercial</button>
-        <button id="tab-consultar" class="tab-btn inactive-gray" onclick="cambiarVista('consultar')">🔍 Consultar Historial</button>
-      </div>
-      <a href="index.html" class="btn-inicio">🏠 Menú Inicio</a>
+  <div class="container">
+    <h1 id="titulo-pantalla">Fumigadora Tecnoplagas - Nuevo Certificado Comercial</h1>
+
+    <div class="tabs">
+      <button id="tab-emitir" class="tab-btn active-green" onclick="cambiarVista('emitir')">📄 Emisión / Edición</button>
+      <button id="tab-consultar" class="tab-btn inactive-gray" onclick="cambiarVista('consultar')">🔍 Historial y Consulta</button>
     </div>
 
-    <div id="vista-emision" class="seccion-modulo active">
-      <div id="titulo-pantalla" class="titulo-modulo">Fumigadora Tecnoplagas - Nuevo Certificado Comercial</div>
-      
-      <form id="certificado-form" novalidate>
-        <div class="form-row">
+    <!-- VISTA DE EMISIÓN -->
+    <div id="vista-emision" class="tab-content active">
+      <form id="certificado-form">
+        
+        <div class="grid-2">
           <div class="form-group">
             <label id="label-consecutivo">Consecutivo / N° de Certificado</label>
-            <input type="text" id="id-certificado" readonly>
+            <input type="text" id="id-certificado" readonly style="background:#e5e7eb; font-weight:bold;">
           </div>
           <div class="form-group">
-            <label for="select-cliente">Cliente Destino</label>
+            <label>Cliente registrado *</label>
             <select id="select-cliente" required>
-              <option value="">Seleccione un cliente...</option>
+              <option value="">Cargando clientes...</option>
             </select>
-          </div>
-          <div class="form-group">
-            <label for="nombre-fantasia">Nombre de Fantasía</label>
-            <div class="input-with-btn">
-              <input type="text" id="nombre-fantasia" placeholder="Opcional">
-              <button type="button" id="btn-limpiar-fantasia" class="btn-clear-input" title="Limpiar campo">✕</button>
-            </div>
           </div>
         </div>
 
-        <div class="form-row">
+        <div class="form-group">
+          <label>Nombre de Fantasía (Local / Sucursal)
+            <button type="button" id="btn-limpiar-fantasia" style="border:none; background:none; color:#2563eb; cursor:pointer; font-size:0.85em; margin-left:10px;">(Limpiar campo)</button>
+          </label>
+          <input type="text" id="nombre-fantasia" placeholder="Nombre comercial de la sucursal o establecimiento">
+        </div>
+
+        <div class="grid-2">
           <div class="form-group">
-            <label for="fecha-servicio">Fecha de Aplicación</label>
+            <label>Fecha del Servicio *</label>
             <input type="date" id="fecha-servicio" required>
           </div>
           <div class="form-group">
-            <label for="servicio-valido">Vencimiento del Servicio</label>
+            <label>Servicio Válido Hasta *</label>
             <input type="date" id="servicio-valido" required>
           </div>
+        </div>
+
+        <div class="grid-2">
           <div class="form-group">
-            <label for="hora-inicio">Hora Inicio</label>
-            <input type="time" id="hora-inicio" value="08:00" required>
+            <label>Hora de Inicio</label>
+            <input type="time" id="hora-inicio" value="08:00">
           </div>
           <div class="form-group">
-            <label for="hora-finalizacion">Hora Finalización</label>
-            <input type="time" id="hora-finalizacion" value="09:00" required>
+            <label>Hora de Finalización</label>
+            <input type="time" id="hora-finalizacion" value="09:00">
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Tipo de Servicio:</label>
+        <div class="form-group">
+          <label>Tipo de Servicio</label>
           <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Comercial"> Comercial</label>
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Residencial"> Residencial</label>
-              <label class="checkbox-item"><input type="checkbox" name="tipo-servicio" value="Industrial"> Industrial</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Fumigación"> Fumigación</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Desinsectación"> Desinsectación</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Desratización"> Desratización</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Desinfección"> Desinfección</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Control de Aves"> Control de Aves</label>
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Objetivo de Control:</label>
+        <div class="form-group">
+          <label>Objetivo de Control</label>
           <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desinsectación"> Desinsectación</label>
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Desratización"> Desratización</label>
-              <label class="checkbox-item"><input type="checkbox" name="objetivo-control" value="Sanitización"> Sanitización</label>
+            <label><input type="checkbox" name="objetivo-control" value="Cucarachas"> Cucarachas</label>
+            <label><input type="checkbox" name="objetivo-control" value="Roedores"> Roedores</label>
+            <label><input type="checkbox" name="objetivo-control" value="Hormigas"> Hormigas</label>
+            <label><input type="checkbox" name="objetivo-control" value="Moscas / Mosquitos"> Moscas / Mosquitos</label>
+            <label><input type="checkbox" name="objetivo-control" value="Chinches"> Chinches</label>
+            <label><input type="checkbox" name="objetivo-control" value="Microorganismos"> Microorganismos</label>
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label>Método de Aplicación:</label>
+        <div class="form-group">
+          <label>Método de Aplicación</label>
           <div class="checkbox-group">
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aspersión"> Aspersión</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Termonebulización"> Termonebulización</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Nebulización en frío"> Nebulización en frío</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Lami gomosa"> Lami gomosa</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Prod granulado"> Prod granulado</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Cebo para roedores"> Cebo para roedores</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Trampa mecánica"> Trampa mecánica</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en gel"> Aplic de prod en gel</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de Gas Fumígeno"> Aplic de Gas Fumígeno</label>
-              <label class="checkbox-item"><input type="checkbox" name="metodo-aplicacion" value="Aplic de prod en Polvo"> Aplic de prod en Polvo</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Aspersión"> Aspersión</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Nebulización"> Nebulización</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Gel Insecticida"> Gel Insecticida</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Estaciones de Cebo"> Estaciones de Cebo</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Termonebulización"> Termonebulización</label>
           </div>
         </div>
 
-        <fieldset>
-          <legend>🧪 Ficha Técnica del Producto Químico</legend>
-          
-          <div class="form-group" style="margin-bottom: 15px;">
-            <label for="producto-utilizado">Producto Utilizado</label>
-            <select id="producto-utilizado" required>
-              <option value="">Seleccione el producto químico...</option>
-            </select>
-          </div>
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e5e7eb;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0;">Ficha Técnica de Productos Químicos</h3>
+          <button type="button" id="btn-agregar-producto" style="background-color: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+            ➕ Agregar Otro Producto
+          </button>
+        </div>
 
-          <div class="form-group full-width" style="margin-bottom: 20px;">
-            <label for="plagas-controla">Plagas que Controla</label>
-            <input type="text" id="plagas-controla" required placeholder="control de insectos rastreros, arácnidos, insectos voladores y termitas">
-          </div>
+        <!-- Contenedor dinámico de productos -->
+        <div id="contenedor-productos-lista"></div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Nombre Comercial</label>
-              <input type="text" id="form-prod-nombre" required>
-            </div>
-            <div class="form-group">
-              <label>Ingrediente Activo</label>
-              <input type="text" id="form-prod-activo" required>
-            </div>
-            <div class="form-group">
-              <label>Registro M.S.</label>
-              <input type="text" id="form-prod-ms" required>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Dosis Recomendada</label>
-              <input type="text" id="form-prod-dosis" required>
-            </div>
-            <div class="form-group">
-              <label>Lote</label>
-              <input type="text" id="form-prod-lote" placeholder="Ej: 2301234">
-            </div>
-            <div class="form-group">
-              <label>Vencimiento de Producto</label>
-              <input type="text" id="form-prod-vence" required>
-            </div>
-          </div>
-        </fieldset>
-
-        <button type="submit" id="btn-submit-certificado" class="btn-submit">
-          💾 Guardar e Imprimir Certificado Comercial
-        </button>
+        <button type="submit" id="btn-submit-certificado" class="btn-submit">💾 Guardar e Imprimir Certificado Comercial</button>
       </form>
     </div>
 
-    <div id="vista-consulta" class="seccion-modulo">
-      <div class="titulo-modulo">Fumigadora Tecnoplagas - Panel de Historial Comercial</div>
-      <div class="search-wrapper">
-        <input type="text" id="input-buscar" class="search-input" placeholder="Buscar por ID de Certificado o Nombre de Cliente...">
+    <!-- VISTA DE CONSULTA -->
+    <div id="vista-consulta" class="tab-content">
+      <div class="form-group">
+        <input type="text" id="input-buscar" placeholder="🔍 Buscar por N° de Certificado o Nombre de Cliente...">
       </div>
-      <div class="table-container">
-        <table class="historial-table">
-          <thead>
-            <tr>
-              <th>ID Certificado</th>
-              <th>Cliente</th>
-              <th>Fecha Servicio</th>
-              <th>Producto</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-historial-body">
-            <tr>
-              <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">
-                Cargando historial en tiempo real...
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>N° Certificado</th>
+            <th>Cliente</th>
+            <th>Fecha</th>
+            <th>Productos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial-body">
+          <tr>
+            <td colspan="5" style="text-align:center;">Cargando historial...</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
   </div>
 
-  <div id="vista-impresion" class="only-print">
-    <div class="certificate-border">
-      
-      <div class="flex-row-print">
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; width: 90%;">Datos del Cliente</h3>
-          <table style="width: 95%; border-collapse: collapse; font-size: 11px;">
-            <tr><td style="padding: 3px 0; font-weight: bold; width: 35%;">Razón Social:</td><td style="padding: 3px 0;" id="print-cliente">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Nombre Fantasía:</td><td style="padding: 3px 0;" id="print-fantasia">---</td></tr>
-            <tr><td style="padding: 3px 0; font-weight: bold;">Dirección Física:</td><td style="padding: 3px 0;" id="print-direccion">---</td></tr>
-          </table>
-        </div>
-        
-        <div class="flex-col-print">
-          <h3 style="margin: 0 0 6px 0; font-size: 13px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px;">Datos de la Empresa de Servicio</h3>
-          <table style="width: 100%; border-collapse: collapse; font-size: 10.5px; line-height: 1.3;">
-            <tr><td style="padding: 2px 0; font-weight: bold; width: 30%;">Razón Social:</td><td style="padding: 2px 0;">Fumigadora TecnoPlagas C.R.C</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Sede Central:</td><td style="padding: 2px 0;">Tres Ríos, La Unión, Cartago</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Permiso Sanitario:</td><td style="padding: 2px 0; font-weight: bold; color: #0f172a;">ARSLU-3160-02-2025</td></tr>
-            <tr><td style="padding: 2px 0; font-weight: bold;">Código CIIU:</td><td style="padding: 2px 0;">8129.0 Grupo de Riesgo: B</td></tr>
-          </table>
-        </div>
+  <!-- PLANTILLA DE IMPRESIÓN PDF -->
+  <div id="print-template">
+    <div class="pdf-header">
+      <div>
+        <h2 style="margin:0; color:#059669;">FUMIGADORA TECNOPLAGAS</h2>
+        <small>Control Integral de Plagas y Sanidad Ambiental</small>
+      </div>
+      <div style="text-align:right;">
+        <strong>CERTIFICADO COMERCIAL</strong><br>
+        <span style="font-size:1.2em; color:#dc2626;" id="print-num-cert">---</span>
+      </div>
+    </div>
+
+    <div class="pdf-box">
+      <div class="pdf-grid-2">
+        <div><strong>Cliente:</strong> <span id="print-cliente">---</span></div>
+        <div><strong>Nombre Fantasía:</strong> <span id="print-fantasia">---</span></div>
+        <div style="grid-column: span 2;"><strong>Dirección:</strong> <span id="print-direccion">---</span></div>
+      </div>
+    </div>
+
+    <div class="pdf-box">
+      <div class="pdf-grid-2">
+        <div><strong>Fecha de Aplicación:</strong> <span id="print-fecha">---</span></div>
+        <div><strong>Válido Hasta:</strong> <span id="print-vence">---</span></div>
+        <div><strong>Hora Inicio:</strong> <span id="print-inicio">---</span></div>
+        <div><strong>Hora Finalización:</strong> <span id="print-fin">---</span></div>
+      </div>
+    </div>
+
+    <div class="pdf-box">
+      <strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span><br>
+      <strong>Plagas Afectadas:</strong> <span id="print-plagas">---</span>
+    </div>
+
+    <div class="pdf-grid-2">
+      <div class="pdf-box">
+        <strong>Objetivo de Control:</strong>
+        <div id="print-objetivos-elegidos" style="margin-top:5px; font-size:0.9em;">---</div>
+      </div>
+      <div class="pdf-box">
+        <strong>Método de Aplicación:</strong>
+        <div id="print-metodos-elegidos" style="margin-top:5px; font-size:0.9em;">---</div>
+      </div>
+    </div>
+
+    <h4 style="margin: 10px 0 5px 0;">Detalle de Productos Químicos Utilizados</h4>
+    <table class="pdf-table">
+      <thead>
+        <tr>
+          <th>Nombre Comercial</th>
+          <th>Ingrediente Activo</th>
+          <th>Registro M.S.</th>
+          <th>Lote</th>
+          <th>Dosis</th>
+          <th>Vencimiento</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-print-productos">
+        <!-- Rellenado dinámicamente -->
+      </tbody>
+    </table>
+
+    <div class="pdf-footer">
+      <div style="text-align:center; width:200px;">
+        <div style="border-bottom: 1px solid #000; height: 40px;"></div>
+        <small>Firma / Sello Tecnoplagas</small>
       </div>
 
-      <div class="print-header-title">CERTIFICADO COMERCIAL DE MANEJO INTEGRADO DE PLAGAS #<span id="print-num-cert">---</span></div>
-
-      <table class="print-table">
-        <tr>
-          <td><strong>Prestación del Servicio:</strong> <span id="print-fecha">---</span></td>
-          <td><strong>Válido Hasta:</strong> <span id="print-vence">---</span></td>
-          <td><strong>Horario Técnico:</strong> <span id="print-inicio">00:00</span> a <span id="print-fin">00:00</span></td>
-          <td><strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span></td>
-        </tr>
-      </table>
-
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 30%;">Objetivo de Control</th>
-            <th style="width: 30%;">Método de Aplicación</th>
-            <th style="width: 40%;">Plagas que Controla (Rastreros / Voladores / Arácnidos)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="line-height: 1.6; padding: 6px; vertical-align: top;" id="print-objetivos-elegidos"></td>
-            <td style="line-height: 1.4; padding: 6px; font-size: 10px; vertical-align: top;" id="print-metodos-elegidos"></td>
-            <td id="print-plagas" style="padding: 8px; font-style: italic; vertical-align: top; color: #334155;">---</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h4 style="margin: 8px 0 4px 0; font-size: 11px; color: #1e293b; font-weight: bold;">Especificación de los Productos Químicos Utilizados:</h4>
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th>Producto Utilizado</th>
-            <th>Ingrediente Activo</th>
-            <th>N° Registro M.S.</th>
-            <th>Lote Fabricación</th>
-            <th>Dosis Aplicada</th>
-            <th>Vencimiento Químico</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td id="td-prod-nombre" style="font-weight: bold; color: #0f172a;">---</td>
-            <td id="td-prod-activo">---</td>
-            <td id="td-prod-ms">---</td>
-            <td id="td-prod-lote">---</td>
-            <td id="td-prod-dosis">---</td>
-            <td id="td-prod-vence">---</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-        <tr>
-          <td style="width: 38%; text-align: left; border: none; padding: 0 0 0 15px; vertical-align: bottom;">
-            <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; height: 75px; margin-bottom: 5px;">
-              <img src="https://raw.githubusercontent.com/EVERSTRC/tecnoplagas-app/main/firma.png" 
-                   alt="Firma Everst" 
-                   style="max-height: 65px; max-width: 140px; object-fit: contain; display: block;" />
-            </div>
-            <div style="border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 90%;">
-              <strong>Everst Rojas Camacho</strong><br>Técnico Responsable Aplicador
-            </div>
-          </td>
-          <td style="width: 32%; text-align: center; border: none; padding: 0; vertical-align: bottom;">
-            <div style="margin-top: 30px; border-top: 1px dashed #475569; padding-top: 4px; font-size: 10.5px; width: 85%; margin-left: auto; margin-right: auto;">
-              <br>Firma / Sello de Recibido Cliente
-            </div>
-          </td>
-          <td style="width: 30%; text-align: right; border: none; padding: 0; vertical-align: bottom;">
-            <div style="display: inline-block; text-align: center; padding: 5px; border: 1px solid #cbd5e1; background: #fff; border-radius: 4px;">
-              <div style="font-size: 8px; font-weight: bold; color: #475569; margin-bottom: 3px; max-width: 100px; line-height: 1.1; margin-left: auto; margin-right: auto;">
-                Consulte la validez y autenticidad aquí
-              </div>
-              <div id="qrcode" style="display: inline-block;"></div>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <div class="legal-text">
-        De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N° 37308 del 30 de agosto de 2012 (Según la Ley General de Salud). <br>
-        <strong>Contacto Corporativo:</strong> Teléfono Oficina: 7232-5001 o 8987-7776 | Email: Info@tecnoplagascrc.com | Web: http://tecnoplagascrc.com
+      <div class="qr-container">
+        <div id="qrcode"></div>
+        <small style="font-size:0.7em;">Validación de Autenticidad</small>
       </div>
-
     </div>
   </div>
 
@@ -698,7 +473,8 @@
         selectCliente.addEventListener('change', () => {
           const selectedText = selectCliente.options[selectCliente.selectedIndex]?.text;
           if (selectedText && selectCliente.value !== '') {
-            inputFantasia.value = selectedText;
+            const nombreLimpio = selectedText.replace(/^\[.*?\]\s*/, '');
+            inputFantasia.value = nombreLimpio;
           } else {
             inputFantasia.value = '';
           }
@@ -714,6 +490,7 @@
     });
   </script>
 
+  <!-- Lógica JavaScript Firebase -->
   <script type="module" src="certificado_comercial.js"></script>
 </body>
 </html>
