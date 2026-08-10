@@ -17,10 +17,10 @@
     .btn-productos:hover { background: #d97706; }
     .btn-certificados { background: #2563eb; }
     .btn-certificados:hover { background: #1d4ed8; }
+    .btn-cert-comercial { background: #0d9488; }
+    .btn-cert-comercial:hover { background: #0f766e; }
     .btn-facturacion { background: #ef4444; }
     .btn-facturacion:hover { background: #dc2626; }
-    
-    /* Estilo del nuevo botón de Estaciones de Cebaderos */
     .btn-cebaderos { background: #6366f1; }
     .btn-cebaderos:hover { background: #4f46e5; }
     
@@ -35,15 +35,14 @@
       <a href="clientes.html" class="btn-nav btn-clientes">👥 Control de Clientes</a>
       <a href="productos.html" class="btn-nav btn-productos">📦 Control de Productos</a>
       <a href="certificados.html" class="btn-nav btn-certificados">📄 Emitir Certificados</a>
+      <a href="certificado_comercial.html" class="btn-nav btn-cert-comercial">🏢 Certificado Comercial</a>
       <a href="facturacion.html" class="btn-nav btn-facturacion">💰 Facturación y Cotizaciones</a>
-      <!-- Nuevo Módulo de Cebaderos Agregado -->
       <a href="formulario_cebaderos.html" class="btn-nav btn-cebaderos">🐀 Estaciones de Cebaderos</a>
     </div>
     <div class="pwa-tag">Sistema optimizado para Tablets y Soporte Offline</div>
   </div>
 
   <script>
-    // Registro automático del Service Worker para soporte Offline
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
