@@ -183,7 +183,7 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
   const formatoNumero = String(numeroSiguiente).padStart(6, '0');
   
   if(!isEditMode && formCert && inputIdCertificado) {
-    inputIdCertificado.value = `CERT-COM-${formatoNumero}`;
+    inputIdCertificado.value = `CERT-${formatoNumero}`;
   }
 
   if(snapshot.empty) {
@@ -219,6 +219,14 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         }];
       }
 
+      const hInicioRaw = cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate() : null;
+      const hFinRaw = cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate() : null;
+
+      const formatearHora12h = (dateObj, fallbackStr) => {
+        if (!dateObj) return fallbackStr;
+        return dateObj.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', hour12: true });
+      };
+
       listaCertificadosGlobal.push({
         id: cert.IdCertificados || docSnap.id,
         clienteId: idClienteRelacionado,
@@ -232,15 +240,14 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         tipo: cert["Tipo de servicio"] || 'Control de Plagas',
         metodo: cert["Metodo de aplicacion"] || '---',
         objetivo: cert["Objetivo de Control"] || '---',
-        plagas: cert["Plagas que controla"] || (listaProds[0]?.plagas || '---'),
+        plagas: cert["Plagas que controla"] || (listaProds[0]?.plagas || 'ácaros, arañas, cucarachas, alacranes, tijerillas y más'),
         tecnico: cert["Tecnico Responsable"] || "Everst Rojas Camacho",
         recibido: cert["Recibido por"] || "---",
         
-        horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '16:00',
-        horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '18:00',
+        horaInicioInput: hInicioRaw ? hInicioRaw.toTimeString().substring(0, 5) : '16:00',
+        horaFinInput: hFinRaw ? hFinRaw.toTimeString().substring(0, 5) : '18:00',
         
-        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '16:00 Hrs',
-        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '18:00 Hrs',
+        horarioFormatted: `${formatearHora12h(hInicioRaw, '04:00 p. m.')} a ${formatearHora12h(hFinRaw, '06:00 p. m.')}`,
         
         productos: listaProds
       });
@@ -388,32 +395,48 @@ window.ejecutarReimpresionDirecta = async function(idCert) {
   prepararYDispararImpresion(cert);
 };
 
+// PREPARACIÓN DE IMPRESIÓN (PDF IDÉNTICO A IMAGEN 309.PNG)
 function prepararYDispararImpresion(cert) {
   try {
     const fantasiaLimpia = (cert.fantasia || '---').replace(/^\[.*?\]\s*/, '');
 
+    if(document.getElementById('print-cert-id')) document.getElementById('print-cert-id').innerText = cert.id || 'CERT-000000';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
-    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = fantasiaLimpia;
+    if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = fantasiaLimpia || '---';
     if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
     if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
     if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
-    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '16:00 Hrs';
-    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '18:00 Hrs';
+    if(document.getElementById('print-horario')) document.getElementById('print-horario').innerText = cert.horarioFormatted || '02:00 p. m. a 08:00 p. m.';
     if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || 'Control de Plagas';
-    if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
+    if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || 'ácaros, arañas, cucarachas, alacranes, tijerillas y más';
     if(document.getElementById('print-tecnico')) document.getElementById('print-tecnico').innerText = cert.tecnico || 'Everst Rojas Camacho';
     if(document.getElementById('print-recibido')) document.getElementById('print-recibido').innerText = cert.recibido || '---';
 
-    const contenedorMetodos = document.getElementById('print-metodos-elegidos');
-    if (contenedorMetodos) {
-      const metTexto = cert.metodo || "";
-      if (metTexto && metTexto !== "No especificado" && metTexto !== "---") {
-        contenedorMetodos.innerText = metTexto.split(',').map(m => `(x) ${m.trim()}`).join(' ');
-      } else {
-        contenedorMetodos.innerText = "(x) Aspersión (x) Cebo Rodenticida";
-      }
+    // Lista viñetada de Objetivos de Control
+    const ulObjetivos = document.getElementById('print-objetivos-list');
+    if (ulObjetivos) {
+      ulObjetivos.innerHTML = "";
+      const listaObjs = (cert.objetivo && cert.objetivo !== "---") ? cert.objetivo.split(',') : ["Desinsectación", "Sanitización"];
+      listaObjs.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item.trim();
+        ulObjetivos.appendChild(li);
+      });
     }
 
+    // Lista viñetada de Métodos de Aplicación
+    const ulMetodos = document.getElementById('print-metodos-list');
+    if (ulMetodos) {
+      ulMetodos.innerHTML = "";
+      const listaMets = (cert.metodo && cert.metodo !== "---") ? cert.metodo.split(',') : ["Aspersión"];
+      listaMets.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item.trim();
+        ulMetodos.appendChild(li);
+      });
+    }
+
+    // Rellenar Productos en la tabla PDF
     const tbodyPDF = document.getElementById('tbody-print-productos');
     if (tbodyPDF) {
       tbodyPDF.innerHTML = "";
@@ -421,21 +444,21 @@ function prepararYDispararImpresion(cert) {
         cert.productos.forEach(p => {
           const tr = document.createElement('tr');
           tr.innerHTML = `
-            <td>${p.pNombre || '---'}</td>
+            <td><strong>${p.pNombre || '---'}</strong></td>
             <td>${p.pActivo || '---'}</td>
-            <td>${p.pLote || '---'}</td>
             <td>${p.pReg || '---'}</td>
+            <td>${p.pLote || '---'}</td>
             <td>${p.pDosis || '---'}</td>
             <td>${p.pVence || '---'}</td>
           `;
           tbodyPDF.appendChild(tr);
         });
       } else {
-        tbodyPDF.innerHTML = `<tr><td colspan="6">No se registraron productos.</td></tr>`;
+        tbodyPDF.innerHTML = `<tr><td colspan="6" style="text-align:center;">No se registraron productos.</td></tr>`;
       }
     }
 
-    // Código QR sin datos de vehículos ni placas
+    // Generar Código QR
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -447,8 +470,8 @@ function prepararYDispararImpresion(cert) {
       if (typeof InstanciaQRCode !== 'undefined') {
         new InstanciaQRCode(qrContainer, {
           text: textoQrPublico,
-          width: 90,
-          height: 90,
+          width: 80,
+          height: 80,
           colorDark: "#000000",
           colorLight: "#ffffff",
           correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
@@ -489,8 +512,8 @@ if (formCert) {
       const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
 
       const tipoServicioString = tiposSeleccionados.join(', ') || "Control de Plagas";
-      const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
-      const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
+      const objetivoControlString = objetivosSeleccionados.join(', ') || "Sanitización, Desinsectación";
+      const metodoAplicacionString = metodosSeleccionados.join(', ') || "Aspersión";
 
       const fechaServicioRaw = document.getElementById('fecha-servicio').value;
       const servicioValidoRaw = document.getElementById('servicio-valido').value;
@@ -506,6 +529,10 @@ if (formCert) {
       const hFinStr = document.getElementById('hora-finalizacion').value || "18:00";
       const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
       const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
+
+      const formatearHora12hObj = (dateObj) => {
+        return dateObj.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit', hour12: true });
+      };
 
       const rawFantasia = (document.getElementById('nombre-fantasia').value || "").trim();
       const fantasiaFinal = rawFantasia.replace(/^\[.*?\]\s*/, '');
@@ -524,7 +551,7 @@ if (formCert) {
         });
       });
 
-      const plagasCombinadas = Array.from(new Set(listaProductosGuardar.map(p => p.plagas).filter(p => p))).join(', ') || "control de insectos rastreros, arácnidos, insectos voladores y termitas";
+      const plagasCombinadas = Array.from(new Set(listaProductosGuardar.map(p => p.plagas).filter(p => p))).join(', ') || "ácaros, arañas, cucarachas, alacranes, tijerillas y más";
 
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
@@ -557,8 +584,7 @@ if (formCert) {
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
         plagas: plagasCombinadas,
-        horaInicio: `${hInicioStr} Hrs`,
-        horaFin: `${hFinStr} Hrs`,
+        horarioFormatted: `${formatearHora12hObj(hInicio)} a ${formatearHora12hObj(hFin)}`,
         tecnico: payloadCertificado["Tecnico Responsable"],
         recibido: payloadCertificado["Recibido por"],
         productos: listaProductosGuardar
