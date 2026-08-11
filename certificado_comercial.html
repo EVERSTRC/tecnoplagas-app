@@ -144,7 +144,7 @@
 
     th { background-color: #f9fafb; }
 
-    /* ESTILOS DE IMPRESIÓN (PDF) */
+    /* ESTILOS DE IMPRESIÓN BASADOS EN TU FORMATO ORIGINAL */
     #print-template {
       display: none;
     }
@@ -166,72 +166,93 @@
         width: 100%;
         padding: 0;
         margin: 0;
-        font-family: Arial, sans-serif;
+        font-family: Arial, Helvetica, sans-serif;
         color: #000;
+        font-size: 11px;
       }
 
       @page {
         size: letter;
-        margin: 10mm;
+        margin: 8mm;
       }
 
-      .pdf-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #000;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-      }
-
-      .pdf-title {
+      .pdf-title-banner {
         text-align: center;
-        font-size: 1.3em;
+        background-color: #f3f4f6 !important;
+        border: 1px solid #000;
+        padding: 6px;
+        font-size: 1.2em;
         font-weight: bold;
         text-transform: uppercase;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
+        -webkit-print-color-adjust: exact;
       }
 
-      .pdf-box {
+      .pdf-section-header {
+        font-weight: bold;
+        background-color: #e5e7eb !important;
         border: 1px solid #000;
-        padding: 10px;
-        margin-bottom: 15px;
-        border-radius: 4px;
+        padding: 4px 8px;
+        margin-top: 8px;
+        margin-bottom: 4px;
+        -webkit-print-color-adjust: exact;
       }
 
-      .pdf-grid-2 {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+      .pdf-box-flat {
+        border: 1px solid #000;
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+
+      .pdf-row-flex {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 4px;
       }
 
       .pdf-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-top: 5px;
+        margin-bottom: 8px;
       }
 
       .pdf-table th, .pdf-table td {
         border: 1px solid #000;
-        padding: 6px;
-        font-size: 0.85em;
-        text-align: center;
+        padding: 4px 6px;
+        font-size: 10px;
+        text-align: left;
       }
 
       .pdf-table th {
-        background-color: #e5e7eb !important;
+        background-color: #f3f4f6 !important;
+        font-weight: bold;
         -webkit-print-color-adjust: exact;
       }
 
-      .pdf-footer {
-        margin-top: 25px;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
+      .pdf-footer-legal {
+        margin-top: 15px;
+        font-size: 9px;
+        text-align: center;
+        border-top: 1px solid #000;
+        padding-top: 6px;
       }
 
-      .qr-container {
+      .pdf-firmas-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: flex-end;
+        margin-top: 25px;
+      }
+
+      .pdf-firma-box {
         text-align: center;
+        width: 35%;
+      }
+
+      .pdf-firma-line {
+        border-top: 1px solid #000;
+        margin-bottom: 4px;
       }
     }
   </style>
@@ -284,33 +305,44 @@
         <div class="grid-2">
           <div class="form-group">
             <label>Hora de Inicio</label>
-            <input type="time" id="hora-inicio" value="08:00">
+            <input type="time" id="hora-inicio" value="16:00">
           </div>
           <div class="form-group">
             <label>Hora de Finalización</label>
-            <input type="time" id="hora-finalizacion" value="09:00">
+            <input type="time" id="hora-finalizacion" value="18:00">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Técnico Responsable</label>
+            <input type="text" id="tecnico-responsable" value="Everst Rojas Camacho">
+          </div>
+          <div class="form-group">
+            <label>Recibido por (Cliente)</label>
+            <input type="text" id="recibido-por" placeholder="Nombre de quien recibe">
           </div>
         </div>
 
         <div class="form-group">
           <label>Tipo de Servicio</label>
           <div class="checkbox-group">
-            <label><input type="checkbox" name="tipo-servicio" value="Fumigación"> Fumigación</label>
             <label><input type="checkbox" name="tipo-servicio" value="Desinsectación"> Desinsectación</label>
             <label><input type="checkbox" name="tipo-servicio" value="Desratización"> Desratización</label>
-            <label><input type="checkbox" name="tipo-servicio" value="Desinfección"> Desinfección</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Sanitización"> Sanitización</label>
+            <label><input type="checkbox" name="tipo-servicio" value="Control de Plagas"> Control de Plagas</label>
             <label><input type="checkbox" name="tipo-servicio" value="Control de Aves"> Control de Aves</label>
           </div>
         </div>
 
         <div class="form-group">
-          <label>Objetivo de Control</label>
+          <label>Plagas que Controla / Objetivo</label>
           <div class="checkbox-group">
-            <label><input type="checkbox" name="objetivo-control" value="Cucarachas"> Cucarachas</label>
+            <label><input type="checkbox" name="objetivo-control" value="Insectos Rastreros"> Insectos Rastreros</label>
+            <label><input type="checkbox" name="objetivo-control" value="Arácnidos"> Arácnidos</label>
+            <label><input type="checkbox" name="objetivo-control" value="Insectos Voladores"> Insectos Voladores</label>
+            <label><input type="checkbox" name="objetivo-control" value="Termitas"> Termitas</label>
             <label><input type="checkbox" name="objetivo-control" value="Roedores"> Roedores</label>
-            <label><input type="checkbox" name="objetivo-control" value="Hormigas"> Hormigas</label>
-            <label><input type="checkbox" name="objetivo-control" value="Moscas / Mosquitos"> Moscas / Mosquitos</label>
-            <label><input type="checkbox" name="objetivo-control" value="Chinches"> Chinches</label>
             <label><input type="checkbox" name="objetivo-control" value="Microorganismos"> Microorganismos</label>
           </div>
         </div>
@@ -319,9 +351,9 @@
           <label>Método de Aplicación</label>
           <div class="checkbox-group">
             <label><input type="checkbox" name="metodo-aplicacion" value="Aspersión"> Aspersión</label>
+            <label><input type="checkbox" name="metodo-aplicacion" value="Cebo Rodenticida"> Cebo Rodenticida</label>
             <label><input type="checkbox" name="metodo-aplicacion" value="Nebulización"> Nebulización</label>
             <label><input type="checkbox" name="metodo-aplicacion" value="Gel Insecticida"> Gel Insecticida</label>
-            <label><input type="checkbox" name="metodo-aplicacion" value="Estaciones de Cebo"> Estaciones de Cebo</label>
             <label><input type="checkbox" name="metodo-aplicacion" value="Termonebulización"> Termonebulización</label>
           </div>
         </div>
@@ -329,7 +361,7 @@
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #e5e7eb;">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h3 style="margin: 0;">Ficha Técnica de Productos Químicos</h3>
+          <h3 style="margin: 0;">Productos Utilizados</h3>
           <button type="button" id="btn-agregar-producto" style="background-color: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">
             ➕ Agregar Otro Producto
           </button>
@@ -368,61 +400,63 @@
 
   </div>
 
-  <!-- PLANTILLA DE IMPRESIÓN PDF -->
+  <!-- PLANTILLA DE IMPRESIÓN PDF CON ESTRUCTURA EXACTA AL ARCHIVO PROPORCIONADO -->
   <div id="print-template">
-    <div class="pdf-header">
-      <div>
-        <h2 style="margin:0; color:#059669;">FUMIGADORA TECNOPLAGAS</h2>
-        <small>Control Integral de Plagas y Sanidad Ambiental</small>
-      </div>
-      <div style="text-align:right;">
-        <strong>CERTIFICADO COMERCIAL</strong><br>
-        <span style="font-size:1.2em; color:#dc2626;" id="print-num-cert">---</span>
-      </div>
+    
+    <div class="pdf-title-banner">
+      CERTIFICADO MANEJO INTEGRADO DE PLAGAS[span_2](start_span)[span_2](end_span)
     </div>
 
-    <div class="pdf-box">
-      <div class="pdf-grid-2">
-        <div><strong>Cliente:</strong> <span id="print-cliente">---</span></div>
-        <div><strong>Nombre Fantasía:</strong> <span id="print-fantasia">---</span></div>
-        <div style="grid-column: span 2;"><strong>Dirección:</strong> <span id="print-direccion">---</span></div>
-      </div>
+    <!-- DATOS DEL CLIENTE -->
+    <div class="pdf-section-header">Datos del Cliente:</div>[span_3](start_span)[span_3](end_span)
+    <div class="pdf-box-flat">
+      <div><strong>Nombre Comercial:</strong> <span id="print-cliente">MaxiIndustrias</span></div>[span_4](start_span)[span_4](end_span)
+      <div style="margin-top: 4px;"><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">MaxiIndustrias</span></div>[span_5](start_span)[span_5](end_span)
+      <div style="margin-top: 4px;"><strong>Dirección:</strong> <span id="print-direccion">San José, Tibás, Llorente</span></div>[span_6](start_span)[span_6](end_span)
     </div>
 
-    <div class="pdf-box">
-      <div class="pdf-grid-2">
-        <div><strong>Fecha de Aplicación:</strong> <span id="print-fecha">---</span></div>
+    <!-- DATOS DE LA EMPRESA DE SERVICIO -->
+    <div class="pdf-section-header">Datos de la Empresa de Servicio:</div>[span_7](start_span)[span_7](end_span)
+    <div class="pdf-box-flat">
+      <div><strong>Nombre:</strong> Fumigadora TecnoPlagas C.R.C</div>[span_8](start_span)[span_8](end_span)
+      <div style="margin-top: 4px;"><strong>Dirección:</strong> Tres Ríos, La Unión, Cartago</div>[span_9](start_span)[span_9](end_span)
+      <div style="margin-top: 4px;"><strong>Permiso Sanitario:</strong> ARSLU-3160-02-2025</div>[span_10](start_span)[span_10](end_span)
+      <div style="margin-top: 4px;"><strong>Código SIIU:</strong> 8129.0 &nbsp;&nbsp;&nbsp;&nbsp; <strong>Grupo de Riesgo:</strong> B</div>[span_11](start_span)[span_11](end_span)
+    </div>
+
+    <!-- PRESTACIÓN DEL SERVICIO -->
+    <div class="pdf-box-flat">
+      <div class="pdf-row-flex">
+        <div><strong>Prestación del Servicio:</strong> <span id="print-fecha">10 de Agosto 2026</span></div>[span_12](start_span)[span_12](end_span)
         <div><strong>Válido Hasta:</strong> <span id="print-vence">---</span></div>
-        <div><strong>Hora Inicio:</strong> <span id="print-inicio">---</span></div>
-        <div><strong>Hora Finalización:</strong> <span id="print-fin">---</span></div>
+      </div>
+      <div class="pdf-row-flex" style="margin-top: 4px;">
+        <div><strong>Hora de Inicio:</strong> <span id="print-inicio">16:00 Hrs</span></div>[span_13](start_span)[span_13](end_span)
+        <div><strong>Hora de Finalización:</strong> <span id="print-fin">18:00 Hrs</span></div>[span_14](start_span)[span_14](end_span)
+      </div>
+      <div style="margin-top: 4px;">
+        <strong>Tipo de Servicio:</strong> <span id="print-tipo">Control de Plagas</span>[span_15](start_span)[span_15](end_span)
       </div>
     </div>
 
-    <div class="pdf-box">
-      <strong>Tipo de Servicio:</strong> <span id="print-tipo">---</span><br>
-      <strong>Plagas Afectadas:</strong> <span id="print-plagas">---</span>
+    <!-- PLAGAS QUE CONTROLA Y MÉTODO DE APLICACIÓN -->
+    <div class="pdf-box-flat">
+      <div><strong>Plagas que Controla:</strong></div>[span_16](start_span)[span_16](end_span)
+      <div id="print-plagas" style="margin-left: 10px; margin-top: 2px;">control de insectos rastreros, arácnidos, insectos voladores y termitas</div>[span_17](start_span)[span_17](end_span)
+      <div style="margin-top: 6px;"><strong>Método Aplicación:</strong></div>[span_18](start_span)[span_18](end_span)
+      <div id="print-metodos-elegidos" style="margin-left: 10px; margin-top: 2px;">(x) Aspersión (x) Cebo Rodenticida</div>[span_19](start_span)[span_19](end_span)
     </div>
 
-    <div class="pdf-grid-2">
-      <div class="pdf-box">
-        <strong>Objetivo de Control:</strong>
-        <div id="print-objetivos-elegidos" style="margin-top:5px; font-size:0.9em;">---</div>
-      </div>
-      <div class="pdf-box">
-        <strong>Método de Aplicación:</strong>
-        <div id="print-metodos-elegidos" style="margin-top:5px; font-size:0.9em;">---</div>
-      </div>
-    </div>
-
-    <h4 style="margin: 10px 0 5px 0;">Detalle de Productos Químicos Utilizados</h4>
+    <!-- TABLA DE PRODUCTOS UTILIZADOS -->
+    <div class="pdf-section-header">Productos Utilizados</div>[span_20](start_span)[span_20](end_span)
     <table class="pdf-table">
       <thead>
         <tr>
-          <th>Nombre Comercial</th>
+          <th>Plaguicida / Nombre Comercial</th>
           <th>Ingrediente Activo</th>
-          <th>Registro M.S.</th>
-          <th>Lote</th>
-          <th>Dosis</th>
+          <th>N° Lote</th>
+          <th>Registro MS</th>
+          <th>Dosis / Conc.</th>
           <th>Vencimiento</th>
         </tr>
       </thead>
@@ -431,17 +465,34 @@
       </tbody>
     </table>
 
-    <div class="pdf-footer">
-      <div style="text-align:center; width:200px;">
-        <div style="border-bottom: 1px solid #000; height: 40px;"></div>
-        <small>Firma / Sello Tecnoplagas</small>
+    <!-- FIRMAS Y TÉCNICOS -->
+    <div class="pdf-firmas-container">
+      <div class="pdf-firma-box">
+        <div style="height: 30px;"></div>
+        <div class="pdf-firma-line"></div>
+        <div><strong>Técnico Responsable:</strong></div>[span_21](start_span)[span_21](end_span)
+        <div id="print-tecnico">Everst Rojas Camacho</div>[span_22](start_span)[span_22](end_span)
       </div>
 
-      <div class="qr-container">
+      <div class="pdf-firma-box">
+        <div style="height: 30px;"></div>
+        <div class="pdf-firma-line"></div>
+        <div><strong>Recibido por:</strong></div>[span_23](start_span)[span_23](end_span)
+        <div id="print-recibido">---</div>
+      </div>
+
+      <div style="text-align:center;">
         <div id="qrcode"></div>
-        <small style="font-size:0.7em;">Validación de Autenticidad</small>
+        <small style="font-size:8px;">Validación Digital</small>
       </div>
     </div>
+
+    <!-- PIE DE PÁGINA LEGAL IGUAL AL ORIGINAL -->
+    <div class="pdf-footer-legal">
+      De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N 37308 del 30 de agosto de 2012 (Según la Ley General de Salud)<br>[span_24](start_span)[span_24](end_span)
+      <strong>Teléfono Oficina:</strong> 7232-5001 o 8987-7776 &nbsp;|&nbsp; <strong>Email:</strong> Info@tecnoplagascrc.com &nbsp;|&nbsp; <strong>Url Web:</strong> http://tecnoplagascrc.com[span_25](start_span)[span_25](end_span)
+    </div>
+
   </div>
 
   <script>
