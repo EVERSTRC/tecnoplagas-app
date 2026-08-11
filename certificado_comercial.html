@@ -144,7 +144,7 @@
 
     th { background-color: #f9fafb; }
 
-    /* ESTILOS DE IMPRESIÓN BASADOS EN TU FORMATO ORIGINAL */
+    /* ESTILOS DE IMPRESIÓN - ESTRUCTURA DEL PDF ORIGINAL */
     #print-template {
       display: none;
     }
@@ -331,19 +331,16 @@
             <label><input type="checkbox" name="tipo-servicio" value="Desratización"> Desratización</label>
             <label><input type="checkbox" name="tipo-servicio" value="Sanitización"> Sanitización</label>
             <label><input type="checkbox" name="tipo-servicio" value="Control de Plagas"> Control de Plagas</label>
-            <label><input type="checkbox" name="tipo-servicio" value="Control de Aves"> Control de Aves</label>
           </div>
         </div>
 
+        <!-- SECCIÓN DE OBJETIVOS DE CONTROL RESTRINGIDA A LAS 3 OPCIONES SOLICITADAS -->
         <div class="form-group">
-          <label>Plagas que Controla / Objetivo</label>
+          <label>Objetivos de Control / Servicio</label>
           <div class="checkbox-group">
-            <label><input type="checkbox" name="objetivo-control" value="Insectos Rastreros"> Insectos Rastreros</label>
-            <label><input type="checkbox" name="objetivo-control" value="Arácnidos"> Arácnidos</label>
-            <label><input type="checkbox" name="objetivo-control" value="Insectos Voladores"> Insectos Voladores</label>
-            <label><input type="checkbox" name="objetivo-control" value="Termitas"> Termitas</label>
-            <label><input type="checkbox" name="objetivo-control" value="Roedores"> Roedores</label>
-            <label><input type="checkbox" name="objetivo-control" value="Microorganismos"> Microorganismos</label>
+            <label><input type="checkbox" name="objetivo-control" value="Sanitización"> Sanitización</label>
+            <label><input type="checkbox" name="objetivo-control" value="Desratización"> Desratización</label>
+            <label><input type="checkbox" name="objetivo-control" value="Desinsectación"> Desinsectación</label>
           </div>
         </div>
 
@@ -400,55 +397,55 @@
 
   </div>
 
-  <!-- PLANTILLA DE IMPRESIÓN PDF CON ESTRUCTURA EXACTA AL ARCHIVO PROPORCIONADO -->
+  <!-- PLANTILLA DE IMPRESIÓN PDF -->
   <div id="print-template">
     
     <div class="pdf-title-banner">
-      CERTIFICADO MANEJO INTEGRADO DE PLAGAS[span_2](start_span)[span_2](end_span)
+      CERTIFICADO MANEJO INTEGRADO DE PLAGAS[span_0](start_span)[span_0](end_span)
     </div>
 
     <!-- DATOS DEL CLIENTE -->
-    <div class="pdf-section-header">Datos del Cliente:</div>[span_3](start_span)[span_3](end_span)
+    <div class="pdf-section-header">Datos del Cliente:</div>[span_1](start_span)[span_1](end_span)
     <div class="pdf-box-flat">
-      <div><strong>Nombre Comercial:</strong> <span id="print-cliente">MaxiIndustrias</span></div>[span_4](start_span)[span_4](end_span)
-      <div style="margin-top: 4px;"><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">MaxiIndustrias</span></div>[span_5](start_span)[span_5](end_span)
-      <div style="margin-top: 4px;"><strong>Dirección:</strong> <span id="print-direccion">San José, Tibás, Llorente</span></div>[span_6](start_span)[span_6](end_span)
+      <div><strong>Nombre Comercial:</strong> <span id="print-cliente">MaxiIndustrias</span></div>[span_2](start_span)[span_2](end_span)
+      <div style="margin-top: 4px;"><strong>Nombre de Fantasía:</strong> <span id="print-fantasia">MaxiIndustrias</span></div>[span_3](start_span)[span_3](end_span)
+      <div style="margin-top: 4px;"><strong>Dirección:</strong> <span id="print-direccion">San José, Tibás, Llorente</span></div>[span_4](start_span)[span_4](end_span)
     </div>
 
     <!-- DATOS DE LA EMPRESA DE SERVICIO -->
-    <div class="pdf-section-header">Datos de la Empresa de Servicio:</div>[span_7](start_span)[span_7](end_span)
+    <div class="pdf-section-header">Datos de la Empresa de Servicio:</div>[span_5](start_span)[span_5](end_span)
     <div class="pdf-box-flat">
-      <div><strong>Nombre:</strong> Fumigadora TecnoPlagas C.R.C</div>[span_8](start_span)[span_8](end_span)
-      <div style="margin-top: 4px;"><strong>Dirección:</strong> Tres Ríos, La Unión, Cartago</div>[span_9](start_span)[span_9](end_span)
-      <div style="margin-top: 4px;"><strong>Permiso Sanitario:</strong> ARSLU-3160-02-2025</div>[span_10](start_span)[span_10](end_span)
-      <div style="margin-top: 4px;"><strong>Código SIIU:</strong> 8129.0 &nbsp;&nbsp;&nbsp;&nbsp; <strong>Grupo de Riesgo:</strong> B</div>[span_11](start_span)[span_11](end_span)
+      <div><strong>Nombre:</strong> Fumigadora TecnoPlagas C.R.C</div>[span_6](start_span)[span_6](end_span)
+      <div style="margin-top: 4px;"><strong>Dirección:</strong> Tres Ríos, La Unión, Cartago</div>[span_7](start_span)[span_7](end_span)
+      <div style="margin-top: 4px;"><strong>Permiso Sanitario:</strong> ARSLU-3160-02-2025</div>[span_8](start_span)[span_8](end_span)
+      <div style="margin-top: 4px;"><strong>Código SIIU:</strong> 8129.0 &nbsp;&nbsp;&nbsp;&nbsp; <strong>Grupo de Riesgo:</strong> B</div>[span_9](start_span)[span_9](end_span)
     </div>
 
     <!-- PRESTACIÓN DEL SERVICIO -->
     <div class="pdf-box-flat">
       <div class="pdf-row-flex">
-        <div><strong>Prestación del Servicio:</strong> <span id="print-fecha">10 de Agosto 2026</span></div>[span_12](start_span)[span_12](end_span)
+        <div><strong>Prestación del Servicio:</strong> <span id="print-fecha">10 de Agosto 2026</span></div>[span_10](start_span)[span_10](end_span)
         <div><strong>Válido Hasta:</strong> <span id="print-vence">---</span></div>
       </div>
       <div class="pdf-row-flex" style="margin-top: 4px;">
-        <div><strong>Hora de Inicio:</strong> <span id="print-inicio">16:00 Hrs</span></div>[span_13](start_span)[span_13](end_span)
-        <div><strong>Hora de Finalización:</strong> <span id="print-fin">18:00 Hrs</span></div>[span_14](start_span)[span_14](end_span)
+        <div><strong>Hora de Inicio:</strong> <span id="print-inicio">16:00 Hrs</span></div>[span_11](start_span)[span_11](end_span)
+        <div><strong>Hora de Finalización:</strong> <span id="print-fin">18:00 Hrs</span></div>[span_12](start_span)[span_12](end_span)
       </div>
       <div style="margin-top: 4px;">
-        <strong>Tipo de Servicio:</strong> <span id="print-tipo">Control de Plagas</span>[span_15](start_span)[span_15](end_span)
+        <strong>Tipo de Servicio:</strong> <span id="print-tipo">Control de Plagas</span>[span_13](start_span)[span_13](end_span)
       </div>
     </div>
 
     <!-- PLAGAS QUE CONTROLA Y MÉTODO DE APLICACIÓN -->
     <div class="pdf-box-flat">
-      <div><strong>Plagas que Controla:</strong></div>[span_16](start_span)[span_16](end_span)
-      <div id="print-plagas" style="margin-left: 10px; margin-top: 2px;">control de insectos rastreros, arácnidos, insectos voladores y termitas</div>[span_17](start_span)[span_17](end_span)
-      <div style="margin-top: 6px;"><strong>Método Aplicación:</strong></div>[span_18](start_span)[span_18](end_span)
-      <div id="print-metodos-elegidos" style="margin-left: 10px; margin-top: 2px;">(x) Aspersión (x) Cebo Rodenticida</div>[span_19](start_span)[span_19](end_span)
+      <div><strong>Plagas que Controla:</strong></div>[span_14](start_span)[span_14](end_span)
+      <div id="print-plagas" style="margin-left: 10px; margin-top: 2px;">control de insectos rastreros, arácnidos, insectos voladores y termitas</div>[span_15](start_span)[span_15](end_span)
+      <div style="margin-top: 6px;"><strong>Método Aplicación:</strong></div>[span_16](start_span)[span_16](end_span)
+      <div id="print-metodos-elegidos" style="margin-left: 10px; margin-top: 2px;">(x) Aspersión (x) Cebo Rodenticida</div>[span_17](start_span)[span_17](end_span)
     </div>
 
     <!-- TABLA DE PRODUCTOS UTILIZADOS -->
-    <div class="pdf-section-header">Productos Utilizados</div>[span_20](start_span)[span_20](end_span)
+    <div class="pdf-section-header">Productos Utilizados</div>[span_18](start_span)[span_18](end_span)
     <table class="pdf-table">
       <thead>
         <tr>
@@ -465,19 +462,19 @@
       </tbody>
     </table>
 
-    <!-- FIRMAS Y TÉCNICOS -->
+    <!-- FIRMAS -->
     <div class="pdf-firmas-container">
       <div class="pdf-firma-box">
         <div style="height: 30px;"></div>
         <div class="pdf-firma-line"></div>
-        <div><strong>Técnico Responsable:</strong></div>[span_21](start_span)[span_21](end_span)
-        <div id="print-tecnico">Everst Rojas Camacho</div>[span_22](start_span)[span_22](end_span)
+        <div><strong>Técnico Responsable:</strong></div>[span_19](start_span)[span_19](end_span)
+        <div id="print-tecnico">Everst Rojas Camacho</div>[span_20](start_span)[span_20](end_span)
       </div>
 
       <div class="pdf-firma-box">
         <div style="height: 30px;"></div>
         <div class="pdf-firma-line"></div>
-        <div><strong>Recibido por:</strong></div>[span_23](start_span)[span_23](end_span)
+        <div><strong>Recibido por:</strong></div>[span_21](start_span)[span_21](end_span)
         <div id="print-recibido">---</div>
       </div>
 
@@ -487,10 +484,10 @@
       </div>
     </div>
 
-    <!-- PIE DE PÁGINA LEGAL IGUAL AL ORIGINAL -->
+    <!-- PIE DE PÁGINA LEGAL -->
     <div class="pdf-footer-legal">
-      De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N 37308 del 30 de agosto de 2012 (Según la Ley General de Salud)<br>[span_24](start_span)[span_24](end_span)
-      <strong>Teléfono Oficina:</strong> 7232-5001 o 8987-7776 &nbsp;|&nbsp; <strong>Email:</strong> Info@tecnoplagascrc.com &nbsp;|&nbsp; <strong>Url Web:</strong> http://tecnoplagascrc.com[span_25](start_span)[span_25](end_span)
+      De acuerdo al cumplimiento del Reglamento Servicio Alimentación al Público, aprobado mediante decreto ejecutivo N 37308 del 30 de agosto de 2012 (Según la Ley General de Salud)<br>[span_22](start_span)[span_22](end_span)
+      <strong>Teléfono Oficina:</strong> 7232-5001 o 8987-7776 &nbsp;|&nbsp; <strong>Email:</strong> Info@tecnoplagascrc.com &nbsp;|&nbsp; <strong>Url Web:</strong> http://tecnoplagascrc.com[span_23](start_span)[span_23](end_span)
     </div>
 
   </div>
