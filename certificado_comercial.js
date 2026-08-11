@@ -33,7 +33,7 @@ let isEditMode = false;
 let currentEditingId = null;
 let contadorProductos = 0;
 
-// Sincronización de Productos disponibles desde Firestore
+// Sincronización de Productos desde Firestore
 onSnapshot(collection(db, "Productos"), (snapshot) => {
   listaProductosGlobal = [];
   snapshot.forEach((docSnap) => {
@@ -41,7 +41,6 @@ onSnapshot(collection(db, "Productos"), (snapshot) => {
     listaProductosGlobal.push({ id: docSnap.id, ...producto });
   });
 
-  // Re-actualiza los desplegables de productos existentes
   document.querySelectorAll('.prod-select').forEach(sel => {
     const valActual = sel.value;
     actualizarOpcionesSelectProducto(sel);
@@ -63,7 +62,7 @@ function actualizarOpcionesSelectProducto(selectElem) {
   selectElem.appendChild(optionOtro);
 }
 
-// Función para agregar un producto dinámico
+// Función para agregar un producto a la lista dinámica
 function agregarFilaProducto(datosProd = null) {
   contadorProductos++;
   const idIndex = contadorProductos;
@@ -85,18 +84,18 @@ function agregarFilaProducto(datosProd = null) {
     </div>
 
     <div class="grid-2">
-      <div class="form-group"><label>Nombre Comercial</label><input type="text" class="prod-nombre"></div>
+      <div class="form-group"><label>Plaguicida / Nombre Comercial</label><input type="text" class="prod-nombre"></div>
       <div class="form-group"><label>Ingrediente Activo</label><input type="text" class="prod-activo"></div>
     </div>
 
     <div class="grid-3">
       <div class="form-group"><label>Registro M.S.</label><input type="text" class="prod-ms"></div>
       <div class="form-group"><label>N° Lote</label><input type="text" class="prod-lote"></div>
-      <div class="form-group"><label>Dosis Recomendada</label><input type="text" class="prod-dosis"></div>
+      <div class="form-group"><label>Dosis / Conc.</label><input type="text" class="prod-dosis"></div>
     </div>
 
     <div class="grid-2">
-      <div class="form-group"><label>Vencimiento Producto</label><input type="text" class="prod-vence" placeholder="DD/MM/AAAA"></div>
+      <div class="form-group"><label>Vencimiento Producto</label><input type="text" class="prod-vence" placeholder="MM/AA"></div>
       <div class="form-group"><label>Plagas que Controla</label><input type="text" class="prod-plagas"></div>
     </div>
   `;
@@ -204,7 +203,6 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         idClienteRelacionado = cert.Nombre.split('/').pop();
       }
 
-      // Soporte para arreglo de productos o producto único antiguo
       let listaProds = [];
       if (Array.isArray(cert.productos) && cert.productos.length > 0) {
         listaProds = cert.productos;
@@ -231,16 +229,18 @@ onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
         fechaRaw: cert["Fecha del Servicio"] ? cert["Fecha del Servicio"].toDate().toISOString().split('T')[0] : '',
         venceRaw: cert["Servicio valido"] ? cert["Servicio valido"].toDate().toISOString().split('T')[0] : '',
         fantasia: cert["Nombre de fantasia"] || '---',
-        tipo: cert["Tipo de servicio"] || '---',
+        tipo: cert["Tipo de servicio"] || 'Control de Plagas',
         metodo: cert["Metodo de aplicacion"] || '---',
         objetivo: cert["Objetivo de Control"] || '---',
         plagas: cert["Plagas que controla"] || (listaProds[0]?.plagas || '---'),
+        tecnico: cert["Tecnico Responsable"] || "Everst Rojas Camacho",
+        recibido: cert["Recibido por"] || "---",
         
-        horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '08:00',
-        horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '09:00',
+        horaInicioInput: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toTimeString().substring(0, 5) : '16:00',
+        horaFinInput: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toTimeString().substring(0, 5) : '18:00',
         
-        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
-        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '00:00',
+        horaInicio: cert["Hora de Inicio"] ? cert["Hora de Inicio"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '16:00 Hrs',
+        horaFin: cert["Hora Finalizacion"] ? cert["Hora Finalizacion"].toDate().toLocaleTimeString('es-CR', {hour: '2-digit', minute:'2-digit'}) : '18:00 Hrs',
         
         productos: listaProds
       });
@@ -332,31 +332,32 @@ window.cargarEnEditor = function(idCert) {
   if (document.getElementById('servicio-valido')) document.getElementById('servicio-valido').value = cert.venceRaw;
   if (document.getElementById('hora-inicio')) document.getElementById('hora-inicio').value = cert.horaInicioInput;
   if (document.getElementById('hora-finalizacion')) document.getElementById('hora-finalizacion').value = cert.horaFinInput;
+  if (document.getElementById('tecnico-responsable')) document.getElementById('tecnico-responsable').value = cert.tecnico;
+  if (document.getElementById('recibido-por')) document.getElementById('recibido-por').value = cert.recibido !== "---" ? cert.recibido : "";
 
   document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
 
-  if (cert.tipo && cert.tipo !== "---" && cert.tipo !== "No especificado") {
+  if (cert.tipo && cert.tipo !== "---") {
     cert.tipo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="tipo-servicio"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
     });
   }
 
-  if (cert.objetivo && cert.objetivo !== "---" && cert.objetivo !== "No especificado") {
+  if (cert.objetivo && cert.objetivo !== "---") {
     cert.objetivo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="objetivo-control"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
     });
   }
 
-  if (cert.metodo && cert.metodo !== "---" && cert.metodo !== "No especificado") {
+  if (cert.metodo && cert.metodo !== "---") {
     cert.metodo.split(',').forEach(val => {
       const cb = document.querySelector(`input[name="metodo-aplicacion"][value="${val.trim()}"]`);
       if (cb) cb.checked = true;
     });
   }
 
-  // Cargar productos en la interfaz
   contenedorProductos.innerHTML = "";
   contadorProductos = 0;
   if (cert.productos && cert.productos.length > 0) {
@@ -391,53 +392,28 @@ function prepararYDispararImpresion(cert) {
   try {
     const fantasiaLimpia = (cert.fantasia || '---').replace(/^\[.*?\]\s*/, '');
 
-    if(document.getElementById('print-num-cert')) document.getElementById('print-num-cert').innerText = cert.id || '---';
     if(document.getElementById('print-cliente')) document.getElementById('print-cliente').innerText = cert.clienteNombre || '---';
     if(document.getElementById('print-fantasia')) document.getElementById('print-fantasia').innerText = fantasiaLimpia;
     if(document.getElementById('print-direccion')) document.getElementById('print-direccion').innerText = cert.direccion || '---';
     if(document.getElementById('print-fecha')) document.getElementById('print-fecha').innerText = cert.fecha || '---';
     if(document.getElementById('print-vence')) document.getElementById('print-vence').innerText = cert.vence || '---';
-    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '00:00';
-    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '00:00';
-    if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || '---';
+    if(document.getElementById('print-inicio')) document.getElementById('print-inicio').innerText = cert.horaInicio || '16:00 Hrs';
+    if(document.getElementById('print-fin')) document.getElementById('print-fin').innerText = cert.horaFin || '18:00 Hrs';
+    if(document.getElementById('print-tipo')) document.getElementById('print-tipo').innerText = cert.tipo || 'Control de Plagas';
     if(document.getElementById('print-plagas')) document.getElementById('print-plagas').innerText = cert.plagas || '---';
-
-    const contenedorObjetivos = document.getElementById('print-objetivos-elegidos');
-    if (contenedorObjetivos) {
-      contenedorObjetivos.innerHTML = "";
-      const objTexto = cert.objetivo || "";
-      if (objTexto && objTexto !== "No especificado" && objTexto !== "---") {
-        objTexto.split(',').forEach(item => {
-          if(item.trim().length > 0) {
-            const div = document.createElement('div');
-            div.style.fontWeight = "bold";
-            div.innerText = `• ${item.trim()}`;
-            contenedorObjetivos.appendChild(div);
-          }
-        });
-      } else {
-        contenedorObjetivos.innerText = "---";
-      }
-    }
+    if(document.getElementById('print-tecnico')) document.getElementById('print-tecnico').innerText = cert.tecnico || 'Everst Rojas Camacho';
+    if(document.getElementById('print-recibido')) document.getElementById('print-recibido').innerText = cert.recibido || '---';
 
     const contenedorMetodos = document.getElementById('print-metodos-elegidos');
     if (contenedorMetodos) {
-      contenedorMetodos.innerHTML = "";
       const metTexto = cert.metodo || "";
       if (metTexto && metTexto !== "No especificado" && metTexto !== "---") {
-        metTexto.split(',').forEach(item => {
-          if(item.trim().length > 0) {
-            const div = document.createElement('div');
-            div.innerText = `• ${item.trim()}`;
-            contenedorMetodos.appendChild(div);
-          }
-        });
+        contenedorMetodos.innerText = metTexto.split(',').map(m => `(x) ${m.trim()}`).join(' ');
       } else {
-        contenedorMetodos.innerText = "---";
+        contenedorMetodos.innerText = "(x) Aspersión (x) Cebo Rodenticida";
       }
     }
 
-    // Renderizar filas de productos en el PDF
     const tbodyPDF = document.getElementById('tbody-print-productos');
     if (tbodyPDF) {
       tbodyPDF.innerHTML = "";
@@ -447,8 +423,8 @@ function prepararYDispararImpresion(cert) {
           tr.innerHTML = `
             <td>${p.pNombre || '---'}</td>
             <td>${p.pActivo || '---'}</td>
-            <td>${p.pReg || '---'}</td>
             <td>${p.pLote || '---'}</td>
+            <td>${p.pReg || '---'}</td>
             <td>${p.pDosis || '---'}</td>
             <td>${p.pVence || '---'}</td>
           `;
@@ -459,7 +435,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // Generación del Código QR Limpio
+    // QR Sin placas ni información extra de vehículos
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
@@ -471,8 +447,8 @@ function prepararYDispararImpresion(cert) {
       if (typeof InstanciaQRCode !== 'undefined') {
         new InstanciaQRCode(qrContainer, {
           text: textoQrPublico,
-          width: 115,
-          height: 115,
+          width: 90,
+          height: 90,
           colorDark: "#000000",
           colorLight: "#ffffff",
           correctLevel: InstanciaQRCode.CorrectLevel ? InstanciaQRCode.CorrectLevel.M : 1
@@ -488,7 +464,6 @@ function prepararYDispararImpresion(cert) {
 
 window.prepararYDispararImpresion = prepararYDispararImpresion;
 
-// Cargar por primera vez 1 fila de producto al iniciar la App
 document.addEventListener('DOMContentLoaded', () => {
   if (contenedorProductos && contenedorProductos.children.length === 0) {
     agregarFilaProducto();
@@ -513,7 +488,7 @@ if (formCert) {
       const objetivosSeleccionados = Array.from(document.querySelectorAll('input[name="objetivo-control"]:checked')).map(cb => cb.value);
       const metodosSeleccionados = Array.from(document.querySelectorAll('input[name="metodo-aplicacion"]:checked')).map(cb => cb.value);
 
-      const tipoServicioString = tiposSeleccionados.join(', ') || "No especificado";
+      const tipoServicioString = tiposSeleccionados.join(', ') || "Control de Plagas";
       const objetivoControlString = objetivosSeleccionados.join(', ') || "No especificado";
       const metodoAplicacionString = metodosSeleccionados.join(', ') || "No especificado";
 
@@ -527,15 +502,14 @@ if (formCert) {
       const fServicio = new Date(fechaServicioRaw + "T00:00:00");
       const fValido = new Date(servicioValidoRaw + "T00:00:00");
       
-      const hInicioStr = document.getElementById('hora-inicio').value || "08:00";
-      const hFinStr = document.getElementById('hora-finalizacion').value || "09:00";
+      const hInicioStr = document.getElementById('hora-inicio').value || "16:00";
+      const hFinStr = document.getElementById('hora-finalizacion').value || "18:00";
       const hInicio = new Date(fechaServicioRaw + "T" + hInicioStr);
       const hFin = new Date(fechaServicioRaw + "T" + hFinStr);
 
       const rawFantasia = (document.getElementById('nombre-fantasia').value || "").trim();
       const fantasiaFinal = rawFantasia.replace(/^\[.*?\]\s*/, '');
 
-      // Recolectar lista de productos agregados
       const listaProductosGuardar = [];
       document.querySelectorAll('.card-producto-item').forEach(card => {
         listaProductosGuardar.push({
@@ -550,7 +524,7 @@ if (formCert) {
         });
       });
 
-      const plagasCombinadas = Array.from(new Set(listaProductosGuardar.map(p => p.plagas).filter(p => p))).join(', ') || "No especificado";
+      const plagasCombinadas = Array.from(new Set(listaProductosGuardar.map(p => p.plagas).filter(p => p))).join(', ') || "control de insectos rastreros, arácnidos, insectos voladores y termitas";
 
       const payloadCertificado = {
         IdCertificados: idCertificadoValue,
@@ -563,6 +537,8 @@ if (formCert) {
         "Servicio valido": Timestamp.fromDate(fValido),
         "Hora de Inicio": Timestamp.fromDate(hInicio),
         "Hora Finalizacion": Timestamp.fromDate(hFin),
+        "Tecnico Responsable": document.getElementById('tecnico-responsable').value.trim() || "Everst Rojas Camacho",
+        "Recibido por": document.getElementById('recibido-por').value.trim() || "---",
         Nombre: doc(db, "clientes", clienteSeleccionadoId), 
         productos: listaProductosGuardar,
         "Codigo de barras": idCertificadoValue
@@ -581,8 +557,10 @@ if (formCert) {
         metodo: metodoAplicacionString,
         objetivo: objetivoControlString,
         plagas: plagasCombinadas,
-        horaInicio: hInicioStr,
-        horaFin: hFinStr,
+        horaInicio: `${hInicioStr} Hrs`,
+        horaFin: `${hFinStr} Hrs`,
+        tecnico: payloadCertificado["Tecnico Responsable"],
+        recibido: payloadCertificado["Recibido por"],
         productos: listaProductosGuardar
       };
 
