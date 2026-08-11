@@ -62,7 +62,7 @@ function actualizarOpcionesSelectProducto(selectElem) {
   selectElem.appendChild(optionOtro);
 }
 
-// Función para agregar un producto a la lista dinámica
+// Agregar fila de producto
 function agregarFilaProducto(datosProd = null) {
   contadorProductos++;
   const idIndex = contadorProductos;
@@ -174,7 +174,7 @@ onSnapshot(collection(db, "clientes"), (snapshot) => {
   }
 });
 
-// Sincronización del Historial e ID Autoincrementable
+// Sincronización del Historial
 onSnapshot(collection(db, "certificados_comerciales"), (snapshot) => {
   listaCertificadosGlobal = [];
   
@@ -435,7 +435,7 @@ function prepararYDispararImpresion(cert) {
       }
     }
 
-    // QR Sin placas ni información extra de vehículos
+    // Código QR sin datos de vehículos ni placas
     const qrContainer = document.getElementById('qrcode');
     if (qrContainer) {
       qrContainer.innerHTML = ""; 
