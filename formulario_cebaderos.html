@@ -3,872 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Estaciones de Cebaderos - Tecnoplagas</title>
-
-    <!-- Librería para generación dinámica de códigos QR -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
+    <title>Generador de Etiquetas QR (40x30 mm)</title>
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #16a085;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #dcdde1;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1100px;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        header {
-            margin-bottom: 25px;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .header-titles { flex: 1; }
-        header h1 { color: var(--primary-color); font-size: 24px; }
-        header p { color: #7f8c8d; font-size: 14px; }
-
-        .nav-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-menu {
-            background-color: #34495e;
-            color: white;
-            padding: 10px 15px;
-            border-radius: 4px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .btn-menu:hover { background-color: #2c3e50; }
-
-        .search-section {
-            background-color: #edf2f7;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            flex: 1;
-            min-width: 200px;
-        }
-
-        label {
-            font-size: 13px;
-            color: #2c3e50;
-            font-weight: 600;
-        }
-
-        input, select {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 14px;
-            width: 100%;
-        }
-
-        input:focus, select:focus { outline: none; border-color: var(--accent-color); }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 14px;
-        }
-
-        .btn-primary { background-color: var(--accent-color); color: white; }
-        .btn-primary:hover { background-color: #117a65; }
-        .btn-secondary { background-color: #7f8c8d; color: white; }
-        .btn-secondary:hover { background-color: #616a6b; }
-        .btn-danger { background-color: #e74c3c; color: white; }
-        .btn-danger:hover { background-color: #c0392b; }
-        .btn-pdf { background-color: #e67e22; color: white; }
-        .btn-pdf:hover { background-color: #d35400; }
-        .btn-qr { background-color: #8e44ad; color: white; }
-        .btn-qr:hover { background-color: #732d91; }
-
-        .metadata-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 15px;
-            background: #fdfefe;
-            padding: 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-        }
-
-        .product-info-card {
-            background: #eef2f7;
-            border-left: 5px solid #2980b9;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            display: none;
-        }
-
-        .product-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 10px;
-            font-size: 13px;
-        }
-
-        .product-info-grid span {
-            background: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            border: 1px solid #dcdde1;
-        }
-
-        .bulk-section {
-            background: #f4f6f6;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            border-left: 4px solid var(--accent-color);
-        }
-
-        .bulk-controls {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .stations-table-container { overflow-x: auto; margin-bottom: 25px; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { background-color: var(--primary-color); color: white; }
-        tr:hover { background-color: #f2f4f4; }
-
-        .actions-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .status-new { background: #d4efdf; color: #196f3d; }
-        .status-edit { background: #fcedc9; color: #b7950b; }
+        * { box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { padding: 20px; max-width: 800px; margin: 0 auto; background-color: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #333; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        select, input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
     </style>
+
+    <!-- Librería para generación de QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Librería para generación de PDFs con tamaño personalizado 40x30 mm -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <div class="header-titles">
-            <h1>Control y Monitoreo de Estaciones de Cebaderos</h1>
-            <p>Fumigadora Tecnoplagas - Control de Vectores</p>
-        </div>
-        <div class="nav-buttons">
-            <a href="scanner.html" class="btn-menu" style="background-color: #8e44ad;">📷 Escáner QR</a>
-            <button type="button" class="btn-menu" id="btnIrMenu">🏠 Inicio</button>
-        </div>
-    </header>
-
-    <!-- BÚSQUEDA AVANZADA POR NOMBRE DE CLIENTE -->
-    <section class="search-section">
-        <div class="form-group" style="flex: 2;">
-            <label for="searchNombreCliente">Buscar por Nombre del Cliente</label>
-            <input type="text" id="searchNombreCliente" placeholder="Ej: Juan Pérez o TecnoEmpresa">
-        </div>
-        <button type="button" class="btn-primary" id="btnBuscarCliente">Buscar Visitas</button>
-        <button type="button" class="btn-secondary" id="btnNuevo">Limpiar / Nuevo</button>
-        <span id="formMode" class="status-badge status-new">Modo: Nuevo Registro</span>
+    <div class="card">
+        <h2>Generador de Estaciones y QR</h2>
         
-        <div class="form-group" id="contenedorHistorial" style="display:none; width: 100%; margin-top: 15px; flex: none;">
-            <label for="selectVisitasEncontradas" style="color: #d35400;">⚠️ Se encontraron múltiples visitas. Selecciona una fecha:</label>
-            <select id="selectVisitasEncontradas">
-                <option value="">-- Elige una visita del historial --</option>
+        <div class="form-group">
+            <label for="clienteSelect">Cliente:</label>
+            <select id="clienteSelect">
+                <option value="">Seleccione un cliente...</option>
+                <option value="1">CLI-001 - Empresa Demo S.A.</option>
             </select>
         </div>
-    </section>
 
-    <form id="formControlCebaderos">
-        <!-- DATOS DE ENCABEZADO -->
-        <div class="metadata-grid">
-            <div class="form-group">
-                <label for="clienteSelect">Seleccionar Cliente</label>
-                <select id="clienteSelect" required>
-                    <option value="">Cargando clientes...</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="productoSelect">Producto Utilizado (Cebo)</label>
-                <select id="productoSelect" required>
-                    <option value="">Cargando productos...</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="consecutivo">Consecutivo Documento</label>
-                <input type="text" id="consecutivo" placeholder="Ej: DOC-000001" required>
-            </div>
-            <div class="form-group">
-                <label for="fechaInspeccion">Fecha de Inspección</label>
-                <input type="date" id="fechaInspeccion" required>
-            </div>
+        <div class="form-group">
+            <label for="productoSelect">Producto:</label>
+            <select id="productoSelect">
+                <option value="">Seleccione un producto...</option>
+                <option value="101">Cebo Raticida Bloque</option>
+            </select>
         </div>
 
-        <!-- DETALLES EXTENDIDOS DEL PRODUCTO -->
-        <div id="productInfoCard" class="product-info-card">
-            <strong style="color: #2980b9; font-size: 15px;">📋 Ficha Técnica del Producto Seleccionado:</strong>
-            <div class="product-info-grid">
-                <span><strong>Ingrediente Activo:</strong> <span id="lblActivo">-</span></span>
-                <span><strong>Lote:</strong> <span id="lblLote">-</span></span>
-                <span><strong>Dosis Recomendada:</strong> <span id="lblDosis">-</span></span>
-                <span><strong>Registro M.S.:</strong> <span id="lblRegistro">-</span></span>
-                <span><strong>Vencimiento:</strong> <span id="lblVencimiento">-</span></span>
-            </div>
+        <div class="form-group">
+            <label for="fechaInspeccionInput">Fecha de Inspección:</label>
+            <input type="date" id="fechaInspeccionInput">
         </div>
 
-        <!-- GENERADOR EN MASA -->
-        <div class="bulk-section">
-            <h3>Agregar Múltiples Estaciones Simultáneamente</h3>
-            <div class="bulk-controls">
-                <div class="form-group" style="max-width: 150px;">
-                    <label for="bulkCantidad">Cantidad a agregar</label>
-                    <input type="number" id="bulkCantidad" value="5" min="1" max="100">
-                </div>
-                <div class="form-group">
-                    <label for="bulkEstadoCebo">Estado Inicial del Cebo</label>
-                    <select id="bulkEstadoCebo">
-                        <option value="Intacto">Intacto</option>
-                        <option value="Consumo Parcial">Consumo Parcial</option>
-                        <option value="Consumo Total">Consumo Total</option>
-                        <option value="Sin Cebo / Desaparecido">Sin Cebo / Desaparecido</option>
-                    </select>
-                </div>
-                <button type="button" class="btn-primary" id="btnAgregarLote" style="background-color: var(--primary-color);">+ Generar Estaciones</button>
-            </div>
+        <div class="form-group">
+            <label for="consecutivoInput">Consecutivo / Lote:</label>
+            <input type="text" id="consecutivoInput" placeholder="Ej. LOTE-2026-01">
         </div>
 
-        <!-- TABLA DINÁMICA DE ESTACIONES -->
-        <h3>Detalle de Estaciones de Cebado</h3>
-        <div class="stations-table-container">
-            <table id="tablaEstaciones">
-                <thead>
-                    <tr>
-                        <th style="width: 80px; text-align: center;">N° Est.</th>
-                        <th>Ubicación Específica</th>
-                        <th style="width: 180px;">Estado del Cebo</th>
-                        <th style="width: 150px;">Actividad</th>
-                        <th style="width: 110px; text-align: center;">Mantenimiento</th>
-                        <th>Observaciones</th>
-                        <th style="width: 70px; text-align: center;">Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="tbodyEstaciones">
-                    <!-- Filas dinámicas -->
-                </tbody>
-            </table>
+        <div class="form-group">
+            <label for="numEstacionesInput">Número de Estaciones a Generar:</label>
+            <input type="number" id="numEstacionesInput" value="3" min="1" max="50">
         </div>
 
-        <!-- ACCIONES -->
-        <div class="actions-footer">
-            <button type="button" class="btn-secondary" id="btnResetForm">Cancelar</button>
-            <button type="button" class="btn-qr" id="btnImprimirQR">🏷️ Imprimir QR Marklife (40x30)</button>
-            <button type="button" class="btn-pdf" id="btnGenerarPDF">📄 Generar Reporte PDF</button>
-            <button type="submit" class="btn-primary" id="btnGuardar">Guardar en Firebase</button>
-        </div>
-    </form>
-</div>
+        <button id="btnGenerarEstaciones" class="btn">Generar Estaciones</button>
+    </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, doc, setDoc, addDoc, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-
-    // Configuración oficial de tu proyecto Firebase
-    const firebaseConfig = {
-        authDomain: "fumigadora-tecnoplagas.firebaseapp.com",
-        projectId: "fumigadora-tecnoplagas",
-        storageBucket: "fumigadora-tecnoplagas.appspot.com",
-        messagingSenderId: "36712339504",
-        appId: "1:36712339504:web:65e1eb2997bb320fb7ef1c"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const tbodyEstaciones = document.getElementById('tbodyEstaciones');
-    const btnAgregarLote = document.getElementById('btnAgregarLote');
-    const bulkCantidad = document.getElementById('bulkCantidad');
-    const bulkEstadoCebo = document.getElementById('bulkEstadoCebo');
-    const formControlCebaderos = document.getElementById('formControlCebaderos');
-    const searchNombreCliente = document.getElementById('searchNombreCliente');
-    const btnBuscarCliente = document.getElementById('btnBuscarCliente');
-    const btnNuevo = document.getElementById('btnNuevo');
-    const formModeBadge = document.getElementById('formMode');
-    
-    const contenedorHistorial = document.getElementById('contenedorHistorial');
-    const selectVisitasEncontradas = document.getElementById('selectVisitasEncontradas');
-
-    const clienteSelect = document.getElementById('clienteSelect');
-    const productoSelect = document.getElementById('productoSelect'); 
-    const consecutivoInput = document.getElementById('consecutivo');
-    const fechaInspeccionInput = document.getElementById('fechaInspeccion');
-
-    const productInfoCard = document.getElementById('productInfoCard');
-    const lblActivo = document.getElementById('lblActivo');
-    const lblLote = document.getElementById('lblLote');
-    const lblDosis = document.getElementById('lblDosis');
-    const lblRegistro = document.getElementById('lblRegistro');
-    const lblVencimiento = document.getElementById('lblVencimiento');
-
-    let cacheProductos = {};
-    let cacheVisitasBuscadas = {}; 
-    let currentMode = 'NUEVO';
-    let docIdVisitaExistente = null; 
-    
-    fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
-
-    document.getElementById('btnIrMenu').addEventListener('click', () => { window.location.href = 'index.html'; });
-
-    async function cargarClientesDesdeFirebase() {
-        try {
-            const querySnapshot = await getDocs(collection(db, "clientes"));
-            clienteSelect.innerHTML = '<option value="">-- Seleccione un Cliente --</option>';
-            if (querySnapshot.empty) return;
-            querySnapshot.forEach((docSnap) => {
-                const datos = docSnap.data();
-                const idCliente = datos.consecutivo || docSnap.id;
-                const option = document.createElement('option');
-                option.value = `clientes/${idCliente}`; 
-                option.text = `${idCliente} - ${(datos.nombre || "Sin Nombre")}`;
-                clienteSelect.appendChild(option);
-            });
-        } catch (error) { 
-            console.error("Error al cargar clientes:", error); 
-            clienteSelect.innerHTML = '<option value="">Error al cargar clientes</option>';
-        }
-    }
-
-    async function cargarProductosDesdeFirebase() {
-        try {
-            const querySnapshot = await getDocs(collection(db, "Productos"));
-            productoSelect.innerHTML = '<option value="">-- Seleccione un Producto --</option>';
-            if (querySnapshot.empty) return;
-            querySnapshot.forEach((docSnap) => {
-                const datosProducto = docSnap.data();
-                const idProducto = datosProducto.IdProductos || docSnap.id;
-                cacheProductos[idProducto] = datosProducto;
-
-                const option = document.createElement('option');
-                option.value = idProducto; 
-                option.textContent = datosProducto["Nombre Comercial"] || "Sin Nombre"; 
-                productoSelect.appendChild(option);
-            });
-        } catch (error) { 
-            console.error("Error al cargar productos:", error); 
-            productoSelect.innerHTML = '<option value="">Error al cargar productos</option>';
-        }
-    }
-
-    productoSelect.addEventListener('change', (e) => {
-        const id = e.target.value;
-        if (!id || !cacheProductos[id]) { productInfoCard.style.display = "none"; return; }
-        const prod = cacheProductos[id];
-        lblActivo.textContent = prod["Ingrediente Activo"] || "N/A";
-        lblLote.textContent = prod["Lote"] || "N/A";
-        lblDosis.textContent = prod["Dosis Recomendada"] || "N/A";
-        lblRegistro.textContent = prod["Registro M.S."] || "N/A";
-        lblVencimiento.textContent = prod["Vencimiento del Producto"] || "N/A";
-        productInfoCard.style.display = "block";
-    });
-
-    btnBuscarCliente.addEventListener('click', async () => {
-        const textoBusqueda = searchNombreCliente.value.trim().toLowerCase();
-        if (!textoBusqueda) return alert("Por favor escribe el nombre de un cliente.");
-
-        try {
-            const queryClientes = await getDocs(collection(db, "clientes"));
-            let clientesEncontradosRefs = [];
-
-            queryClientes.forEach((docSnap) => {
-                const datosClie = docSnap.data();
-                const nombreClie = (datosClie.nombre || "").toLowerCase();
-                if (nombreClie.includes(textoBusqueda)) {
-                    const idCliente = datosClie.consecutivo || docSnap.id;
-                    clientesEncontradosRefs.push(`clientes/${idCliente}`);
-                }
-            });
-
-            if (clientesEncontradosRefs.length === 0) return alert("No se encontró ningún cliente registrado con ese nombre.");
-
-            cacheVisitasBuscadas = {};
-            selectVisitasEncontradas.innerHTML = '<option value="">-- Seleccione la visita que desea cargar --</option>';
-            let visitasEncontradasContador = 0;
-
-            const queryVisitas = await getDocs(collection(db, "Cebaderos"));
-            queryVisitas.forEach((docSnap) => {
-                const datosVisita = docSnap.data();
-                if (clientesEncontradosRefs.includes(datosVisita.cliente_ref)) {
-                    visitasEncontradasContador++;
-                    const idVisita = docSnap.id;
-                    cacheVisitasBuscadas[idVisita] = datosVisita;
-
-                    let fechaTexto = "Sin Fecha";
-                    if (datosVisita.fecha_inspeccion) fechaTexto = datosVisita.fecha_inspeccion.toDate().toLocaleDateString('es-ES');
-
-                    const opt = document.createElement('option');
-                    opt.value = idVisita;
-                    opt.textContent = `Fecha: ${fechaTexto} | Ref: ${datosVisita.consecutivo_origen || 'S/N'}`;
-                    selectVisitasEncontradas.appendChild(opt);
-                }
-            });
-
-            if (visitasEncontradasContador === 0) {
-                alert("Se ubicó al cliente, pero no registra visitas.");
-                contenedorHistorial.style.display = "none";
-                return;
-            }
-
-            contenedorHistorial.style.display = "block";
-        } catch (error) { console.error("Error en búsqueda:", error); }
-    });
-
-    selectVisitasEncontradas.addEventListener('change', (e) => {
-        const idVisitaSel = e.target.value;
-        if (!idVisitaSel || !cacheVisitasBuscadas[idVisitaSel]) return;
-
-        const datosVisita = cacheVisitasBuscadas[idVisitaSel];
-        docIdVisitaExistente = idVisitaSel;
-        currentMode = 'EDICION';
-        formModeBadge.textContent = "Modo: Edición de Registro";
-        formModeBadge.className = "status-badge status-edit";
-        tbodyEstaciones.innerHTML = ""; 
-
-        clienteSelect.value = datosVisita.cliente_ref || "";
-        consecutivoInput.value = datosVisita.consecutivo_origen || "";
-        if (datosVisita.fecha_inspeccion) fechaInspeccionInput.value = datosVisita.fecha_inspeccion.toDate().toISOString().split('T')[0];
-
-        if (datosVisita.producto_utilizado && datosVisita.producto_utilizado.id_producto) {
-            productoSelect.value = datosVisita.producto_utilizado.id_producto;
-            productoSelect.dispatchEvent(new Event('change'));
-        }
-
-        if (datosVisita.estaciones) {
-            datosVisita.estaciones.forEach((est) => {
-                agregarFilaEstacion(est.numero_estacion, {
-                    ubicacion: est.ubicacion, estado_cebo: est.estado_cebo,
-                    actividad: est.actividad, mantenimiento: est.mantenimiento_realizado,
-                    observaciones: est.observaciones
-                });
-            });
-        }
-    });
-
-    function obtenerEstacionesDeTabla() {
-        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
-        const lista = [];
-        filas.forEach((fila) => {
-            lista.push({
-                numero: fila.querySelector('.col-numero').textContent,
-                ubicacion: fila.querySelector('.input-ubicacion').value,
-                estado_cebo: fila.querySelector('.select-cebo').value,
-                actividad: fila.querySelector('.select-actividad').value,
-                mantenimiento: fila.querySelector('.check-mantenimiento').checked ? "Sí" : "No",
-                observaciones: fila.querySelector('.input-observaciones').value
-            });
-        });
-        return lista;
-    }
-
-    // --- IMPRESIÓN DE ETIQUETAS TÉRMICAS MARKLIFE (40mm x 30mm) ---
-    document.getElementById('btnImprimirQR').addEventListener('click', () => {
-        const estaciones = obtenerEstacionesDeTabla();
-        if (!estaciones.length) return alert("Agrega al menos una estación.");
-        if (!clienteSelect.value || !productoSelect.value) return alert("Selecciona cliente y producto.");
-
-        const textCliente = clienteSelect.options[clienteSelect.selectedIndex].text.replace(/^[^-]*-/, '').trim();
-        const textFecha = fechaInspeccionInput.value;
-        const prodSel = cacheProductos[productoSelect.value] || {};
-        const pNombre = prodSel["Nombre Comercial"] || "-";
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-            <head>
-                <title>Etiquetas_Marklife_40x30</title>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-                <style>
-                    @page {
-                        size: 40mm 30mm;
-                        margin: 0;
-                    }
-                    * {
-                        box-sizing: border-box;
-                        margin: 0;
-                        padding: 0;
-                        font-family: Arial, sans-serif;
-                    }
-                    body {
-                        background: #fff;
-                        color: #000;
-                        -webkit-print-color-adjust: exact;
-                    }
-                    .label-card {
-                        width: 40mm;
-                        height: 30mm;
-                        padding: 1.5mm 2mm;
-                        display: flex;
-                        flex-direction: column;
-                        justify-content: space-between;
-                        align-items: center;
-                        page-break-after: always;
-                        overflow: hidden;
-                        text-align: center;
-                    }
-                    .empresa-title {
-                        font-size: 7px;
-                        font-weight: bold;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 36mm;
-                        line-height: 1;
-                        text-transform: uppercase;
-                    }
-                    .details-text {
-                        font-size: 5.5px;
-                        line-height: 1.1;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        max-width: 36mm;
-                    }
-                    .qr-container {
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        margin: 0.5mm 0;
-                    }
-                    .station-badge {
-                        font-size: 8px;
-                        font-weight: 900;
-                        line-height: 1;
-                    }
-                    .btn-print {
-                        position: fixed;
-                        top: 10px;
-                        left: 10px;
-                        padding: 8px 15px;
-                        background: #16a085;
-                        color: #fff;
-                        border: none;
-                        border-radius: 4px;
-                        font-weight: bold;
-                        cursor: pointer;
-                        z-index: 9999;
-                    }
-                    @media print {
-                        .btn-print { display: none; }
-                    }
-                </style>
-            </head>
-            <body>
-                <button class="btn-print" onclick="window.print()">🖨️ Imprimir en Marklife (40x30)</button>
-                <div id="labelsContainer"></div>
-
-                <script>
-                    const estaciones = ${JSON.stringify(estaciones)};
-                    const container = document.getElementById('labelsContainer');
-
-                    estaciones.forEach(est => {
-                        const card = document.createElement('div');
-                        card.className = 'label-card';
-
-                        const qrData = "Empresa: ${textCliente}\\nFecha: ${textFecha}\\nProd: ${pNombre}\\nEstacion: #" + est.numero;
-
-                        card.innerHTML = \`
-                            <div class="empresa-title">${textCliente}</div>
-                            <div class="details-text">F: ${textFecha} | P: ${pNombre}</div>
-                            <div class="qr-container" id="qr-\${est.numero}"></div>
-                            <div class="station-badge">ESTACIÓN N° \${est.numero}</div>
-                        \`;
-                        container.appendChild(card);
-
-                        new QRCode(document.getElementById(\`qr-\${est.numero}\`), {
-                            text: qrData,
-                            width: 57,
-                            height: 57,
-                            correctLevel: QRCode.CorrectLevel.L
-                        });
-                    });
-                <\/script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
-    });
-
-    // --- IMPRESIÓN DEL REPORTE TÉCNICO COMPLETO ---
-    document.getElementById('btnGenerarPDF').addEventListener('click', () => {
-        const estaciones = obtenerEstacionesDeTabla();
-        if (!estaciones.length) return alert("Por favor inyecta al menos una estación.");
-        if (!clienteSelect.value || !productoSelect.value) return alert("Completa el cliente y producto.");
-
-        const textCliente = clienteSelect.options[clienteSelect.selectedIndex].text;
-        const textDoc = consecutivoInput.value || "S/N Consecutivo";
-        const textFecha = fechaInspeccionInput.value;
-
-        const prodSel = cacheProductos[productoSelect.value] || {};
-        const pNombre = prodSel["Nombre Comercial"] || "-";
-        const pActivo = prodSel["Ingrediente Activo"] || "-";
-        const pLote = prodSel["Lote"] || "-";
-
-        const ventanaImpresion = window.open('', '_blank');
-        
-        let filasHTML = "";
-        estaciones.forEach((est) => {
-            filasHTML += `
+    <div class="card">
+        <h2>Listado de Estaciones</h2>
+        <table id="tablaEstaciones">
+            <thead>
                 <tr>
-                    <td style="text-align:center; font-weight:bold; padding:8px; border-bottom:1px solid #ddd;">${est.numero}</td>
-                    <td style="padding:8px; border-bottom:1px solid #ddd;">${est.ubicacion}</td>
-                    <td style="padding:8px; border-bottom:1px solid #ddd;">${est.estado_cebo}</td>
-                    <td style="padding:8px; border-bottom:1px solid #ddd;">${est.actividad}</td>
-                    <td style="text-align:center; padding:8px; border-bottom:1px solid #ddd;">${est.mantenimiento}</td>
-                    <td style="padding:8px; border-bottom:1px solid #ddd;">${est.observaciones || 'Ninguna'}</td>
-                </tr>`;
-        });
+                    <th>Estación N°</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
+        <br>
+        <button id="btnImprimirQR" class="btn btn-success">Imprimir QR Marklife (40x30)</button>
+    </div>
 
-        ventanaImpresion.document.write(`
-            <html>
-            <head>
-                <title>Reporte_Cebaderos_${textDoc}</title>
-                <style>
-                    body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; padding: 40px; margin: 0; }
-                    .header { display: flex; justify-content: space-between; border-bottom: 3px solid #16a085; padding-bottom: 15px; margin-bottom: 25px; }
-                    .title { font-size: 24px; font-weight: bold; color: #2c3e50; }
-                    .meta-box { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 25px; }
-                    .meta-table { width: 100%; border-collapse: collapse; }
-                    .meta-table td { padding: 5px; font-size: 14px; }
-                    .main-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
-                    .main-table th { background: #2c3e50; color: white; padding: 10px; text-align: left; }
-                    .signatures { margin-top: 70px; display: flex; justify-content: space-between; font-size: 13px; }
-                    .sig-line { border-top: 1px solid #333; width: 40%; text-align: center; padding-top: 5px; }
-                    @media print { body { padding: 10px; } button { display:none; } }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <div>
-                        <div class="title">FUMIGADORA TECNOPLAGAS</div>
-                        <div style="font-size: 13px; color: #555;">Control Profesional de Vectores y Roedores</div>
-                    </div>
-                    <div style="text-align: right; font-size: 13px;">
-                        <strong>INFORME TÉCNICO DE MONITOREO</strong><br>
-                        Sistema de Estaciones de Cebado
-                    </div>
-                </div>
-
-                <div class="meta-box">
-                    <table class="meta-table">
-                        <tr>
-                            <td><strong>Cliente / Establecimiento:</strong> ${textCliente}</td>
-                            <td><strong>Documento de Referencia:</strong> ${textDoc}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Fecha de la Inspección:</strong> ${textFecha}</td>
-                            <td><strong>Producto Empleado:</strong> ${pNombre}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ingrediente Activo:</strong> ${pActivo}</td>
-                            <td><strong>Número de Lote:</strong> ${pLote}</td>
-                        </tr>
-                    </table>
-                </div>
-
-                <h3 style="color:#2c3e50; margin-bottom:10px;">Estado General de Dispositivos de Captura:</h3>
-                <table class="main-table">
-                    <thead>
-                        <tr>
-                            <th style="width:8%; text-align:center;">N° Est.</th>
-                            <th style="width:32%;">Ubicación Específica</th>
-                            <th style="width:20%;">Estado del Cebo</th>
-                            <th style="width:15%;">Actividad</th>
-                            <th style="width:10%; text-align:center;">Mant.</th>
-                            <th style="width:15%;">Observaciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${filasHTML}
-                    </tbody>
-                </table>
-
-                <div class="signatures">
-                    <div class="sig-line">Firma del Técnico Operador</div>
-                    <div class="sig-line">Sello y Firma del Cliente (Recibido)</div>
-                </div>
-            </body>
-            </html>
-        `);
-
-        ventanaImpresion.document.close();
-        setTimeout(() => { ventanaImpresion.print(); }, 350);
-    });
-
-    btnNuevo.addEventListener('click', () => {
-        formControlCebaderos.reset();
-        tbodyEstaciones.innerHTML = '';
-        productInfoCard.style.display = "none";
-        contenedorHistorial.style.display = "none";
-        searchNombreCliente.value = "";
-        currentMode = 'NUEVO'; docIdVisitaExistente = null;
-        formModeBadge.textContent = "Modo: Nuevo Registro"; formModeBadge.className = "status-badge status-new";
-    });
-
-    document.getElementById('btnResetForm').addEventListener('click', () => { btnNuevo.click(); });
-
-    formControlCebaderos.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const estaciones = obtenerEstacionesDeTabla();
-        if (!estaciones.length) return alert("Agrega estaciones.");
-
-        const arrayFinalStore = estaciones.map(e => ({
-            numero_estacion: parseInt(e.numero), ubicacion: e.ubicacion,
-            estado_cebo: e.estado_cebo, actividad: e.actividad,
-            mantenimiento_realizado: e.mantenimiento === "Sí", observaciones: e.observaciones
-        }));
-
-        const idProd = productoSelect.value;
-        const infoProdCompleta = cacheProductos[idProd] || {};
-
-        const dataFinal = {
-            cliente_ref: clienteSelect.value, consecutivo_origen: consecutivoInput.value,
-            fecha_inspeccion: Timestamp.fromDate(new Date(fechaInspeccionInput.value)),
-            estaciones: arrayFinalStore,
-            producto_utilizado: {
-                id_producto: idProd, nombre_comercial: infoProdCompleta["Nombre Comercial"] || "",
-                ingrediente_activo: infoProdCompleta["Ingrediente Activo"] || "", lote: infoProdCompleta["Lote"] || ""
-            }
+    <script>
+        // Datos en caché/memoria de ejemplo
+        const cacheProductos = {
+            "101": { "Nombre Comercial": "Cebo Raticida Bloque" }
         };
 
-        try {
-            if (currentMode === 'EDICION' && docIdVisitaExistente) {
-                await setDoc(doc(db, "Cebaderos", docIdVisitaExistente), dataFinal, { merge: true });
-                alert("¡Visita actualizada!");
-            } else {
-                await addDoc(collection(db, "Cebaderos"), dataFinal);
-                alert("¡Nueva visita guardada!");
+        const clienteSelect = document.getElementById('clienteSelect');
+        const productoSelect = document.getElementById('productoSelect');
+        const fechaInspeccionInput = document.getElementById('fechaInspeccionInput');
+        const consecutivoInput = document.getElementById('consecutivoInput');
+        const numEstacionesInput = document.getElementById('numEstacionesInput');
+        const tablaEstacionesBody = document.querySelector('#tablaEstaciones tbody');
+
+        // Establecer fecha actual por defecto
+        fechaInspeccionInput.value = new Date().toISOString().split('T')[0];
+
+        // Función para simular/generar las estaciones en la tabla
+        document.getElementById('btnGenerarEstaciones').addEventListener('click', () => {
+            const cantidad = parseInt(numEstacionesInput.value) || 0;
+            tablaEstacionesBody.innerHTML = '';
+
+            for (let i = 1; i <= cantidad; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${i}</td><td>Lista para impresión</td>`;
+                tablaEstacionesBody.appendChild(tr);
             }
-            btnNuevo.click();
-        } catch (err) { alert("Error al guardar: " + err.message); }
-    });
+        });
 
-    cargarClientesDesdeFirebase();
-    cargarProductosDesdeFirebase();
+        // Obtener datos de la tabla
+        function obtenerEstacionesDeTabla() {
+            const filas = tablaEstacionesBody.querySelectorAll('tr');
+            const estaciones = [];
+            filas.forEach(fila => {
+                const num = fila.cells[0].innerText;
+                estaciones.push({ numero: num });
+            });
+            return estaciones;
+        }
 
-    function agregarFilaEstacion(numero, datos = {}) {
-        const tr = document.createElement('tr');
-        tr.className = 'fila-estacion';
-        const ubicacion = datos.ubicacion || '';
-        const estadoCebo = datos.estado_cebo || 'Intacto';
-        const actividad = datos.actividad || 'Ninguna';
-        const mantenimiento = datos.mantenimiento !== undefined ? datos.mantenimiento : true;
-        const observaciones = datos.observaciones || '';
+        // --- GENERACIÓN DIRECTA DE PDF MEDIDA EXACTA 40x30mm ---
+        document.getElementById('btnImprimirQR').addEventListener('click', () => {
+            const estaciones = obtenerEstacionesDeTabla();
+            if (!estaciones.length) return alert("Genera o agrega al menos una estación primero.");
+            if (!clienteSelect.value || !productoSelect.value) return alert("Selecciona cliente y producto.");
 
-        tr.innerHTML = `
-            <td style="text-align: center; font-weight: bold;" class="col-numero">${numero}</td>
-            <td><input type="text" class="input-ubicacion" value="${ubicacion}" placeholder="Ej: Pasillo A..." required></td>
-            <td>
-                <select class="select-cebo">
-                    <option value="Intacto" ${estadoCebo === 'Intacto' ? 'selected' : ''}>Intacto</option>
-                    <option value="Consumo Parcial" ${estadoCebo === 'Consumo Parcial' ? 'selected' : ''}>Consumo Parcial</option>
-                    <option value="Consumo Total" ${estadoCebo === 'Consumo Total' ? 'selected' : ''}>Consumo Total</option>
-                    <option value="Sin Cebo / Desaparecido" ${estadoCebo === 'Sin Cebo / Desaparecido' ? 'selected' : ''}>Sin Cebo / Desaparecido</option>
-                </select>
-            </td>
-            <td>
-                <select class="select-actividad">
-                    <option value="Ninguna" ${actividad === 'Ninguna' ? 'selected' : ''}>Ninguna</option>
-                    <option value="Baja" ${actividad === 'Baja' ? 'selected' : ''}>Baja</option>
-                    <option value="Media" ${actividad === 'Media' ? 'selected' : ''}>Media</option>
-                    <option value="Alta" ${actividad === 'Alta' ? 'selected' : ''}>Alta</option>
-                </select>
-            </td>
-            <td style="text-align: center;">
-                <input type="checkbox" class="check-mantenimiento" ${mantenimiento ? 'checked' : ''} style="transform: scale(1.2);">
-            </td>
-            <td><input type="text" class="input-observaciones" value="${observaciones}" placeholder="Ninguna"></td>
-            <td style="text-align: center;">
-                <button type="button" class="btn-danger btn-eliminar-fila" style="padding: 5px 10px; font-size: 11px;">X</button>
-            </td>
-        `;
-        tr.querySelector('.btn-eliminar-fila').addEventListener('click', () => { tr.remove(); reordenarNumeracion(); });
-        tbodyEstaciones.appendChild(tr);
-    }
+            const textCliente = clienteSelect.options[clienteSelect.selectedIndex].text.replace(/^[^-]*-/, '').trim();
+            const textFecha = fechaInspeccionInput.value;
+            const prodSel = cacheProductos[productoSelect.value] || {};
+            const pNombre = prodSel["Nombre Comercial"] || "-";
 
-    function reordenarNumeracion() {
-        const filas = tbodyEstaciones.querySelectorAll('.fila-estacion');
-        filas.forEach((fila, index) => { fila.querySelector('.col-numero').textContent = index + 1; });
-    }
+            // Contenedor temporal invisible para renderizar el QR en alta calidad
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
 
-    btnAgregarLote.addEventListener('click', () => {
-        const cantidad = parseInt(bulkCantidad.value) || 1;
-        const estadoPredeterminado = bulkEstadoCebo.value;
-        const yaExistentes = tbodyEstaciones.querySelectorAll('.fila-estacion').length;
-        for (let i = 1; i <= cantidad; i++) { agregarFilaEstacion(yaExistentes + i, { estado_cebo: estadoPredeterminado }); }
-    });
-</script>
+            const { jsPDF } = window.jspdf;
+            
+            // Creamos el documento PDF especificando la medida exacta de 40mm x 30mm
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [40, 30]
+            });
+
+            estaciones.forEach((est, index) => {
+                // Agregar una página nueva de 40x30mm por cada etiqueta adicional
+                if (index > 0) doc.addPage([40, 30], 'landscape');
+
+                tempDiv.innerHTML = '';
+                const qrContainer = document.createElement('div');
+                tempDiv.appendChild(qrContainer);
+
+                // Configuración de la imagen QR
+                const qrcode = new QRCode(qrContainer, {
+                    text: `Empresa: ${textCliente}\nFecha: ${textFecha}\nProd: ${pNombre}\nEstacion: #${est.numero}`,
+                    width: 150,
+                    height: 150,
+                    correctLevel: QRCode.CorrectLevel.L
+                });
+
+                // Proceso asíncrono leve para asegurar la renderización del Canvas
+                setTimeout(() => {
+                    const canvas = qrContainer.querySelector('canvas');
+                    if (canvas) {
+                        const imgData = canvas.toDataURL('image/png');
+
+                        // 1. Título Cliente / Empresa
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(6);
+                        doc.text(textCliente.substring(0, 25), 20, 3.5, { align: 'center' });
+
+                        // 2. Información secundaria (Fecha y Producto)
+                        doc.setFont("helvetica", "normal");
+                        doc.setFontSize(4.5);
+                        doc.text(`F: ${textFecha} | P: ${pNombre.substring(0, 15)}`, 20, 6, { align: 'center' });
+
+                        // 3. Imagen QR centrada en la etiqueta (17x17 mm)
+                        doc.addImage(imgData, 'PNG', 11.5, 7, 17, 17);
+
+                        // 4. Número de Estación destacado al pie
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(7.5);
+                        doc.text(`ESTACIÓN N° ${est.numero}`, 20, 27.5, { align: 'center' });
+                    }
+
+                    // Si procesamos la última etiqueta, guardar/descargar el archivo PDF
+                    if (index === estaciones.length - 1) {
+                        document.body.removeChild(tempDiv);
+                        doc.save(`Etiquetas_Marklife_${consecutivoInput.value || '40x30'}.pdf`);
+                    }
+                }, 50 * (index + 1));
+            });
+        });
+    </script>
 </body>
 </html>
