@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escanear Estación de Cebado</title>
+    <!-- Librería Html5Qrcode para lectura rápida con cámara móvil -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h2 { color: #2c3e50; margin-bottom: 5px; }
+        #reader { width: 100%; margin-bottom: 20px; border-radius: 6px; overflow: hidden; }
+        .result-box {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #16a085;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            min-height: 80px;
+        }
+        .btn-back {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #34495e;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .btn-back:hover { background: #2c3e50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Escanear Estación</h2>
+    <p style="color:#666; font-size:14px; margin-bottom:15px;">Apunta la cámara al código QR de la etiqueta Marklife (40x30 mm).</p>
+    
+    <div id="reader"></div>
+    
+    <h3 style="font-size: 15px; color: #2c3e50; margin-bottom: 8px;">Resultado del Escaneo:</h3>
+    <div id="result" class="result-box">Esperando lectura...</div>
+
+    <a href="index.html" class="btn-back">⬅ Volver al sistema principal</a>
+</div>
+
+<script>
+    function onScanSuccess(decodedText) {
+        document.getElementById('result').innerText = decodedText;
+    }
+
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { 
+            fps: 10, 
+            qrbox: { width: 220, height: 220 },
+            rememberLastUsedCamera: true
+        },
+        /* verbose= */ false
+    );
+    html5QrcodeScanner.render(onScanSuccess);
+</script>
+</body>
+</html>
